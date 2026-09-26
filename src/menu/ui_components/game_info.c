@@ -176,7 +176,7 @@ static void draw_row (int y, const char *label) {
 }
 
 static void draw_value (int y, const char *value) {
-    draw_text(CAROUSEL_SELECTED_X, y, STL_DEFAULT, value ? value : "-");
+    draw_text(GAME_INFO_VALUE_X, y, STL_DEFAULT, value ? value : "-");
 }
 
 static const char *format_save_type (rom_save_type_t save_type) {
@@ -232,7 +232,7 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
 
 /** @brief Page 1: players, accessories, region, credits and dates (the mockup layout). */
 static void draw_overview_page (entry_t *entry, rom_info_t *info) {
-    int x = CAROUSEL_SELECTED_X;
+    int x = GAME_INFO_VALUE_X;
     int y = GAME_INFO_Y;
     char date[32];
 
@@ -328,11 +328,11 @@ static void draw_about_page (rom_info_t *info) {
     ui_components_text_draw(
         &(rdpq_textparms_t) {
             .style_id = description ? STL_DEFAULT : STL_GRAY,
-            .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X,
+            .width = VISIBLE_AREA_X1 - GAME_INFO_VALUE_X,
             .height = (GAME_INFO_ROW_PITCH * 5) + 4,
             .wrap = WRAP_WORD,
         },
-        FNT_SMALL, CAROUSEL_SELECTED_X, y - 9,
+        FNT_SMALL, GAME_INFO_VALUE_X, y - 9,
         description ? description : "No description yet. Add a metadata file for this game to show one here."
     );
     y += (GAME_INFO_ROW_PITCH * 5) + GAME_INFO_GROUP_GAP;

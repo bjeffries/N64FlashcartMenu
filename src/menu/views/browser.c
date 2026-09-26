@@ -580,7 +580,7 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
 
-    int x = CAROUSEL_SELECTED_X;
+    int x = GAME_INFO_VALUE_X;
     if (menu->browser.entry) {
         bool is_dir = (menu->browser.entry->type == ENTRY_TYPE_DIR);
         x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_dir ? "Open Folder" : "Play Cartridge") + LIBRARY_HINT_GAP;

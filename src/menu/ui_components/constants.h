@@ -364,11 +364,12 @@
 
 /*
  * Library (carousel) layout. Text Y values are baselines.
- * The selected tile, header, title and info values all share one left edge.
+ * The selected tile, header, title and info labels share one left edge;
+ * info values and button hints share a second one (GAME_INFO_VALUE_X).
  */
 
-/** @brief Left edge of the selected tile, header, title and info values. */
-#define CAROUSEL_SELECTED_X             (200)
+/** @brief Left edge of the selected tile, header, title and info labels. */
+#define CAROUSEL_SELECTED_X             (VISIBLE_AREA_X0 + 8)
 /** @brief Baseline of the screen header ("Library"). */
 #define LIBRARY_HEADER_Y                (42)
 /** @brief Top of the selected tile. */
@@ -412,7 +413,9 @@
 /** @brief Baseline of the selected entry's title (40px font). */
 #define CAROUSEL_TITLE_Y                (CAROUSEL_TILE_Y + CAROUSEL_SELECTED_TILE_SIZE + 44)
 /** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
-#define GAME_INFO_LABEL_X               (VISIBLE_AREA_X0 + 8)
+#define GAME_INFO_LABEL_X               (CAROUSEL_SELECTED_X)
+/** @brief Left edge of the info panel's values, and of the button hints. */
+#define GAME_INFO_VALUE_X               (200)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
 /** @brief Distance between info rows in a group. */
