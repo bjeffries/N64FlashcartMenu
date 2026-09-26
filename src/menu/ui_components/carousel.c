@@ -219,7 +219,7 @@ static void draw_tile_caption (entry_t *entry, int x) {
             .width = CAROUSEL_TILE_SIZE,
             .wrap = WRAP_ELLIPSES,
         },
-        FNT_DEFAULT,
+        FNT_SMALL,
         x,
         CAROUSEL_CAPTION_Y,
         title,

@@ -16,6 +16,7 @@
 typedef enum {
     FNT_DEFAULT = 1, /**< Default font type (Analogue OS 20px) */
     FNT_TITLE,       /**< Large title font (Analogue OS 40px) */
+    FNT_SMALL,       /**< Small caption font (Analogue OS 12px, anti-aliased) */
 } menu_font_type_t;
 
 /**

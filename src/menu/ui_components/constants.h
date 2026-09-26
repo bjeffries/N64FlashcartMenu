@@ -402,7 +402,7 @@
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
 #define CARTRIDGE_LABEL_BLEED           (2)
 /** @brief Baseline of the captions under unselected tiles. */
-#define CAROUSEL_CAPTION_Y              (CAROUSEL_SMALL_TILE_Y + CAROUSEL_TILE_SIZE + 20)
+#define CAROUSEL_CAPTION_Y              (CAROUSEL_SMALL_TILE_Y + CAROUSEL_TILE_SIZE + 14)
 /** @brief Baseline of the selected entry's title (40px font). */
 #define CAROUSEL_TITLE_Y                (CAROUSEL_TILE_Y + CAROUSEL_SELECTED_TILE_SIZE + 44)
 /** @brief Baseline of the button hints at the bottom of the screen. */

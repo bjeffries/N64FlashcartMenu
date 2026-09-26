@@ -30,14 +30,15 @@ static void load_default_font (char *custom_font_path) {
     rdpq_text_register_font(FNT_DEFAULT, default_font);
 }
 
-static void load_title_font (void) {
-    rdpq_font_t *title_font = rdpq_font_load("rom:/AnalogueOS-40.font64");
-    register_styles(title_font);
-    rdpq_text_register_font(FNT_TITLE, title_font);
+static void load_font (menu_font_type_t id, const char *path) {
+    rdpq_font_t *font = rdpq_font_load(path);
+    register_styles(font);
+    rdpq_text_register_font(id, font);
 }
 
 
 void fonts_init (char *custom_font_path) {
     load_default_font(custom_font_path);
-    load_title_font();
+    load_font(FNT_TITLE, "rom:/AnalogueOS-40.font64");
+    load_font(FNT_SMALL, "rom:/AnalogueOS-12.font64");
 }
