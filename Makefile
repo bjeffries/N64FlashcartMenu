@@ -80,8 +80,9 @@ SRCS = \
 	utils/fs.c \
 	utils/utf_converter.c \
 
-FONTS = \
-	Firple-Bold.ttf
+# Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
+FONT_SIZES = 20 40
+FONT_TTF = $(ASSETS_DIR)/fonts/AnalogueOS-Regular.ttf
 
 SOUNDS_WAV = \
 	cursorsound.wav \
@@ -98,21 +99,22 @@ SPNG_OBJS = $(filter $(BUILD_DIR)/libs/libspng/%.o,$(OBJS))
 DEPS = $(OBJS:.o=.d)
 
 FILESYSTEM = \
-	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(FONTS:%.ttf=%.font64))) \
+	$(foreach s,$(FONT_SIZES),$(FILESYSTEM_DIR)/AnalogueOS-$(s).font64) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite)))
 
 $(MINIZ_OBJS): N64_CFLAGS+=-Wno-unused-function -fcompare-debug-second
 $(SPNG_OBJS): N64_CFLAGS+=-DSPNG_USE_MINIZ -fcompare-debug-second
-$(FILESYSTEM_DIR)/Firple-Bold.font64: MKFONT_FLAGS+=--compress 1 --outline 1 --size 15 --charset $(ASSETS_DIR)/fonts/charset.txt --ellipsis 2026,1
 $(FILESYSTEM_DIR)/%.wav64: AUDIOCONV_FLAGS=--wav-compress 1
 
 $(@info $(shell mkdir -p ./$(FILESYSTEM_DIR) &> /dev/null))
 
-$(FILESYSTEM_DIR)/%.font64: $(ASSETS_DIR)/fonts/%.ttf
+$(FILESYSTEM_DIR)/AnalogueOS-%.font64: $(FONT_TTF)
 	@echo "    [FONT] $@"
-	@$(N64_MKFONT) $(MKFONT_FLAGS) -o $(FILESYSTEM_DIR) "$<"
+	@mkdir -p $(BUILD_DIR)/fonts/$*
+	@$(N64_MKFONT) --compress 1 --monochrome --size $* --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$<"
+	@mv $(BUILD_DIR)/fonts/$*/AnalogueOS-Regular.font64 $@
 
 $(FILESYSTEM_DIR)/%.wav64: $(ASSETS_DIR)/sounds/%.wav
 	@echo "    [AUDIO WAV] $@"

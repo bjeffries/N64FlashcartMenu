@@ -14,7 +14,8 @@
  * in the menu system.
  */
 typedef enum {
-    FNT_DEFAULT = 1, /**< Default font type */
+    FNT_DEFAULT = 1, /**< Default font type (Analogue OS 20px) */
+    FNT_TITLE,       /**< Large title font (Analogue OS 40px) */
 } menu_font_type_t;
 
 /**
