@@ -179,7 +179,8 @@ static void draw_folder_icon (int x, int y, int size) {
  * @brief Draw a cartridge tile of any size between the small and large tiles.
  *
  * At its native size a tile is copied 1:1; while it is growing or shrinking (only during
- * scrolling) the nearer style is scaled with bilinear filtering.
+ * scrolling) the nearer style is scaled with point sampling. Bilinear filtering would blend
+ * the black of transparent pixels into the cartridge edges and show strip seams.
  */
 static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int32_t selected, float x, float y, float size, bool large) {
     tile_style_t *style = large ? &large_style : &small_style;
@@ -213,10 +214,9 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
         } else {
             rdpq_set_mode_standard();
             rdpq_mode_alphacompare(1);
-            rdpq_mode_filter(FILTER_BILINEAR);
+            rdpq_mode_filter(FILTER_POINT);
         }
-        // .filtering overlaps the TMEM strips large images are drawn in, so bilinear scaling leaves no seams.
-        rdpq_blitparms_t parms = { .scale_x = scale, .scale_y = scale, .filtering = !native };
+        rdpq_blitparms_t parms = { .scale_x = scale, .scale_y = scale };
 
         // The label goes underneath; the cartridge is an overlay with a rounded window cut out for it.
         if (label) {
@@ -235,7 +235,7 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
             } else {
                 rdpq_set_mode_standard();
                 rdpq_mode_alphacompare(1);
-                rdpq_mode_filter(FILTER_BILINEAR);
+                rdpq_mode_filter(FILTER_POINT);
             }
             rdpq_sprite_blit(style->cartridge, cx, cy, &parms);
         rdpq_mode_pop();
