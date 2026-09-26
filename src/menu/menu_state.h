@@ -110,6 +110,7 @@ typedef struct {
 
         bool configure;     // C-right: per-game options (Library)
         bool remove;        // C-up: hide the game from the Library
+        bool favorite;      // C-left: add to / remove from Favorites
         bool tab_prev;      // L: previous top-level screen
         bool tab_next;      // R: next top-level screen
     } actions;

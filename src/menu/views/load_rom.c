@@ -329,10 +329,6 @@ static void set_clear_rdram_option(menu_t *menu, void *arg) {
     menu->browser.reload = true;
 }
 
-static void add_favorite (menu_t *menu, void *arg) {
-    bookkeeping_favorite_add(&menu->bookkeeping, menu->load.rom_path, NULL, BOOKKEEPING_TYPE_ROM);
-}
-
 static void iterate_metadata_image(menu_t *menu, int direction) {
     scan_metadata_images(menu);
     bool low_memory_mode = !is_memory_expanded();
@@ -460,7 +456,6 @@ static component_context_menu_t options_context_menu = { .list = {
     { .text = "Use Cheats", .submenu = &set_cheat_options_menu },
     { .text = "Datel Code Editor", .action = open_datel_code_editor },
     { .text = "Clear RDRAM on boot", .submenu = &set_clear_rdram_options_menu },
-    { .text = "Add to favorites", .action = add_favorite },
     COMPONENT_CONTEXT_MENU_LIST_END,
 }};
 

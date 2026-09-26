@@ -59,13 +59,15 @@ def letter(img, char):
 
 
 def triangle(img, direction):
-    """Solid pixel triangle pointing right or up, centred in the icon."""
+    """Solid pixel triangle pointing right, left or up, centred in the icon."""
     px = img.load()
     cx, cy = img.width // 2, img.height // 2
     for i in range(5):              # 5 rows/columns from the base to the tip
         for j in range(-4 + i, 5 - i):
             if direction == 'right':
                 px[cx - 2 + i, cy + j] = BLACK
+            elif direction == 'left':
+                px[cx + 1 - i, cy + j] = BLACK
             else:
                 px[cx + j, cy + 2 - i] = BLACK
     return img
@@ -79,6 +81,7 @@ def main():
         'button_b': letter(circle(ROUND_SIZE), 'B'),
         'button_c_right': triangle(circle(ROUND_SIZE), 'right'),
         'button_c_up': triangle(circle(ROUND_SIZE), 'up'),
+        'button_c_left': triangle(circle(ROUND_SIZE), 'left'),
         'button_l': letter(pill(PILL_W, PILL_H), 'L'),
         'button_r': letter(pill(PILL_W, PILL_H), 'R'),
     }

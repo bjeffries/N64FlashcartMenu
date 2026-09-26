@@ -98,9 +98,19 @@ static void process (menu_t *menu) {
     } else if (menu->actions.configure && entries[selected].type == ENTRY_TYPE_ROM) {
         sound_play_effect(SFX_SETTING);
         open_selected(menu, true);
-    } else if (menu->actions.remove && tab == TAB_FAVORITES) {
-        bookkeeping_favorite_remove(&menu->bookkeeping, entries[selected].index);
-        entries_load();
+    } else if (menu->actions.favorite) {
+        path_t *path = path_create(entries[selected].name);
+        int slot = bookkeeping_favorite_find(&menu->bookkeeping, path);
+        if (slot >= 0) {
+            bookkeeping_favorite_remove(&menu->bookkeeping, slot);
+        } else {
+            bookkeeping_item_types_t type = (entries[selected].type == ENTRY_TYPE_DISK) ? BOOKKEEPING_TYPE_DISK : BOOKKEEPING_TYPE_ROM;
+            bookkeeping_favorite_add(&menu->bookkeeping, path, NULL, type);
+        }
+        path_free(path);
+        if (tab == TAB_FAVORITES) {
+            entries_load();     // the game just left the Favorites list
+        }
         sound_play_effect(SFX_SETTING);
     } else if ((menu->actions.go_up || menu->actions.go_down) && !menu->actions.go_fast) {
         int pages = ui_components_game_info_page_count(&entries[selected]);
@@ -121,7 +131,7 @@ static void draw (menu_t *menu, surface_t *display) {
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
             FNT_DEFAULT, CAROUSEL_SELECTED_X, CAROUSEL_TILE_Y + 40,
             (tab == TAB_FAVORITES)
-                ? "No favorites yet.\nPress C-Right on a game and choose\n\"Add to favorites\"."
+                ? "No favorites yet.\nPress C-Left on a game in the Library\nto add it here."
                 : "Nothing played yet.\nGames you launch will appear here."
         );
         rdpq_detach_show();
@@ -138,13 +148,14 @@ static void draw (menu_t *menu, surface_t *display) {
     ui_components_game_info_dots_draw(info_page, pages);
 
     int x = GAME_INFO_VALUE_X;
-    x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Play Cartridge") + LIBRARY_HINT_GAP;
+    x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Play") + LIBRARY_HINT_GAP;
     if (entries[selected].type == ENTRY_TYPE_ROM) {
-        x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Configure") + LIBRARY_HINT_GAP;
+        x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
     }
-    if (tab == TAB_FAVORITES) {
-        ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Remove");
-    }
+    path_t *path = path_create(entries[selected].name);
+    bool favorite = bookkeeping_favorite_find(&menu->bookkeeping, path) >= 0;
+    path_free(path);
+    ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite");
 
     rdpq_detach_show();
 }

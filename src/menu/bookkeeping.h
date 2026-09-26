@@ -11,8 +11,8 @@
 
 #include "path.h"
 
-#define FAVORITES_COUNT 8 /**< Maximum number of favorite items */
-#define HISTORY_COUNT 8 /**< Maximum number of history items */
+#define FAVORITES_COUNT 32 /**< Maximum number of favorite items */
+#define HISTORY_COUNT 32 /**< Maximum number of history items (also how many games keep a Last Played date) */
 
 /** @brief Bookkeeping item types enumeration */
 typedef enum {
@@ -74,6 +74,15 @@ void bookkeeping_history_add(bookkeeping_t *bookkeeping, path_t *primary_path, p
  * @return Launch time, or 0 if the file isn't in the history (or was launched without a clock).
  */
 time_t bookkeeping_history_last_played(bookkeeping_t *bookkeeping, path_t *path);
+
+/**
+ * @brief Find a file in the favorites.
+ *
+ * @param bookkeeping Pointer to the bookkeeping structure.
+ * @param path Full path of the ROM or disk.
+ * @return Its favorites slot, or -1 if it isn't a favorite.
+ */
+int bookkeeping_favorite_find(bookkeeping_t *bookkeeping, path_t *path);
 
 /**
  * @brief Add a ROM to the favorites.

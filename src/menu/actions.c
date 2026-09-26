@@ -25,6 +25,7 @@ static void actions_clear (menu_t *menu) {
 
     menu->actions.configure = false;
     menu->actions.remove = false;
+    menu->actions.favorite = false;
     menu->actions.tab_prev = false;
     menu->actions.tab_next = false;
 }
@@ -119,6 +120,7 @@ static void actions_update_buttons (menu_t *menu) {
     // Library controls, reported alongside the older actions above so existing screens keep working.
     menu->actions.configure = pressed.c_right;
     menu->actions.remove = pressed.c_up;
+    menu->actions.favorite = pressed.c_left;
     menu->actions.tab_prev = pressed.l;
     menu->actions.tab_next = pressed.r;
 }

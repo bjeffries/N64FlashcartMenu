@@ -533,6 +533,17 @@ static void process (menu_t *menu) {
         menu->load.open_configure = true;
         menu->next_mode = MENU_MODE_LOAD_ROM;
         sound_play_effect(SFX_SETTING);
+    } else if (menu->actions.favorite && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
+        path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
+        int slot = bookkeeping_favorite_find(&menu->bookkeeping, path);
+        if (slot >= 0) {
+            bookkeeping_favorite_remove(&menu->bookkeeping, slot);
+        } else {
+            bookkeeping_item_types_t type = (menu->browser.entry->type == ENTRY_TYPE_DISK) ? BOOKKEEPING_TYPE_DISK : BOOKKEEPING_TYPE_ROM;
+            bookkeeping_favorite_add(&menu->bookkeeping, path, NULL, type);
+        }
+        path_free(path);
+        sound_play_effect(SFX_SETTING);
     } else if (menu->actions.remove && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
         path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
         bool hide = !menu->browser.entry->hidden;
@@ -572,16 +583,20 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
 
-    // Games show Play / Configure / Hide; there is only room for Back on folders.
+    // Games show Play / Config / Favorite / Hide; there is only room for Back on folders.
     int x = GAME_INFO_VALUE_X;
     entry_t *entry = menu->browser.entry;
     bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
     if (entry) {
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_game ? "Play Cartridge" : "Open Folder") + LIBRARY_HINT_GAP;
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_game ? "Play" : "Open Folder") + LIBRARY_HINT_GAP;
         if (entry->type == ENTRY_TYPE_ROM) {
-            x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Configure") + LIBRARY_HINT_GAP;
+            x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
         }
         if (is_game) {
+            path_t *path = path_clone_push(menu->browser.directory, entry->name);
+            bool favorite = bookkeeping_favorite_find(&menu->bookkeeping, path) >= 0;
+            path_free(path);
+            x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
             ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
         }
     }

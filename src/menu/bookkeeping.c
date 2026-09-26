@@ -282,6 +282,16 @@ time_t bookkeeping_history_last_played(bookkeeping_t *bookkeeping, path_t *path)
     return 0;
 }
 
+int bookkeeping_favorite_find(bookkeeping_t *bookkeeping, path_t *path) {
+    for (int i = 0; i < FAVORITES_COUNT; i++) {
+        bookkeeping_item_t *item = &bookkeeping->favorite_items[i];
+        if (item->bookkeeping_type != BOOKKEEPING_TYPE_EMPTY && path_are_match(item->primary_path, path)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 /**
  * @brief Add a new item to the bookkeeping favorites.
  * 

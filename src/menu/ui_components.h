@@ -260,6 +260,7 @@ typedef enum {
     ICON_B,
     ICON_C_RIGHT,
     ICON_C_UP,
+    ICON_C_LEFT,
     ICON_L,
     ICON_R,
     ICON_COUNT,
