@@ -64,7 +64,11 @@ static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position
         path_t *path = path_clone_push(directory, entry->name);
         uint32_t id;
         if (labels_rom_id(path_get(path), &id)) {
-            label_cache[slot].label = labels_load(id, CARTRIDGE_LABEL_WIDTH, CARTRIDGE_LABEL_HEIGHT);
+            label_cache[slot].label = labels_load(
+                id,
+                CARTRIDGE_LABEL_WIDTH + (CARTRIDGE_LABEL_BLEED * 2),
+                CARTRIDGE_LABEL_HEIGHT + (CARTRIDGE_LABEL_BLEED * 2)
+            );
         }
         path_free(path);
     }
@@ -135,18 +139,21 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
     int ly = cy + CARTRIDGE_LABEL_Y;
     surface_t *label = label_get(directory, entry, position, selected);
 
-    rdpq_mode_push();
-        rdpq_set_mode_copy(true);
-        if (cartridge) {
-            rdpq_sprite_blit(cartridge, cx, cy, NULL);
-        }
-        if (label) {
-            rdpq_tex_blit(label, lx, ly, NULL);
-        }
-    rdpq_mode_pop();
-
-    if (!label) {
+    // The label goes underneath; the cartridge is an overlay with a rounded window cut out for it.
+    if (label) {
+        rdpq_mode_push();
+            rdpq_set_mode_copy(false);
+            rdpq_tex_blit(label, lx - CARTRIDGE_LABEL_BLEED, ly - CARTRIDGE_LABEL_BLEED, NULL);
+        rdpq_mode_pop();
+    } else {
         ui_components_box_draw(lx, ly, lx + CARTRIDGE_LABEL_WIDTH, ly + CARTRIDGE_LABEL_HEIGHT, CAROUSEL_PLACEHOLDER_COLOR);
+    }
+
+    if (cartridge) {
+        rdpq_mode_push();
+            rdpq_set_mode_copy(true);
+            rdpq_sprite_blit(cartridge, cx, cy, NULL);
+        rdpq_mode_pop();
     }
 }
 

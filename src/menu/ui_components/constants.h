@@ -383,11 +383,13 @@
 /** @brief Size of the cartridge sprite (assets/images/cartridge.png, see scripts/make_cartridge.py). */
 #define CARTRIDGE_WIDTH                 (88)
 #define CARTRIDGE_HEIGHT                (62)
-/** @brief Position and size of the label inside the cartridge sprite. */
+/** @brief Position and size of the transparent label window in the cartridge sprite. */
 #define CARTRIDGE_LABEL_X               (22)
 #define CARTRIDGE_LABEL_Y               (6)
 #define CARTRIDGE_LABEL_WIDTH           (44)
 #define CARTRIDGE_LABEL_HEIGHT          (51)
+/** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
+#define CARTRIDGE_LABEL_BLEED           (2)
 /** @brief Baseline of the captions under unselected tiles. */
 #define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + CAROUSEL_TILE_SIZE + 20)
 /** @brief Baseline of the selected entry's title (40px font). */

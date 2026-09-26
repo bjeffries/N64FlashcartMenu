@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate the pixel-art N64 cartridge drawn behind every Library label.
 
-Writes assets/images/cartridge.png (RGBA, transparent background). The label is
-drawn on top at LABEL_X/LABEL_Y with size LABEL_W x LABEL_H; keep those in sync
-with CARTRIDGE_LABEL_* in src/menu/ui_components/constants.h.
+Writes assets/images/cartridge.png (RGBA, transparent background). The sprite is
+an overlay: the label is drawn first, then the cartridge on top, and the label
+shows through a transparent window at LABEL_X/LABEL_Y (LABEL_W x LABEL_H) with
+rounded corners and a dark rim. Keep these in sync with CARTRIDGE_LABEL_* in
+src/menu/ui_components/constants.h.
 
 Usage: scripts/make_cartridge.py [out=assets/images/cartridge.png]
 """
@@ -15,6 +17,7 @@ W, H = 88, 62
 WING = 15                       # width of each side wing, seam excluded
 PANEL_X0, PANEL_X1 = WING + 1, W - WING - 2   # centre panel columns (inclusive)
 LABEL_X, LABEL_Y, LABEL_W, LABEL_H = 22, 6, 44, 51
+WINDOW_RADIUS = 4
 
 BODY = (0xC4, 0xC4, 0xC4, 0xFF)
 HIGHLIGHT = (0xD8, 0xD8, 0xD8, 0xFF)
@@ -32,6 +35,13 @@ def top_edge(x):
         return round(2.4 * ((x - centre) / half) ** 2)
     outer = x if x < PANEL_X0 else W - 1 - x      # 0 at the cartridge edge
     return 4 + round(4 * (1 - outer / (WING - 1)) ** 2)
+
+
+def in_rounded_rect(x, y, rx, ry, rw, rh, radius):
+    """True if pixel (x, y) is inside the rounded rectangle, testing the pixel centre."""
+    cx = min(max(x + 0.5, rx + radius), rx + rw - radius)
+    cy = min(max(y + 0.5, ry + radius), ry + rh - radius)
+    return (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= radius ** 2
 
 
 def main():
@@ -75,13 +85,11 @@ def main():
         px[4, y] = SEAM
         px[W - 5, y] = SEAM
 
-    # Recess around the label.
-    for x in range(LABEL_X - 1, LABEL_X + LABEL_W + 1):
-        px[x, LABEL_Y - 1] = RECESS
-        px[x, LABEL_Y + LABEL_H] = RECESS
-    for y in range(LABEL_Y - 1, LABEL_Y + LABEL_H + 1):
-        px[LABEL_X - 1, y] = RECESS
-        px[LABEL_X + LABEL_W, y] = RECESS
+    # Label window: transparent rounded rectangle inside a 1px dark rim.
+    for y in range(LABEL_Y, LABEL_Y + LABEL_H):
+        for x in range(LABEL_X, LABEL_X + LABEL_W):
+            inside = in_rounded_rect(x, y, LABEL_X + 1, LABEL_Y + 1, LABEL_W - 2, LABEL_H - 2, WINDOW_RADIUS - 1)
+            px[x, y] = CLEAR if inside else RECESS
 
     img.save(out)
     print(f'{out}: {W}x{H}, label at ({LABEL_X},{LABEL_Y}) {LABEL_W}x{LABEL_H}')
