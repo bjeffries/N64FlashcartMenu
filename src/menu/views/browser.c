@@ -23,6 +23,7 @@ static const char *rom_meta_extensions[] = { "meta", "metadata", NULL };
 #define DIRECTORY_MAX_ENTRIES_JUMPER_PAK 1024
 
 static bool directory_entry_limit_exceeded = false;
+static int info_page = 0;
 
 static const char *hidden_root_paths[] = {
     "/menu.bin",
@@ -455,9 +456,10 @@ static void process (menu_t *menu) {
         return;
     }
 
-    int scroll_speed = menu->actions.go_fast ? 10 : 1;
+    int scroll_speed = 1;
 
-    if (menu->browser.entries > 1) {
+    // C-buttons also report a direction (go_fast); in the Library they are action buttons instead.
+    if (menu->browser.entries > 1 && !menu->actions.go_fast) {
         if (menu->actions.go_left) {
             menu->browser.selected -= scroll_speed;
             if (menu->settings.wrap_file_list_scrolling) {
@@ -507,6 +509,7 @@ static void process (menu_t *menu) {
                 menu->next_mode = MENU_MODE_IMAGE_VIEWER;
                 break;
             case ENTRY_TYPE_ROM:
+                menu->load.play_now = true;
                 menu->next_mode = MENU_MODE_LOAD_ROM;
                 break;
             case ENTRY_TYPE_ROM_CHEAT:
@@ -534,7 +537,18 @@ static void process (menu_t *menu) {
             );
         }
         sound_play_effect(SFX_EXIT);
-    } else if (menu->actions.options && menu->browser.entry) {
+    } else if (menu->actions.configure && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_ROM) {
+        menu->load.open_configure = true;
+        menu->next_mode = MENU_MODE_LOAD_ROM;
+        sound_play_effect(SFX_SETTING);
+    } else if ((menu->actions.go_up || menu->actions.go_down) && !menu->actions.go_fast) {
+        int pages = ui_components_game_info_page_count(menu->browser.entry);
+        if (pages > 1) {
+            info_page = (info_page + (menu->actions.go_down ? 1 : pages - 1)) % pages;
+            sound_play_effect(SFX_CURSOR);
+        }
+    } else if (menu->actions.lz_context && !menu->actions.tab_prev && menu->browser.entry) {
+        // Z: file options (properties, delete, set default folder)
         ui_components_context_menu_show(&entry_context_menu);
         sound_play_effect(SFX_SETTING);
     } else if (menu->actions.settings) {
@@ -543,42 +557,33 @@ static void process (menu_t *menu) {
     }
 }
 
-static void draw_badge (int x, int y_baseline, const char *text) {
-    int width = 8 + (strlen(text) * 12);
-    ui_components_box_draw(x, y_baseline - 17, x + width, y_baseline + 5, LIBRARY_BADGE_COLOR);
-    rdpq_text_printf(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = width, .align = ALIGN_CENTER },
-        FNT_DEFAULT, x, y_baseline, "%s", text
-    );
-}
-
 static void draw (menu_t *menu, surface_t *d) {
     rdpq_attach_clear(d, NULL);
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Library");
-    draw_badge(VISIBLE_AREA_X1 - 56, LIBRARY_HEADER_Y, "L");
-    draw_badge(VISIBLE_AREA_X1 - 26, LIBRARY_HEADER_Y, "R");
+    int r_x = VISIBLE_AREA_X1 - ui_components_icon_width(ICON_R);
+    ui_components_icon_draw(ICON_R, r_x, LIBRARY_HEADER_Y - 15);
+    ui_components_icon_draw(ICON_L, r_x - 6 - ui_components_icon_width(ICON_L), LIBRARY_HEADER_Y - 15);
 
     ui_components_carousel_draw(menu->browser.directory, menu->browser.list, menu->browser.entries, menu->browser.selected);
 
-    ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping);
-
-    const char *action = "Play Cartridge";
-    if (menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
-        action = "Open Folder";
+    int pages = ui_components_game_info_page_count(menu->browser.entry);
+    if (info_page >= pages) {
+        info_page = 0;
     }
+    ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
+    ui_components_game_info_dots_draw(info_page, pages);
 
     int x = CAROUSEL_SELECTED_X;
-    if (menu->browser.entries > 0) {
-        draw_badge(x, LIBRARY_BUTTONS_Y, "A");
-        rdpq_text_printf(NULL, FNT_DEFAULT, x + 28, LIBRARY_BUTTONS_Y, "%s", action);
-        x += 200;
-        draw_badge(x, LIBRARY_BUTTONS_Y, "R");
-        rdpq_text_printf(NULL, FNT_DEFAULT, x + 28, LIBRARY_BUTTONS_Y, "Configure");
+    if (menu->browser.entry) {
+        bool is_dir = (menu->browser.entry->type == ENTRY_TYPE_DIR);
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_dir ? "Open Folder" : "Play Cartridge") + LIBRARY_HINT_GAP;
+        if (menu->browser.entry->type == ENTRY_TYPE_ROM) {
+            x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Configure") + LIBRARY_HINT_GAP;
+        }
     }
     if (!path_is_root(menu->browser.directory)) {
-        draw_badge(VISIBLE_AREA_X0 + 8, LIBRARY_BUTTONS_Y, "B");
-        rdpq_text_printf(NULL, FNT_DEFAULT, VISIBLE_AREA_X0 + 36, LIBRARY_BUTTONS_Y, "Back");
+        ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
     }
 
     ui_components_context_menu_draw(&entry_context_menu);

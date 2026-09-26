@@ -22,6 +22,11 @@ static void actions_clear (menu_t *menu) {
     menu->actions.options = false;
     menu->actions.settings = false;
     menu->actions.lz_context = false;
+
+    menu->actions.configure = false;
+    menu->actions.remove = false;
+    menu->actions.tab_prev = false;
+    menu->actions.tab_next = false;
 }
 
 static void actions_update_direction (menu_t *menu) {
@@ -110,6 +115,12 @@ static void actions_update_buttons (menu_t *menu) {
     } else if (pressed.l || pressed.z) {
         menu->actions.lz_context = true;
     }
+
+    // Library controls, reported alongside the older actions above so existing screens keep working.
+    menu->actions.configure = pressed.c_right;
+    menu->actions.remove = pressed.c_up;
+    menu->actions.tab_prev = pressed.l;
+    menu->actions.tab_next = pressed.r;
 }
 
 

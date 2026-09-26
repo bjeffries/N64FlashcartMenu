@@ -254,19 +254,68 @@ void ui_components_file_list_free(void);
  */
 void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected);
 
+/** @brief Controller button icons (assets/images/button_*.png, see scripts/make_icons.py). */
+typedef enum {
+    ICON_A,
+    ICON_B,
+    ICON_C_RIGHT,
+    ICON_C_UP,
+    ICON_L,
+    ICON_R,
+    ICON_COUNT,
+} ui_icon_t;
+
+/**
+ * @brief Draw a button icon with its top-left corner at (x, y).
+ */
+void ui_components_icon_draw(ui_icon_t icon, int x, int y);
+
+/**
+ * @brief Width of a button icon (pixels).
+ */
+int ui_components_icon_width(ui_icon_t icon);
+
+/**
+ * @brief Draw a button icon followed by a label ("(A) Play Cartridge").
+ *
+ * @param icon Button icon.
+ * @param x Left edge.
+ * @param baseline Baseline of the label (FNT_DEFAULT).
+ * @param text Label.
+ * @return Horizontal space used.
+ */
+int ui_components_button_hint_draw(ui_icon_t icon, int x, int baseline, const char *text);
+
 /**
  * @brief Forget cached labels; call whenever the directory listing changes.
  */
 void ui_components_carousel_invalidate(void);
 
 /**
- * @brief Draw the Library info panel (players, accessories, region, credits, dates) for an entry.
+ * @brief Draw one page of the Library info panel for an entry.
+ *
+ * Page 0 is the overview (players, accessories, region, credits, dates), page 1 the
+ * boot details, page 2 the description.
  *
  * @param directory Directory containing the entry.
  * @param entry Selected entry (folders draw nothing).
  * @param bookkeeping History, used for the last played date.
+ * @param page Page to draw (0 .. ui_components_game_info_page_count() - 1).
  */
-void ui_components_game_info_draw(path_t *directory, entry_t *entry, bookkeeping_t *bookkeeping);
+void ui_components_game_info_draw(path_t *directory, entry_t *entry, bookkeeping_t *bookkeeping, int page);
+
+/**
+ * @brief Number of info pages available for an entry (0 for folders).
+ */
+int ui_components_game_info_page_count(entry_t *entry);
+
+/**
+ * @brief Draw the info page indicator dots.
+ *
+ * @param page Current page.
+ * @param count Number of pages (nothing is drawn for fewer than 2).
+ */
+void ui_components_game_info_dots_draw(int page, int count);
 
 /**
  * @brief Forget the cached info for the selected entry.

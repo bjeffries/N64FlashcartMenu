@@ -58,6 +58,7 @@ SRCS = \
 	menu/ui_components/file_info.c \
 	menu/ui_components/file_list.c \
 	menu/ui_components/game_info.c \
+	menu/ui_components/icons.c \
 	menu/ui_components/tabs.c \
 	menu/usb_comm.c \
 	menu/views/browser.c \
@@ -99,7 +100,13 @@ SOUNDS_XM ?=
 
 IMAGES = \
 	cartridge.png \
-	cartridge_large.png
+	cartridge_large.png \
+	button_a.png \
+	button_b.png \
+	button_c_right.png \
+	button_c_up.png \
+	button_l.png \
+	button_r.png
 
 OBJS = $(addprefix $(BUILD_DIR)/, $(addsuffix .o,$(basename $(SRCS))))
 MINIZ_OBJS = $(filter $(BUILD_DIR)/libs/miniz/%.o,$(OBJS))

@@ -105,6 +105,11 @@ typedef struct {
         bool options;
         bool settings;
         bool lz_context;
+
+        bool configure;     // C-right: per-game options (Library)
+        bool remove;        // C-up: hide the game from the Library
+        bool tab_prev;      // L: previous top-level screen
+        bool tab_next;      // R: next top-level screen
     } actions;
 
     struct {
@@ -126,6 +131,8 @@ typedef struct {
         int32_t load_history_id;
         int32_t load_favorite_id;
         bool combined_disk_rom;
+        bool play_now;          // Library "Play Cartridge": boot without stopping on the ROM details screen
+        bool open_configure;    // Library "Configure": open the per-game options straight away
     } load;
 
     struct {

@@ -418,6 +418,16 @@
 /** @brief Player icon for a player slot the game doesn't support. */
 #define GAME_INFO_PLAYER_OFF_COLOR      RGBA32(0xB0, 0xB0, 0xB0, 0xFF)
 
+/** @brief Distance between the info page dots. */
+#define GAME_INFO_DOT_PITCH             (11)
+/** @brief Current info page dot. */
+#define GAME_INFO_DOT_ON_COLOR          RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+/** @brief Other info page dots. */
+#define GAME_INFO_DOT_OFF_COLOR         RGBA32(0x55, 0x55, 0x55, 0xFF)
+
+/** @brief Space between button hints. */
+#define LIBRARY_HINT_GAP                (14)
+
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
 
@@ -429,7 +439,5 @@
 #define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x6A, 0x6A, 0x6A, 0xFF)
 /** @brief Folder icon color. */
 #define CAROUSEL_FOLDER_COLOR           RGBA32(0xC4, 0xC4, 0xC4, 0xFF)
-/** @brief Background of the small L/R and button badges. */
-#define LIBRARY_BADGE_COLOR             RGBA32(0x44, 0x44, 0x44, 0xFF)
 
 #endif /* COMPONENTS_CONSTANTS_H__ */

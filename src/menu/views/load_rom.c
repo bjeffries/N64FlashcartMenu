@@ -819,6 +819,12 @@ static void deinit (void) {
 
 
 void view_load_rom_init (menu_t *menu) {
+    // Consume the Library's requests up front so an early error return can't leave them set.
+    bool play_now = menu->load.play_now;
+    bool open_configure = menu->load.open_configure;
+    menu->load.play_now = false;
+    menu->load.open_configure = false;
+
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     if (!menu->settings.rom_autoload_enabled) {
 #endif
@@ -880,6 +886,15 @@ void view_load_rom_init (menu_t *menu) {
     }
 #endif
 
+    if (play_now) {
+        if (rom_requires_missing_expansion_pak(menu)) {
+            show_expansion_pak_warning = true;
+        } else {
+            menu->load_pending.rom_file = true;
+        }
+    } else if (open_configure) {
+        ui_components_context_menu_show(&options_context_menu);
+    }
 }
 
 void view_load_rom_display (menu_t *menu, surface_t *display) {
