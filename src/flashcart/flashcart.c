@@ -214,6 +214,10 @@ bool flashcart_has_feature (flashcart_features_t feature) {
  * @return flashcart_firmware_version_t The firmware version.
  */
 flashcart_firmware_version_t flashcart_get_firmware_version (void) {
+    // The placeholder driver used without a supported cart (e.g. in emulators) has no version.
+    if (!flashcart->get_firmware_version) {
+        return (flashcart_firmware_version_t) { 0 };
+    }
     return flashcart->get_firmware_version();
 }
 
