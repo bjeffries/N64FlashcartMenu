@@ -159,12 +159,16 @@ void ui_components_carousel_title (const char *name, bool directory, char *out, 
     }
 }
 
-static void draw_folder_icon (int x, int y, int size) {
-    int w = (size * 4) / 7, h = (size * 2) / 5;
-    int fx = x + (size - w) / 2;
-    int fy = y + (size - h) / 2 + 4;
-    ui_components_box_draw(fx, fy - 8, fx + (w * 2) / 5, fy, CAROUSEL_FOLDER_COLOR);
-    ui_components_box_draw(fx, fy, fx + w, fy + h, CAROUSEL_FOLDER_COLOR);
+/**
+ * @brief Folder shape filling the same w x h footprint as a cartridge: a tab on top-left and a body.
+ *
+ * @param grow Expands both parts outward (used to draw the selection outline behind the folder).
+ */
+static void draw_folder_shape (float x, float y, float w, float h, float grow, color_t color) {
+    float tab_w = w * 0.4f;
+    float tab_h = h * 0.16f;
+    ui_components_box_draw(x - grow, y - grow, x + tab_w + grow, y + tab_h + grow, color);
+    ui_components_box_draw(x - grow, y + (tab_h * 0.6f) - grow, x + w + grow, y + h + grow, color);
 }
 
 /**
@@ -184,16 +188,16 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
         y = roundf(y);
     }
 
-    if (entry->type == ENTRY_TYPE_DIR) {
-        draw_folder_icon(x, y, size);
-        return;
-    }
-
     float cx = x + (size - cartridge_width) / 2;
     float cy = y + (size - (style->cartridge_height * scale)) / 2;
     if (native) {
         cx = roundf(cx);
         cy = roundf(cy);
+    }
+
+    if (entry->type == ENTRY_TYPE_DIR) {
+        draw_folder_shape(cx, cy, cartridge_width, style->cartridge_height * scale, 0, CAROUSEL_FOLDER_COLOR);
+        return;
     }
     float lx = cx + (style->label_x * scale);
     float ly = cy + (style->label_y * scale);
@@ -364,17 +368,23 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
 
     entry_t *entry = &list[selected];
 
-    // Selection outline around the focused cartridge, once it has finished moving into place.
-    if (settled && entry->type != ENTRY_TYPE_DIR) {
-        if (!selection_outline) {
-            selection_outline = sprite_load("rom:/cartridge_large_outline.sprite");
-        }
+    // Selection outline around the focused cartridge or folder, once it has finished moving into place.
+    if (settled) {
         int cx = CAROUSEL_SELECTED_X + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_WIDTH) / 2);
         int cy = CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2);
-        rdpq_mode_push();
-            rdpq_set_mode_copy(true);
-            rdpq_sprite_blit(selection_outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
-        rdpq_mode_pop();
+        if (entry->type == ENTRY_TYPE_DIR) {
+            // White folder grown by the outline width, then the folder again on top of it.
+            draw_folder_shape(cx, cy, CARTRIDGE_LARGE_WIDTH, CARTRIDGE_LARGE_HEIGHT, CARTRIDGE_OUTLINE_OFFSET, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            draw_folder_shape(cx, cy, CARTRIDGE_LARGE_WIDTH, CARTRIDGE_LARGE_HEIGHT, 0, CAROUSEL_FOLDER_COLOR);
+        } else {
+            if (!selection_outline) {
+                selection_outline = sprite_load("rom:/cartridge_large_outline.sprite");
+            }
+            rdpq_mode_push();
+                rdpq_set_mode_copy(true);
+                rdpq_sprite_blit(selection_outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
+            rdpq_mode_pop();
+        }
     }
 
     char title[128];
