@@ -24,6 +24,7 @@ static const char *rom_meta_extensions[] = { "meta", "metadata", NULL };
 
 static bool directory_entry_limit_exceeded = false;
 static int info_page = 0;
+static int hold_frames = 0;
 
 static const char *hidden_root_paths[] = {
     "/menu.bin",
@@ -458,8 +459,13 @@ static void process (menu_t *menu) {
 
     int scroll_speed = 1;
 
+    // Held directions repeat every frame; throttle that to one tile every CAROUSEL_REPEAT_FRAMES.
+    bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
+    bool move_now = horizontal && (hold_frames % CAROUSEL_REPEAT_FRAMES == 0);
+    hold_frames = horizontal ? hold_frames + 1 : 0;
+
     // C-buttons also report a direction (go_fast); in the Library they are action buttons instead.
-    if (menu->browser.entries > 1 && !menu->actions.go_fast) {
+    if (menu->browser.entries > 1 && move_now) {
         if (menu->actions.go_left) {
             menu->browser.selected -= scroll_speed;
             if (menu->settings.wrap_file_list_scrolling) {

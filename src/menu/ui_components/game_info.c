@@ -24,6 +24,7 @@ static struct {
     bool is_rom;
     rom_info_t rom_info;
     time_t added;
+    int64_t size;
     time_t last_played;
 } current;
 
@@ -47,6 +48,7 @@ static void current_load (path_t *path, entry_t *entry, bookkeeping_t *bookkeepi
     struct stat st;
     if (stat(path_get(path), &st) == 0) {
         current.added = st.st_mtime;
+        current.size = st.st_size;
     }
     current.last_played = bookkeeping_history_last_played(bookkeeping, path);
 
@@ -293,7 +295,8 @@ static void draw_details_page (entry_t *entry, rom_info_t *info) {
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Size");
-    draw_value(y, format_size(entry->size, buffer, sizeof(buffer)));
+    // Directory listings don't always carry sizes (e.g. the emulator's rom:/ filesystem), so use stat().
+    draw_value(y, format_size(current.size ? current.size : entry->size, buffer, sizeof(buffer)));
     y += GAME_INFO_ROW_PITCH + GAME_INFO_GROUP_GAP;
 
     draw_row(y, "Save Type");

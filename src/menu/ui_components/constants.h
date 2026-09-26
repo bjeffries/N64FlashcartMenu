@@ -431,6 +431,13 @@
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
 
+/** @brief Scroll easing rate (1/s): higher is snappier. 18 covers ~90% of a step in 130ms. */
+#define CAROUSEL_SCROLL_SPEED           (18.0f)
+/** @brief Scroll distances beyond this many tiles jump and animate only the last step. */
+#define CAROUSEL_MAX_ANIMATED_STEPS     (3.0f)
+/** @brief While ←/→ is held, move one tile every this many frames (12 per second at 60fps). */
+#define CAROUSEL_REPEAT_FRAMES          (5)
+
 /** @brief Selected tile outline (unselected tiles have no background or outline). */
 #define CAROUSEL_SELECTION_COLOR        RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
 /** @brief Selected tile outline thickness (pixels). */

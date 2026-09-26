@@ -5,12 +5,14 @@
  */
 
 #include <ctype.h>
+#include <math.h>
 #include <string.h>
 
 #include "../labels.h"
 #include "../ui_components.h"
 #include "../fonts.h"
 #include "constants.h"
+#include "utils/utils.h"
 
 #define LABEL_CACHE_SIZE    (16)
 
@@ -49,6 +51,10 @@ typedef struct {
 
 static label_slot_t label_cache[LABEL_CACHE_SIZE];
 static bool label_cache_ready = false;
+
+static bool scroll_ready = false;       // false: snap to the selection on the next draw
+static float scroll_position = 0;       // selection index currently in the focus frame (fractional while moving)
+static uint64_t scroll_last_us = 0;
 
 
 static void label_cache_reset (void) {
@@ -169,44 +175,73 @@ static void draw_folder_icon (int x, int y, int size) {
     ui_components_box_draw(fx, fy, fx + w, fy + h, CAROUSEL_FOLDER_COLOR);
 }
 
-static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int32_t selected, int x, int y) {
-    bool is_selected = (position == selected);
-    tile_style_t *style = is_selected ? &large_style : &small_style;
+/**
+ * @brief Draw a cartridge tile of any size between the small and large tiles.
+ *
+ * At its native size a tile is copied 1:1; while it is growing or shrinking (only during
+ * scrolling) the nearer style is scaled with bilinear filtering.
+ */
+static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int32_t selected, float x, float y, float size, bool large) {
+    tile_style_t *style = large ? &large_style : &small_style;
+    float scale = size / style->tile_size;
+    bool native = (fabsf(scale - 1.0f) < 0.001f);
 
-    if (is_selected) {
-        draw_selection_border(x, y, style->tile_size);
+    if (native) {
+        x = roundf(x);
+        y = roundf(y);
     }
 
     if (entry->type == ENTRY_TYPE_DIR) {
-        draw_folder_icon(x, y, style->tile_size);
+        draw_folder_icon(x, y, size);
         return;
     }
 
-    int cx = x + (style->tile_size - style->cartridge_width) / 2;
-    int cy = y + (style->tile_size - style->cartridge_height) / 2;
-    int lx = cx + style->label_x;
-    int ly = cy + style->label_y;
-    surface_t *label = label_get(directory, entry, position, selected, is_selected);
+    float cx = x + (size - (style->cartridge_width * scale)) / 2;
+    float cy = y + (size - (style->cartridge_height * scale)) / 2;
+    if (native) {
+        cx = roundf(cx);
+        cy = roundf(cy);
+    }
+    float lx = cx + (style->label_x * scale);
+    float ly = cy + (style->label_y * scale);
+    float bleed = CARTRIDGE_LABEL_BLEED * scale;
+    surface_t *label = label_get(directory, entry, position, selected, large);
 
-    // The label goes underneath; the cartridge is an overlay with a rounded window cut out for it.
-    if (label) {
-        rdpq_mode_push();
-            rdpq_set_mode_copy(false);
-            rdpq_tex_blit(label, lx - CARTRIDGE_LABEL_BLEED, ly - CARTRIDGE_LABEL_BLEED, NULL);
-        rdpq_mode_pop();
-    } else {
-        ui_components_box_draw(lx, ly, lx + style->label_width, ly + style->label_height, CAROUSEL_PLACEHOLDER_COLOR);
+    rdpq_mode_push();
+        if (native) {
+            rdpq_set_mode_copy(true);
+        } else {
+            rdpq_set_mode_standard();
+            rdpq_mode_alphacompare(1);
+            rdpq_mode_filter(FILTER_BILINEAR);
+        }
+        rdpq_blitparms_t parms = { .scale_x = scale, .scale_y = scale };
+
+        // The label goes underneath; the cartridge is an overlay with a rounded window cut out for it.
+        if (label) {
+            rdpq_tex_blit(label, lx - bleed, ly - bleed, &parms);
+        }
+    rdpq_mode_pop();
+
+    if (!label) {
+        ui_components_box_draw(lx, ly, lx + (style->label_width * scale), ly + (style->label_height * scale), CAROUSEL_PLACEHOLDER_COLOR);
     }
 
     if (style->cartridge) {
         rdpq_mode_push();
-            rdpq_set_mode_copy(true);
-            rdpq_sprite_blit(style->cartridge, cx, cy, NULL);
+            if (native) {
+                rdpq_set_mode_copy(true);
+            } else {
+                rdpq_set_mode_standard();
+                rdpq_mode_alphacompare(1);
+                rdpq_mode_filter(FILTER_BILINEAR);
+            }
+            rdpq_sprite_blit(style->cartridge, cx, cy, &parms);
         rdpq_mode_pop();
     }
 }
 
-static void draw_tile_caption (entry_t *entry, int x) {
+static void draw_tile_caption (entry_t *entry, float centre_x) {
     char title[128];
     ui_components_carousel_title(entry->name, entry->type == ENTRY_TYPE_DIR, title, sizeof(title));
     for (char *c = title; *c; c++) {
@@ -221,17 +256,78 @@ static void draw_tile_caption (entry_t *entry, int x) {
             .wrap = WRAP_ELLIPSES,
         },
         FNT_SMALL,
-        x,
+        roundf(centre_x - (CAROUSEL_TILE_SIZE / 2)),
         CAROUSEL_CAPTION_Y,
         title
     );
 }
 
 /**
- * @brief Forget cached labels (call when the directory listing changes).
+ * @brief Left edge of a tile that is `d` steps from the focus frame (d may be fractional).
+ *
+ * Whole steps give the resting layout: the large focused tile, a wider gap on each side of it,
+ * then small tiles at a regular pitch. Fractional steps interpolate between neighbours.
+ */
+static float tile_x (float d) {
+    float lo = floorf(d);
+    float t = d - lo;
+    float x0, x1;
+    for (int k = 0; k < 2; k++) {
+        int n = (int) (lo) + k;
+        float x;
+        if (n == 0) {
+            x = CAROUSEL_SELECTED_X;
+        } else if (n > 0) {
+            x = CAROUSEL_SELECTED_X + CAROUSEL_SELECTED_TILE_SIZE + CAROUSEL_SELECTED_GAP + ((n - 1) * CAROUSEL_TILE_PITCH);
+        } else {
+            x = CAROUSEL_SELECTED_X - CAROUSEL_SELECTED_GAP - CAROUSEL_TILE_SIZE + ((n + 1) * CAROUSEL_TILE_PITCH);
+        }
+        if (k == 0) x0 = x; else x1 = x;
+    }
+    return x0 + ((x1 - x0) * t);
+}
+
+/** @brief Tile size `d` steps from the focus frame: large at 0, small from 1 step away. */
+static float tile_size (float d) {
+    float t = fminf(fabsf(d), 1.0f);
+    return CAROUSEL_SELECTED_TILE_SIZE + ((CAROUSEL_TILE_SIZE - CAROUSEL_SELECTED_TILE_SIZE) * t);
+}
+
+/** @brief Move the scroll position toward the selection; returns true once it has arrived. */
+static bool scroll_update (int32_t selected) {
+    uint64_t now = get_ticks_us();
+
+    if (!scroll_ready) {
+        scroll_ready = true;
+        scroll_position = selected;
+        scroll_last_us = now;
+        return true;
+    }
+
+    float dt = (now - scroll_last_us) / 1000000.0f;
+    scroll_last_us = now;
+
+    float distance = selected - scroll_position;
+    // Big jumps (wrap-around, fast repeats) animate as a single step instead of sweeping the list.
+    if (fabsf(distance) > CAROUSEL_MAX_ANIMATED_STEPS) {
+        scroll_position = selected - copysignf(1.0f, distance);
+        distance = selected - scroll_position;
+    }
+
+    // Exponential ease-out, frame rate independent.
+    scroll_position += distance * (1.0f - expf(-dt * CAROUSEL_SCROLL_SPEED));
+    if (fabsf(selected - scroll_position) < 0.01f) {
+        scroll_position = selected;
+    }
+    return scroll_position == selected;
+}
+
+/**
+ * @brief Forget cached labels and snap the scroll position (call when the directory listing changes).
  */
 void ui_components_carousel_invalidate (void) {
     label_cache_reset();
+    scroll_ready = false;
 }
 
 /**
@@ -251,24 +347,25 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         return;
     }
 
-    for (int32_t i = 0; i < entries; i++) {
-        int x = CAROUSEL_SELECTED_X;
-        int y = CAROUSEL_SMALL_TILE_Y;
-        int size = CAROUSEL_TILE_SIZE;
-        if (i < selected) {
-            x -= CAROUSEL_SELECTED_GAP + CAROUSEL_TILE_SIZE + ((selected - i - 1) * CAROUSEL_TILE_PITCH);
-        } else if (i > selected) {
-            x += CAROUSEL_SELECTED_TILE_SIZE + CAROUSEL_SELECTED_GAP + ((i - selected - 1) * CAROUSEL_TILE_PITCH);
-        } else {
-            y = CAROUSEL_TILE_Y;
-            size = CAROUSEL_SELECTED_TILE_SIZE;
-        }
+    scroll_update(selected);
+
+    // The focus frame stays put; tiles slide through it.
+    draw_selection_border(CAROUSEL_SELECTED_X, CAROUSEL_TILE_Y, CAROUSEL_SELECTED_TILE_SIZE);
+
+    int32_t first = MAX(0, (int32_t) floorf(scroll_position) - 3);
+    int32_t last = MIN(entries - 1, (int32_t) ceilf(scroll_position) + 5);
+    for (int32_t i = first; i <= last; i++) {
+        float d = i - scroll_position;
+        float size = tile_size(d);
+        float x = tile_x(d);
         if (x + size <= 0 || x >= DISPLAY_WIDTH) {
             continue;
         }
-        draw_tile(directory, &list[i], i, selected, x, y);
-        if (i != selected) {
-            draw_tile_caption(&list[i], x);
+        float y = CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - size) / 2);
+        bool focused = fabsf(d) < 0.5f;
+        draw_tile(directory, &list[i], i, selected, x, y, size, focused);
+        if (!focused) {
+            draw_tile_caption(&list[i], x + (size / 2));
         }
     }
 
