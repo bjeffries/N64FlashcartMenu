@@ -215,7 +215,8 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
             rdpq_mode_alphacompare(1);
             rdpq_mode_filter(FILTER_BILINEAR);
         }
-        rdpq_blitparms_t parms = { .scale_x = scale, .scale_y = scale };
+        // .filtering overlaps the TMEM strips large images are drawn in, so bilinear scaling leaves no seams.
+        rdpq_blitparms_t parms = { .scale_x = scale, .scale_y = scale, .filtering = !native };
 
         // The label goes underneath; the cartridge is an overlay with a rounded window cut out for it.
         if (label) {

@@ -94,7 +94,9 @@ static void menu_init (boot_params_t *boot_params) {
     resolution_t resolution = {
         .width = 640,
         .height = 480,
-        .interlaced = interlaced ? INTERLACE_HALF : INTERLACE_OFF,
+        // FULL swaps buffers only on even fields, so both fields of an interlaced frame always come
+        // from the same render. HALF could split a frame across fields, combing anything in motion.
+        .interlaced = interlaced ? INTERLACE_FULL : INTERLACE_OFF,
     };
 
     display_init(resolution, DEPTH_16_BPP, 2, GAMMA_NONE, interlaced ? FILTERS_DISABLED : FILTERS_RESAMPLE);
