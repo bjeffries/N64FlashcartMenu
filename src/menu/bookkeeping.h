@@ -7,6 +7,8 @@
 #ifndef BOOKKEEPING_H__
 #define BOOKKEEPING_H__
 
+#include <time.h>
+
 #include "path.h"
 
 #define FAVORITES_COUNT 8 /**< Maximum number of favorite items */
@@ -24,6 +26,7 @@ typedef struct {
     path_t *primary_path; /**< Primary path */
     path_t *secondary_path; /**< Secondary path */
     bookkeeping_item_types_t bookkeeping_type; /**< Bookkeeping item type */
+    time_t last_played; /**< When the item was last launched (0 if unknown); only used by history */
 } bookkeeping_item_t;
 
 /** @brief ROM bookkeeping structure */
@@ -62,6 +65,15 @@ void bookkeeping_save(bookkeeping_t *history);
  * @param type The type of the bookkeeping item.
  */
 void bookkeeping_history_add(bookkeeping_t *bookkeeping, path_t *primary_path, path_t *secondary_path, bookkeeping_item_types_t type);
+
+/**
+ * @brief Find when a file was last launched, from the history list.
+ *
+ * @param bookkeeping Pointer to the bookkeeping structure.
+ * @param path Full path of the ROM or disk.
+ * @return Launch time, or 0 if the file isn't in the history (or was launched without a clock).
+ */
+time_t bookkeeping_history_last_played(bookkeeping_t *bookkeeping, path_t *path);
 
 /**
  * @brief Add a ROM to the favorites.

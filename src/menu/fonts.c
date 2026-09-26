@@ -12,6 +12,7 @@ static void register_styles (rdpq_font_t *font) {
     rdpq_font_style(font, STL_ORANGE, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0x99, 0x00, 0xFF) }));
     rdpq_font_style(font, STL_RED, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0x40, 0x40, 0xFF) }));
     rdpq_font_style(font, STL_GRAY, &((rdpq_fontstyle_t) { .color = RGBA32(0x80, 0x80, 0x80, 0xFF) }));
+    rdpq_font_style(font, STL_BLACK, &((rdpq_fontstyle_t) { .color = RGBA32(0x00, 0x00, 0x00, 0xFF) }));
 }
 
 static void load_default_font (char *custom_font_path) {

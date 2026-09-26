@@ -152,6 +152,7 @@ static void menu_deinit (menu_t *menu) {
     ui_components_background_free();
     ui_components_file_list_free();
     ui_components_carousel_invalidate();
+    ui_components_game_info_invalidate();
     labels_deinit();
     rspq_wait();  // Execute deferred callbacks (e.g., display list freeing) before closing RSPQ
 

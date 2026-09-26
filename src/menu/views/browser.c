@@ -561,6 +561,8 @@ static void draw (menu_t *menu, surface_t *d) {
 
     ui_components_carousel_draw(menu->browser.directory, menu->browser.list, menu->browser.entries, menu->browser.selected);
 
+    ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping);
+
     const char *action = "Play Cartridge";
     if (menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
         action = "Open Folder";

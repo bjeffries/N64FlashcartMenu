@@ -260,6 +260,20 @@ void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entri
 void ui_components_carousel_invalidate(void);
 
 /**
+ * @brief Draw the Library info panel (players, accessories, region, credits, dates) for an entry.
+ *
+ * @param directory Directory containing the entry.
+ * @param entry Selected entry (folders draw nothing).
+ * @param bookkeeping History, used for the last played date.
+ */
+void ui_components_game_info_draw(path_t *directory, entry_t *entry, bookkeeping_t *bookkeeping);
+
+/**
+ * @brief Forget the cached info for the selected entry.
+ */
+void ui_components_game_info_invalidate(void);
+
+/**
  * @brief Turn a file name into a display title (drops extension and region tags, fixes ", The").
  *
  * @param name File or directory name.

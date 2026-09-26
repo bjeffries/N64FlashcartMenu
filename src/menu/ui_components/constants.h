@@ -370,7 +370,7 @@
 /** @brief Left edge of the selected tile, header, title and info values. */
 #define CAROUSEL_SELECTED_X             (200)
 /** @brief Baseline of the screen header ("Library"). */
-#define LIBRARY_HEADER_Y                (48)
+#define LIBRARY_HEADER_Y                (42)
 /** @brief Top of the selected tile. */
 #define CAROUSEL_TILE_Y                 (60)
 /** @brief Selected tile width and height (~30% larger than the others). */
@@ -405,6 +405,19 @@
 #define CAROUSEL_CAPTION_Y              (CAROUSEL_SMALL_TILE_Y + CAROUSEL_TILE_SIZE + 14)
 /** @brief Baseline of the selected entry's title (40px font). */
 #define CAROUSEL_TITLE_Y                (CAROUSEL_TILE_Y + CAROUSEL_SELECTED_TILE_SIZE + 44)
+/** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
+#define GAME_INFO_LABEL_X               (VISIBLE_AREA_X0 + 8)
+/** @brief Baseline of the first info row. */
+#define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
+/** @brief Distance between info rows in a group. */
+#define GAME_INFO_ROW_PITCH             (16)
+/** @brief Extra space between groups of info rows. */
+#define GAME_INFO_GROUP_GAP             (6)
+/** @brief Info value badge background (white box with black text). */
+#define GAME_INFO_BADGE_COLOR           RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+/** @brief Player icon for a player slot the game doesn't support. */
+#define GAME_INFO_PLAYER_OFF_COLOR      RGBA32(0xB0, 0xB0, 0xB0, 0xFF)
+
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
 

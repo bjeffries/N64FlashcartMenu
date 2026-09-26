@@ -217,6 +217,7 @@ static void draw_tile_caption (entry_t *entry, int x) {
         &(rdpq_textparms_t) {
             .style_id = STL_GRAY,
             .width = CAROUSEL_TILE_SIZE,
+            .align = ALIGN_CENTER,
             .wrap = WRAP_ELLIPSES,
         },
         FNT_SMALL,

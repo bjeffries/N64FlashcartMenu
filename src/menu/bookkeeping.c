@@ -45,6 +45,9 @@ static void bookkeeping_ini_load_list(bookkeeping_item_t *list, uint16_t count, 
         
         snprintf(buf, sizeof(buf), "%d_type", i);
         list[i].bookkeeping_type = ini_get_int(ini, group, buf, BOOKKEEPING_TYPE_EMPTY);
+
+        snprintf(buf, sizeof(buf), "%d_last_played", i);
+        list[i].last_played = ini_get_int(ini, group, buf, 0);
     }
 }
 
@@ -90,6 +93,9 @@ static void bookkeeping_ini_save_list(bookkeeping_item_t *list, uint16_t count, 
 
         snprintf(buf, sizeof(buf), "%d_type", i);
         ini_set_int(ini, group, buf, list[i].bookkeeping_type);
+
+        snprintf(buf, sizeof(buf), "%d_last_played", i);
+        ini_set_int(ini, group, buf, (int) list[i].last_played);
     }
 }
 
@@ -153,6 +159,7 @@ static void bookkeeping_clear_item(bookkeeping_item_t *item, bool leave_null) {
         }
     }
     item->bookkeeping_type = BOOKKEEPING_TYPE_EMPTY;
+    item->last_played = 0;
 }
 
 /**
@@ -167,6 +174,7 @@ static void bookkeeping_copy_item(bookkeeping_item_t *source, bookkeeping_item_t
     destination->primary_path =  source->primary_path != NULL ? path_clone(source->primary_path) : path_create("");   
     destination->secondary_path = source->secondary_path != NULL ? path_clone(source->secondary_path) : path_create("");
     destination->bookkeeping_type = source->bookkeeping_type;
+    destination->last_played = source->last_played;
 }
 
 /**
@@ -217,8 +225,9 @@ static void bookkeeping_move_items_up(bookkeeping_item_t *list, int start, int e
  * @param new_item Pointer to the new bookkeeping item.
  */
 static void bookkeeping_insert_top(bookkeeping_item_t *list, int count, bookkeeping_item_t *new_item) {
-    // if it matches the top of the list already then nothing to do
+    // if it matches the top of the list already then only the timestamp changes
     if(bookkeeping_item_match(&list[0], new_item)) {
+        list[0].last_played = new_item->last_played;
         return;
     }
 
@@ -251,14 +260,26 @@ static void bookkeeping_insert_top(bookkeeping_item_t *list, int count, bookkeep
  * @param type The type of the bookkeeping item.
  */
 void bookkeeping_history_add(bookkeeping_t *bookkeeping, path_t *primary_path, path_t *secondary_path, bookkeeping_item_types_t type) {
+    time_t now = time(NULL);
     bookkeeping_item_t new_item = {
         .primary_path = primary_path,
         .secondary_path = secondary_path,
-        .bookkeeping_type = type
+        .bookkeeping_type = type,
+        .last_played = (now > 0) ? now : 0,
     };
 
     bookkeeping_insert_top(bookkeeping->history_items, HISTORY_COUNT, &new_item);
     bookkeeping_save(bookkeeping);
+}
+
+time_t bookkeeping_history_last_played(bookkeeping_t *bookkeeping, path_t *path) {
+    for (int i = 0; i < HISTORY_COUNT; i++) {
+        bookkeeping_item_t *item = &bookkeeping->history_items[i];
+        if (item->bookkeeping_type != BOOKKEEPING_TYPE_EMPTY && path_are_match(item->primary_path, path)) {
+            return item->last_played;
+        }
+    }
+    return 0;
 }
 
 /**
