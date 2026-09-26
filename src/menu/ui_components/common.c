@@ -27,6 +27,26 @@ void ui_components_box_draw (int x0, int y0, int x1, int y1, color_t color) {
 }
 
 /**
+ * @brief Draw text that may be truncated with an ellipsis.
+ *
+ * rdpq_text_printn() lays text out in a stack buffer with no spare slot for its end marker,
+ * so an ellipsis that lands near the end of a string overflows it and crashes. Building the
+ * paragraph on the heap avoids that.
+ *
+ * @param parms Text parameters (usually with .wrap = WRAP_ELLIPSES).
+ * @param font Font ID.
+ * @param x Left edge.
+ * @param y Baseline (or top edge if parms->height is set).
+ * @param text UTF-8 text.
+ */
+void ui_components_text_draw (const rdpq_textparms_t *parms, menu_font_type_t font, int x, int y, const char *text) {
+    int nbytes = strlen(text);
+    rdpq_paragraph_t *layout = rdpq_paragraph_build(parms, font, text, &nbytes);
+    rdpq_paragraph_render(layout, x, y);
+    rdpq_paragraph_free(layout);
+}
+
+/**
  * @brief Draw a border with the specified color.
  * 
  * @param x0 The x-coordinate of the top-left corner.

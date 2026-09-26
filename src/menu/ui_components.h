@@ -70,6 +70,17 @@ typedef struct {
 void ui_components_box_draw(int x0, int y0, int x1, int y1, color_t color);
 
 /**
+ * @brief Draw text that may be truncated with an ellipsis (safe replacement for rdpq_text_printn).
+ *
+ * @param parms Text parameters.
+ * @param font Font ID.
+ * @param x Left edge.
+ * @param y Baseline (or top edge if parms->height is set).
+ * @param text UTF-8 text.
+ */
+void ui_components_text_draw(const rdpq_textparms_t *parms, menu_font_type_t font, int x, int y, const char *text);
+
+/**
  * @brief Draw a border component.
  * 
  * @param x0 Starting x-coordinate.

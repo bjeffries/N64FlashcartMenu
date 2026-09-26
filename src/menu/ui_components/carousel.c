@@ -213,7 +213,7 @@ static void draw_tile_caption (entry_t *entry, int x) {
         *c = toupper((unsigned char) (*c));
     }
 
-    rdpq_text_printn(
+    ui_components_text_draw(
         &(rdpq_textparms_t) {
             .style_id = STL_GRAY,
             .width = CAROUSEL_TILE_SIZE,
@@ -222,8 +222,7 @@ static void draw_tile_caption (entry_t *entry, int x) {
         FNT_SMALL,
         x,
         CAROUSEL_CAPTION_Y,
-        title,
-        strlen(title)
+        title
     );
 }
 
@@ -276,7 +275,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     entry_t *entry = &list[selected];
     ui_components_carousel_title(entry->name, entry->type == ENTRY_TYPE_DIR, title, sizeof(title));
 
-    rdpq_text_printn(
+    ui_components_text_draw(
         &(rdpq_textparms_t) {
             .style_id = STL_DEFAULT,
             .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X,
@@ -285,7 +284,6 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         FNT_TITLE,
         CAROUSEL_SELECTED_X,
         CAROUSEL_TITLE_Y,
-        title,
-        strlen(title)
+        title
     );
 }
