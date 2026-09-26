@@ -6,6 +6,7 @@
 
 #include "../cart_load.h"
 #include "../fonts.h"
+#include "../hidden.h"
 #include "../ui_components/constants.h"
 #include "utils/fs.h"
 #include "views.h"
@@ -283,6 +284,19 @@ static bool load_directory (menu_t *menu) {
                 continue;
             }
 
+            // Games removed from the Library ("Remove") are only listed when the setting asks for them.
+            entry->hidden = false;
+            if (entry->type != ENTRY_TYPE_DIR) {
+                path_push(path, entry->name);
+                entry->hidden = hidden_contains(path);
+                path_pop(path);
+            }
+            if (entry->hidden && !menu->settings.show_hidden_games) {
+                free(entry->name);
+                result = dir_findnext(path_get(path), &info);
+                continue;
+            }
+
             entry->size = info.d_size;
             entry->index = menu->browser.entries;
             menu->browser.entries++;
@@ -533,6 +547,18 @@ static void process (menu_t *menu) {
         menu->load.open_configure = true;
         menu->next_mode = MENU_MODE_LOAD_ROM;
         sound_play_effect(SFX_SETTING);
+    } else if (menu->actions.remove && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
+        path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
+        bool hide = !menu->browser.entry->hidden;
+        hidden_set(path, hide);
+        path_free(path);
+        if (menu->settings.show_hidden_games) {
+            menu->browser.entry->hidden = hide;
+        } else if (reload_directory(menu)) {
+            menu->browser.valid = false;
+            menu_show_error(menu, "Couldn't refresh directory contents");
+        }
+        sound_play_effect(SFX_SETTING);
     } else if ((menu->actions.go_up || menu->actions.go_down) && !menu->actions.go_fast) {
         int pages = ui_components_game_info_page_count(menu->browser.entry);
         if (pages > 1) {
@@ -560,15 +586,20 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
 
+    // Games show Play / Configure / Remove, as in the mockup; there is only room for Back on folders.
     int x = GAME_INFO_VALUE_X;
-    if (menu->browser.entry) {
-        bool is_dir = (menu->browser.entry->type == ENTRY_TYPE_DIR);
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_dir ? "Open Folder" : "Play Cartridge") + LIBRARY_HINT_GAP;
-        if (menu->browser.entry->type == ENTRY_TYPE_ROM) {
+    entry_t *entry = menu->browser.entry;
+    bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
+    if (entry) {
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_game ? "Play Cartridge" : "Open Folder") + LIBRARY_HINT_GAP;
+        if (entry->type == ENTRY_TYPE_ROM) {
             x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Configure") + LIBRARY_HINT_GAP;
         }
+        if (is_game) {
+            ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Remove");
+        }
     }
-    if (!path_is_root(menu->browser.directory)) {
+    if (!is_game && !path_is_root(menu->browser.directory)) {
         ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
     }
 

@@ -66,6 +66,7 @@ typedef struct {
     entry_type_t type;
     int64_t size;
     int32_t index;
+    bool hidden;    // hidden from the Library, only listed when "Show Hidden Games" is on
 } entry_t;
 
 typedef struct {

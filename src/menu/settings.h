@@ -25,6 +25,9 @@ typedef struct {
     /** @brief Show files/directories that are filtered in the browser */
     bool show_protected_entries;
 
+    /** @brief Show games hidden from the Library (menu/hidden.txt) */
+    bool show_hidden_games;
+
     /** @brief Default directory to navigate to when menu loads */
     char *default_directory;
 

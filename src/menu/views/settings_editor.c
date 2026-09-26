@@ -26,6 +26,13 @@ static void set_protected_entries_type (menu_t *menu, void *arg) {
     menu->browser.reload = true;
 }
 
+static void set_show_hidden_games_type (menu_t *menu, void *arg) {
+    menu->settings.show_hidden_games = (bool)(uintptr_t)(arg);
+    settings_save(&menu->settings);
+
+    menu->browser.reload = true;
+}
+
 static void set_use_saves_folder_type (menu_t *menu, void *arg) {
     menu->settings.use_saves_folder = (bool)(uintptr_t)(arg);
     settings_save(&menu->settings);
@@ -151,6 +158,18 @@ static component_context_menu_t set_protected_entries_type_context_menu = {
     .list = {
         {.text = "On", .action = set_protected_entries_type, .arg = (void *)(uintptr_t)(true) },
         {.text = "Off", .action = set_protected_entries_type, .arg = (void *)(uintptr_t)(false) },
+    COMPONENT_CONTEXT_MENU_LIST_END,
+}};
+
+static int get_show_hidden_games_current_selection (menu_t *menu) {
+    return menu->settings.show_hidden_games ? 0 : 1;
+}
+
+static component_context_menu_t set_show_hidden_games_type_context_menu = {
+    .get_default_selection = get_show_hidden_games_current_selection,
+    .list = {
+        {.text = "On", .action = set_show_hidden_games_type, .arg = (void *)(uintptr_t)(true) },
+        {.text = "Off", .action = set_show_hidden_games_type, .arg = (void *)(uintptr_t)(false) },
     COMPONENT_CONTEXT_MENU_LIST_END,
 }};
 
@@ -292,6 +311,7 @@ static component_context_menu_t set_rumble_enabled_type_context_menu = {
 
 static component_context_menu_t options_context_menu = { .list = {
     { .text = "Show Hidden Files", .submenu = &set_protected_entries_type_context_menu },
+    { .text = "Show Hidden Games", .submenu = &set_show_hidden_games_type_context_menu },
     { .text = "Sound Effects", .submenu = &set_soundfx_enabled_type_context_menu },
     { .text = "Use Saves Folder", .submenu = &set_use_saves_folder_type_context_menu },
     { .text = "Show Saves Folder", .submenu = &set_show_saves_folder_type_context_menu },
@@ -363,6 +383,7 @@ static void draw (menu_t *menu, surface_t *d) {
         "  Default Directory : %s\n\n"
         "To change the following menu settings, press 'A':\n"
         "     Show Hidden Files : %s\n"
+        "     Show Hidden Games : %s\n"
         "     Sound Effects     : %s\n"
         "     Use Saves folder  : %s\n"
         "     Show Saves folder : %s\n"
@@ -386,6 +407,7 @@ static void draw (menu_t *menu, surface_t *d) {
         ,
         menu->settings.default_directory,
         format_switch(menu->settings.show_protected_entries),
+        format_switch(menu->settings.show_hidden_games),
         format_switch(menu->settings.soundfx_enabled),
         format_switch(menu->settings.use_saves_folder),
         format_switch(menu->settings.show_saves_folder),

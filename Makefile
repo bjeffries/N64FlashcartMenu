@@ -42,6 +42,7 @@ SRCS = \
 	menu/datel_codes.c \
 	menu/disk_info.c \
 	menu/fonts.c \
+	menu/hidden.c \
 	menu/labels.c \
 	menu/hdmi.c \
 	menu/menu.c \

@@ -14,6 +14,7 @@ static settings_t init = {
     .pal60_enabled = false,
     .force_progressive_scan = false,
     .show_protected_entries = false,
+    .show_hidden_games = false,
     .default_directory = "/",
     .use_saves_folder = true,
     .show_saves_folder = false,
@@ -56,6 +57,7 @@ void settings_load (settings_t *settings) {
     settings->pal60_enabled = ini_get_bool(ini, "menu", "pal60", init.pal60_enabled);
     settings->force_progressive_scan = ini_get_bool(ini, "menu", "force_progressive_scan", init.force_progressive_scan);
     settings->show_protected_entries = ini_get_bool(ini, "menu", "show_protected_entries", init.show_protected_entries);
+    settings->show_hidden_games = ini_get_bool(ini, "menu", "show_hidden_games", init.show_hidden_games);
     free(settings->default_directory);
     settings->default_directory = strdup(ini_get_string(ini, "menu", "default_directory", init.default_directory));
     settings->use_saves_folder = ini_get_bool(ini, "menu", "use_saves_folder", init.use_saves_folder);
@@ -92,6 +94,7 @@ void settings_save (settings_t *settings) {
     ini_set_bool(ini, "menu", "pal60", settings->pal60_enabled);
     ini_set_bool(ini, "menu", "force_progressive_scan", settings->force_progressive_scan);
     ini_set_bool(ini, "menu", "show_protected_entries", settings->show_protected_entries);
+    ini_set_bool(ini, "menu", "show_hidden_games", settings->show_hidden_games);
     ini_set_string(ini, "menu", "default_directory", settings->default_directory);
     ini_set_bool(ini, "menu", "use_saves_folder", settings->use_saves_folder);
     ini_set_bool(ini, "menu", "show_saves_folder", settings->show_saves_folder);
