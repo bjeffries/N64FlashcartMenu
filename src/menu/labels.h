@@ -37,12 +37,14 @@ void labels_deinit(void);
 bool labels_rom_id(const char *rom_path, uint32_t *id);
 
 /**
- * @brief Load the label image for a label ID.
+ * @brief Load the label image for a label ID, downscaled to the given size.
  *
  * @param id Label ID from #labels_rom_id.
+ * @param width Output width (at most #LABEL_WIDTH).
+ * @param height Output height (at most #LABEL_HEIGHT).
  * @return Newly allocated RGBA16 surface (free with #labels_free), or NULL if there is no label.
  */
-surface_t *labels_load(uint32_t id);
+surface_t *labels_load(uint32_t id, int width, int height);
 
 /**
  * @brief Free a label surface once the RDP has finished drawing it.

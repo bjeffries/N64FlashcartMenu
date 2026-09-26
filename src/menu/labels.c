@@ -15,6 +15,7 @@
 #include <miniz.h>
 
 #include "labels.h"
+#include "utils/utils.h"
 
 #define DB_TABLE_OFFSET     (0x100)
 #define DB_TABLE_SLOTS      (4096)
@@ -126,7 +127,7 @@ static int find_id (uint32_t id) {
     return -1;
 }
 
-surface_t *labels_load (uint32_t id) {
+surface_t *labels_load (uint32_t id, int width, int height) {
     int index = ids ? find_id(id) : -1;
     if (index < 0) {
         return NULL;
@@ -145,15 +146,26 @@ surface_t *labels_load (uint32_t id) {
 
     surface_t *label = NULL;
     if (ok && (label = malloc(sizeof(surface_t)))) {
-        *label = surface_alloc(FMT_RGBA16, LABEL_WIDTH, LABEL_HEIGHT);
-        for (int y = 0; y < LABEL_HEIGHT; y++) {
+        *label = surface_alloc(FMT_RGBA16, width, height);
+        // Box filter: each output pixel averages the source pixels it covers.
+        for (int y = 0; y < height; y++) {
+            int sy0 = (y * LABEL_HEIGHT) / height;
+            int sy1 = MAX(sy0 + 1, ((y + 1) * LABEL_HEIGHT) / height);
             uint16_t *row = (uint16_t *) (label->buffer + (y * label->stride));
-            const uint8_t *src = &bgra[y * LABEL_WIDTH * 4];
-            for (int x = 0; x < LABEL_WIDTH; x++, src += 4) {
-                row[x] = color_to_packed16(RGBA32(src[2], src[1], src[0], src[3]));
+            for (int x = 0; x < width; x++) {
+                int sx0 = (x * LABEL_WIDTH) / width;
+                int sx1 = MAX(sx0 + 1, ((x + 1) * LABEL_WIDTH) / width);
+                uint32_t r = 0, g = 0, b = 0, n = 0;
+                for (int sy = sy0; sy < sy1; sy++) {
+                    const uint8_t *src = &bgra[((sy * LABEL_WIDTH) + sx0) * 4];
+                    for (int sx = sx0; sx < sx1; sx++, src += 4, n++) {
+                        b += src[0]; g += src[1]; r += src[2];
+                    }
+                }
+                row[x] = color_to_packed16(RGBA32(r / n, g / n, b / n, 0xFF));
             }
         }
-        data_cache_hit_writeback(label->buffer, label->stride * LABEL_HEIGHT);
+        data_cache_hit_writeback(label->buffer, label->stride * height);
     }
 
     free(bgra);

@@ -370,13 +370,24 @@
 /** @brief Left edge of the selected tile, header, title and info values. */
 #define CAROUSEL_SELECTED_X             (200)
 /** @brief Baseline of the screen header ("Library"). */
-#define LIBRARY_HEADER_Y                (52)
+#define LIBRARY_HEADER_Y                (48)
 /** @brief Top of the carousel tiles. */
-#define CAROUSEL_TILE_Y                 (72)
+#define CAROUSEL_TILE_Y                 (64)
 /** @brief Carousel tile width and height. */
-#define CAROUSEL_TILE_SIZE              (104)
+#define CAROUSEL_TILE_SIZE              (112)
 /** @brief Horizontal distance between tile left edges. */
-#define CAROUSEL_TILE_PITCH             (116)
+#define CAROUSEL_TILE_PITCH             (CAROUSEL_TILE_SIZE + 10)
+/** @brief Extra space on each side of the selected tile. */
+#define CAROUSEL_SELECTED_GAP           (36)
+
+/** @brief Size of the cartridge sprite (assets/images/cartridge.png, see scripts/make_cartridge.py). */
+#define CARTRIDGE_WIDTH                 (88)
+#define CARTRIDGE_HEIGHT                (62)
+/** @brief Position and size of the label inside the cartridge sprite. */
+#define CARTRIDGE_LABEL_X               (22)
+#define CARTRIDGE_LABEL_Y               (6)
+#define CARTRIDGE_LABEL_WIDTH           (44)
+#define CARTRIDGE_LABEL_HEIGHT          (51)
 /** @brief Baseline of the captions under unselected tiles. */
 #define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + CAROUSEL_TILE_SIZE + 20)
 /** @brief Baseline of the selected entry's title (40px font). */
@@ -388,8 +399,10 @@
 #define CAROUSEL_TILE_COLOR             RGBA32(0x33, 0x33, 0x33, 0xFF)
 /** @brief Selected tile background. */
 #define CAROUSEL_TILE_SELECTED_COLOR    RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
-/** @brief Stand-in for a missing label, and the folder icon on unselected tiles. */
-#define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x5A, 0x5A, 0x5A, 0xFF)
+/** @brief Stand-in for a missing label (matches the cartridge's label recess). */
+#define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x6A, 0x6A, 0x6A, 0xFF)
+/** @brief Folder icon color. */
+#define CAROUSEL_FOLDER_COLOR           RGBA32(0xC4, 0xC4, 0xC4, 0xFF)
 /** @brief Background of the small L/R and button badges. */
 #define LIBRARY_BADGE_COLOR             RGBA32(0x44, 0x44, 0x44, 0xFF)
 

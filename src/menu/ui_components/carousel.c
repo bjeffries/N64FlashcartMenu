@@ -21,6 +21,7 @@ typedef struct {
 
 static label_slot_t label_cache[LABEL_CACHE_SIZE];
 static bool label_cache_ready = false;
+static sprite_t *cartridge = NULL;
 
 
 static void label_cache_reset (void) {
@@ -63,7 +64,7 @@ static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position
         path_t *path = path_clone_push(directory, entry->name);
         uint32_t id;
         if (labels_rom_id(path_get(path), &id)) {
-            label_cache[slot].label = labels_load(id);
+            label_cache[slot].label = labels_load(id, CARTRIDGE_LABEL_WIDTH, CARTRIDGE_LABEL_HEIGHT);
         }
         path_free(path);
     }
@@ -112,34 +113,40 @@ static void draw_tile_background (int x, int y, color_t color) {
     ui_components_box_draw(x + 1, y + 1, x + CAROUSEL_TILE_SIZE - 1, y + CAROUSEL_TILE_SIZE - 1, color);
 }
 
-static void draw_folder_icon (int x, int y, color_t color) {
+static void draw_folder_icon (int x, int y) {
     int w = 64, h = 46;
     int fx = x + (CAROUSEL_TILE_SIZE - w) / 2;
     int fy = y + (CAROUSEL_TILE_SIZE - h) / 2 + 4;
-    ui_components_box_draw(fx, fy - 8, fx + 26, fy, color);
-    ui_components_box_draw(fx, fy, fx + w, fy + h, color);
+    ui_components_box_draw(fx, fy - 8, fx + 26, fy, CAROUSEL_FOLDER_COLOR);
+    ui_components_box_draw(fx, fy, fx + w, fy + h, CAROUSEL_FOLDER_COLOR);
 }
 
 static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int32_t selected, int x, int y) {
-    bool is_selected = (position == selected);
-    draw_tile_background(x, y, is_selected ? CAROUSEL_TILE_SELECTED_COLOR : CAROUSEL_TILE_COLOR);
+    draw_tile_background(x, y, (position == selected) ? CAROUSEL_TILE_SELECTED_COLOR : CAROUSEL_TILE_COLOR);
 
     if (entry->type == ENTRY_TYPE_DIR) {
-        draw_folder_icon(x, y, is_selected ? CAROUSEL_TILE_COLOR : CAROUSEL_PLACEHOLDER_COLOR);
+        draw_folder_icon(x, y);
         return;
     }
 
-    int lx = x + (CAROUSEL_TILE_SIZE - LABEL_WIDTH) / 2;
-    int ly = y + (CAROUSEL_TILE_SIZE - LABEL_HEIGHT) / 2;
+    int cx = x + (CAROUSEL_TILE_SIZE - CARTRIDGE_WIDTH) / 2;
+    int cy = y + (CAROUSEL_TILE_SIZE - CARTRIDGE_HEIGHT) / 2;
+    int lx = cx + CARTRIDGE_LABEL_X;
+    int ly = cy + CARTRIDGE_LABEL_Y;
     surface_t *label = label_get(directory, entry, position, selected);
 
-    if (label) {
-        rdpq_mode_push();
-            rdpq_set_mode_copy(false);
+    rdpq_mode_push();
+        rdpq_set_mode_copy(true);
+        if (cartridge) {
+            rdpq_sprite_blit(cartridge, cx, cy, NULL);
+        }
+        if (label) {
             rdpq_tex_blit(label, lx, ly, NULL);
-        rdpq_mode_pop();
-    } else {
-        ui_components_box_draw(lx, ly, lx + LABEL_WIDTH, ly + LABEL_HEIGHT, CAROUSEL_PLACEHOLDER_COLOR);
+        }
+    rdpq_mode_pop();
+
+    if (!label) {
+        ui_components_box_draw(lx, ly, lx + CARTRIDGE_LABEL_WIDTH, ly + CARTRIDGE_LABEL_HEIGHT, CAROUSEL_PLACEHOLDER_COLOR);
     }
 }
 
@@ -178,6 +185,9 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     if (!label_cache_ready) {
         label_cache_reset();
     }
+    if (!cartridge) {
+        cartridge = sprite_load("rom:/cartridge.sprite");
+    }
 
     if (entries == 0) {
         ui_components_main_text_draw(STL_GRAY, ALIGN_CENTER, VALIGN_TOP, "\n\n\n\n\nThis folder has no games");
@@ -186,6 +196,11 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
 
     for (int32_t i = 0; i < entries; i++) {
         int x = CAROUSEL_SELECTED_X + ((i - selected) * CAROUSEL_TILE_PITCH);
+        if (i < selected) {
+            x -= CAROUSEL_SELECTED_GAP;
+        } else if (i > selected) {
+            x += CAROUSEL_SELECTED_GAP;
+        }
         if (x + CAROUSEL_TILE_SIZE <= 0 || x >= DISPLAY_WIDTH) {
             continue;
         }
