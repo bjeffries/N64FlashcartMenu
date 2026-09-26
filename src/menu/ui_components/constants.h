@@ -164,7 +164,7 @@
  * @def TEXT_LINE_SPACING_ADJUST
  * @brief Adjustment for text line spacing (pixels).
  */
-#define TEXT_LINE_SPACING_ADJUST        (0)
+#define TEXT_LINE_SPACING_ADJUST        (-6) // Cancels Analogue OS line gap: 18px line pitch at 20px
 
 /**
  * @def BOXART_WIDTH
