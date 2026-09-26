@@ -15,6 +15,7 @@
 #include "flashcart/flashcart.h"
 #include "fonts.h"
 #include "hdmi.h"
+#include "labels.h"
 #include "menu_state.h"
 #include "menu.h"
 #include "png_decoder.h"
@@ -30,6 +31,7 @@
 #define MENU_ROM_LOAD_HISTORY_FILE  "history.ini"
 
 #define MENU_CACHE_DIRECTORY        "cache"
+#define MENU_LABELS_FILE            "labels.db"
 #define BACKGROUND_CACHE_FILE       "background.data"
 
 #define FPS_LIMIT                   (30.0f)
@@ -115,6 +117,10 @@ static void menu_init (boot_params_t *boot_params) {
     fonts_init(path_get(path));
     path_pop(path);
 
+    path_push(path, MENU_LABELS_FILE);
+    labels_init(path_get(path));
+    path_pop(path);
+
     path_push(path, MENU_CACHE_DIRECTORY);
     directory_create(path_get(path));
 
@@ -145,6 +151,8 @@ static void menu_deinit (menu_t *menu) {
     
     ui_components_background_free();
     ui_components_file_list_free();
+    ui_components_carousel_invalidate();
+    labels_deinit();
     rspq_wait();  // Execute deferred callbacks (e.g., display list freeing) before closing RSPQ
 
     hdmi_send_game_id(menu->boot_params);

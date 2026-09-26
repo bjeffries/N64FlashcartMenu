@@ -234,6 +234,31 @@ void ui_components_file_list_draw(entry_t *list, int entries, int selected);
 void ui_components_file_list_free(void);
 
 /**
+ * @brief Draw the Library carousel row and the selected entry's title.
+ *
+ * @param directory Directory the entries belong to (used to load labels).
+ * @param list List of entries.
+ * @param entries Number of entries.
+ * @param selected Index of the selected entry.
+ */
+void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected);
+
+/**
+ * @brief Forget cached labels; call whenever the directory listing changes.
+ */
+void ui_components_carousel_invalidate(void);
+
+/**
+ * @brief Turn a file name into a display title (drops extension and region tags, fixes ", The").
+ *
+ * @param name File or directory name.
+ * @param directory True if name is a directory (keeps any dots).
+ * @param out Output buffer.
+ * @param out_size Size of the output buffer.
+ */
+void ui_components_carousel_title(const char *name, bool directory, char *out, size_t out_size);
+
+/**
  * @brief Context menu structure.
  */
 typedef struct component_context_menu {

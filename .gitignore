@@ -8,8 +8,12 @@
 /_site
 
 # Ignore generated files in the libdragon FS
-/filesystem/Firple-Bold.font64
-/filesystem/FiraMonoBold.font64
+/filesystem/*.font64
+/filesystem/N64
+/filesystem/menu
+
+# Emulator test data built from local ROMs (scripts/make_devsd.py)
+/devsd
 /filesystem/*.wav64
 /filesystem/*.sprite
 

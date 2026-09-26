@@ -362,4 +362,35 @@
  */
 #define TAB_ACTIVE_BACKGROUND_COLOR     RGBA32(0x6F, 0x6F, 0x6F, 0xFF)
 
+/*
+ * Library (carousel) layout. Text Y values are baselines.
+ * The selected tile, header, title and info values all share one left edge.
+ */
+
+/** @brief Left edge of the selected tile, header, title and info values. */
+#define CAROUSEL_SELECTED_X             (200)
+/** @brief Baseline of the screen header ("Library"). */
+#define LIBRARY_HEADER_Y                (52)
+/** @brief Top of the carousel tiles. */
+#define CAROUSEL_TILE_Y                 (72)
+/** @brief Carousel tile width and height. */
+#define CAROUSEL_TILE_SIZE              (104)
+/** @brief Horizontal distance between tile left edges. */
+#define CAROUSEL_TILE_PITCH             (116)
+/** @brief Baseline of the captions under unselected tiles. */
+#define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + CAROUSEL_TILE_SIZE + 20)
+/** @brief Baseline of the selected entry's title (40px font). */
+#define CAROUSEL_TITLE_Y                (CAROUSEL_CAPTION_Y + 44)
+/** @brief Baseline of the button hints at the bottom of the screen. */
+#define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
+
+/** @brief Unselected tile background. */
+#define CAROUSEL_TILE_COLOR             RGBA32(0x33, 0x33, 0x33, 0xFF)
+/** @brief Selected tile background. */
+#define CAROUSEL_TILE_SELECTED_COLOR    RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+/** @brief Stand-in for a missing label, and the folder icon on unselected tiles. */
+#define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x5A, 0x5A, 0x5A, 0xFF)
+/** @brief Background of the small L/R and button badges. */
+#define LIBRARY_BADGE_COLOR             RGBA32(0x44, 0x44, 0x44, 0xFF)
+
 #endif /* COMPONENTS_CONSTANTS_H__ */

@@ -42,6 +42,7 @@ SRCS = \
 	menu/datel_codes.c \
 	menu/disk_info.c \
 	menu/fonts.c \
+	menu/labels.c \
 	menu/hdmi.c \
 	menu/menu.c \
 	menu/path.c \
@@ -51,6 +52,7 @@ SRCS = \
 	menu/sound.c \
 	menu/ui_components/background.c \
 	menu/ui_components/boxart.c \
+	menu/ui_components/carousel.c \
 	menu/ui_components/common.c \
 	menu/ui_components/context_menu.c \
 	menu/ui_components/file_info.c \
@@ -103,6 +105,18 @@ FILESYSTEM = \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite)))
+
+# DEV_SD=1 packs devsd/ (see scripts/make_devsd.py) into rom:/ so emulators have games to show.
+# Copied as a whole folder because ROM file names contain spaces, which make can't track.
+ifdef DEV_SD
+FILESYSTEM += devsd-sync
+devsd-sync:
+	@echo "    [DEVSD] devsd/ -> $(FILESYSTEM_DIR)/"
+	@cp -R devsd/. $(FILESYSTEM_DIR)/
+.PHONY: devsd-sync
+else
+$(shell rm -rf $(FILESYSTEM_DIR)/N64 $(FILESYSTEM_DIR)/menu)
+endif
 
 $(MINIZ_OBJS): N64_CFLAGS+=-Wno-unused-function -fcompare-debug-second
 $(SPNG_OBJS): N64_CFLAGS+=-DSPNG_USE_MINIZ -fcompare-debug-second

@@ -6,6 +6,7 @@
 
 #include "../cart_load.h"
 #include "../fonts.h"
+#include "../ui_components/constants.h"
 #include "utils/fs.h"
 #include "views.h"
 #include "../sound.h"
@@ -144,6 +145,8 @@ static int compare_entry (const void *pa, const void *pb) {
 }
 
 static void browser_list_free (menu_t *menu) {
+    ui_components_carousel_invalidate();
+
     for (int i = menu->browser.entries - 1; i >= 0; i--) {
         free(menu->browser.list[i].name);
     }
@@ -269,6 +272,13 @@ static bool load_directory (menu_t *menu) {
                 entry->type = ENTRY_TYPE_ROM_META;
             } else {
                 entry->type = ENTRY_TYPE_OTHER;
+            }
+
+            // The Library carousel only shows folders and things that can be played.
+            if (entry->type != ENTRY_TYPE_DIR && entry->type != ENTRY_TYPE_ROM && entry->type != ENTRY_TYPE_DISK) {
+                free(entry->name);
+                result = dir_findnext(path_get(path), &info);
+                continue;
             }
 
             entry->size = info.d_size;
@@ -448,7 +458,7 @@ static void process (menu_t *menu) {
     int scroll_speed = menu->actions.go_fast ? 10 : 1;
 
     if (menu->browser.entries > 1) {
-        if (menu->actions.go_up) {
+        if (menu->actions.go_left) {
             menu->browser.selected -= scroll_speed;
             if (menu->settings.wrap_file_list_scrolling) {
                 // Wrap around to end if we go past the beginning
@@ -460,7 +470,7 @@ static void process (menu_t *menu) {
                 }
             }
             sound_play_effect(SFX_CURSOR);
-        } else if (menu->actions.go_down) {
+        } else if (menu->actions.go_right) {
             menu->browser.selected += scroll_speed;
             if (menu->settings.wrap_file_list_scrolling) {
                 // Wrap around to beginning if we go past the end
@@ -530,71 +540,43 @@ static void process (menu_t *menu) {
     } else if (menu->actions.settings) {
         ui_components_context_menu_show(&settings_context_menu);
         sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.go_right) {
-        menu->next_mode = MENU_MODE_HISTORY;
-        sound_play_effect(SFX_CURSOR);
-    } else if (menu->actions.go_left) {
-        menu->next_mode = MENU_MODE_FAVORITE;
-        sound_play_effect(SFX_CURSOR);
     }
 }
 
+static void draw_badge (int x, int y_baseline, const char *text) {
+    int width = 8 + (strlen(text) * 12);
+    ui_components_box_draw(x, y_baseline - 17, x + width, y_baseline + 5, LIBRARY_BADGE_COLOR);
+    rdpq_text_printf(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = width, .align = ALIGN_CENTER },
+        FNT_DEFAULT, x, y_baseline, "%s", text
+    );
+}
+
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach(d, NULL);
+    rdpq_attach_clear(d, NULL);
 
-    ui_components_background_draw();
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Library");
+    draw_badge(VISIBLE_AREA_X1 - 56, LIBRARY_HEADER_Y, "L");
+    draw_badge(VISIBLE_AREA_X1 - 26, LIBRARY_HEADER_Y, "R");
 
-    ui_components_tabs_common_draw(0);
+    ui_components_carousel_draw(menu->browser.directory, menu->browser.list, menu->browser.entries, menu->browser.selected);
 
-    ui_components_layout_draw_tabbed();
-
-    ui_components_file_list_draw(menu->browser.list, menu->browser.entries, menu->browser.selected);
-
-    const char *action = NULL;
-
-    if (menu->browser.entry) {
-        switch (menu->browser.entry->type) {
-            case ENTRY_TYPE_DIR: action = "A: Enter"; break;
-            case ENTRY_TYPE_ROM: action = "A: Load"; break;
-            case ENTRY_TYPE_DISK: action = "A: Load"; break;
-            case ENTRY_TYPE_IMAGE: action = "A: Show"; break;
-            case ENTRY_TYPE_TEXT: action = "A: View"; break;
-            default: action = "A: Info"; break;
-        }
+    const char *action = "Play Cartridge";
+    if (menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
+        action = "Open Folder";
     }
 
-    ui_components_actions_bar_text_draw(
-        STL_DEFAULT,
-        ALIGN_LEFT, VALIGN_TOP,
-        "%s\n"
-        "^%02XB: Back^00",
-        menu->browser.entries == 0 ? "" : action,
-        path_is_root(menu->browser.directory) ? STL_GRAY : STL_DEFAULT
-    );
-
-    ui_components_actions_bar_text_draw(
-        STL_DEFAULT,
-        ALIGN_RIGHT, VALIGN_TOP,
-        "^%02XStart: Settings^00\n"
-        "^%02XR:  Options^00",
-        menu->browser.entries == 0 ? STL_GRAY : STL_DEFAULT
-    );
-
-    if (menu->current_time >= 0) {
-        ui_components_actions_bar_text_draw(
-            STL_DEFAULT,
-            ALIGN_CENTER, VALIGN_TOP,
-            "C-▼▲ Fast Scroll | ◀ Tabs ▶ \n"
-            "%s",
-            ctime(&menu->current_time)
-        );
-    } else {
-        ui_components_actions_bar_text_draw(
-            STL_DEFAULT,
-            ALIGN_CENTER, VALIGN_TOP,
-            "C-▼▲ Fast Scroll | ◀ Tabs ▶ \n"
-            "\n"
-        );
+    int x = CAROUSEL_SELECTED_X;
+    if (menu->browser.entries > 0) {
+        draw_badge(x, LIBRARY_BUTTONS_Y, "A");
+        rdpq_text_printf(NULL, FNT_DEFAULT, x + 28, LIBRARY_BUTTONS_Y, "%s", action);
+        x += 200;
+        draw_badge(x, LIBRARY_BUTTONS_Y, "R");
+        rdpq_text_printf(NULL, FNT_DEFAULT, x + 28, LIBRARY_BUTTONS_Y, "Configure");
+    }
+    if (!path_is_root(menu->browser.directory)) {
+        draw_badge(VISIBLE_AREA_X0 + 8, LIBRARY_BUTTONS_Y, "B");
+        rdpq_text_printf(NULL, FNT_DEFAULT, VISIBLE_AREA_X0 + 36, LIBRARY_BUTTONS_Y, "Back");
     }
 
     ui_components_context_menu_draw(&entry_context_menu);
@@ -603,7 +585,6 @@ static void draw (menu_t *menu, surface_t *d) {
 
     rdpq_detach_show();
 }
-
 
 void view_browser_init (menu_t *menu) {
     if (!menu->browser.valid) {
