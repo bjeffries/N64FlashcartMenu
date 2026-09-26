@@ -5,6 +5,7 @@
  */
 
 #include <string.h>
+#include <strings.h>
 
 #include "../bookkeeping.h"
 #include "../fonts.h"
@@ -33,6 +34,15 @@ static void entries_free (void) {
     ui_components_carousel_invalidate();
 }
 
+/** @brief Order by file name, like the Library (names are full paths, so compare after the last '/'). */
+static int compare_file_names (const void *a, const void *b) {
+    const char *name_a = ((const entry_t *) (a))->name;
+    const char *name_b = ((const entry_t *) (b))->name;
+    const char *slash_a = strrchr(name_a, '/');
+    const char *slash_b = strrchr(name_b, '/');
+    return strcasecmp(slash_a ? slash_a + 1 : name_a, slash_b ? slash_b + 1 : name_b);
+}
+
 static void entries_load (void) {
     entries_free();
     for (uint16_t i = 0; i < item_max; i++) {
@@ -46,6 +56,10 @@ static void entries_load (void) {
             .size = 0,
             .index = i,
         };
+    }
+    // Favorites are alphabetical; History stays most recent first.
+    if (tab == TAB_FAVORITES) {
+        qsort(entries, entry_count, sizeof(entry_t), compare_file_names);
     }
     if (selected >= entry_count) {
         selected = entry_count > 0 ? entry_count - 1 : 0;
