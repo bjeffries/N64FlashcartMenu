@@ -383,11 +383,11 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     ui_components_text_draw(
         &(rdpq_textparms_t) {
             .style_id = STL_DEFAULT,
-            .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X,
+            .width = VISIBLE_AREA_X1 - GAME_INFO_LABEL_X,
             .wrap = WRAP_ELLIPSES,
         },
         FNT_TITLE,
-        CAROUSEL_SELECTED_X,
+        GAME_INFO_LABEL_X,
         CAROUSEL_TITLE_Y,
         title
     );
