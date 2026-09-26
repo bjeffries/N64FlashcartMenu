@@ -3,7 +3,9 @@
 
 Writes three sprites (RGBA, transparent background) into assets/images/:
   cartridge.png                unselected tiles
-  cartridge_large.png          the selected tile, ~30% larger
+  cartridge_large.png          the selected tile: scaled to fill its 146px tile, with a
+                               70x82 label window so the full-resolution 74x86 label
+                               fits behind it (2px hidden on each side) without scaling
   cartridge_large_outline.png  white selection outline around the large cartridge's
                                silhouette, OUTLINE_OFFSET px bigger on every side
 
@@ -32,6 +34,10 @@ BASE_W, BASE_H = 88, 62
 BASE_WING = 15
 BASE_LABEL_Y, BASE_LABEL_W, BASE_LABEL_H = 6, 44, 51
 BASE_RADIUS = 4
+
+LARGE_WIDTH = 146       # the selected tile's width (CAROUSEL_SELECTED_TILE_SIZE)
+LABEL_SOURCE_W, LABEL_SOURCE_H = 74, 86   # Analogue 3D label resolution
+LABEL_BLEED = 2         # label pixels hidden under the cartridge on each side (CARTRIDGE_LABEL_BLEED)
 
 OUTLINE_GAP = 1         # transparent pixels between the cartridge and its selection outline
 OUTLINE_WIDTH = 2       # outline thickness
@@ -63,11 +69,12 @@ def build_outline(mask, w, h, out_path):
     print(f'{out_path}: {ow}x{oh} (outline offset {OUTLINE_OFFSET})')
 
 
-def build(scale, out_path, outline_path=None):
+def build(scale, out_path, outline_path=None, label_size=None):
     s = lambda v: round(v * scale)
     w, h, wing = s(BASE_W), s(BASE_H), s(BASE_WING)
     panel_x0, panel_x1 = wing + 1, w - wing - 2          # centre panel columns (inclusive)
-    label_w, label_h, label_y = s(BASE_LABEL_W), s(BASE_LABEL_H), s(BASE_LABEL_Y)
+    label_w, label_h = label_size if label_size else (s(BASE_LABEL_W), s(BASE_LABEL_H))
+    label_y = s(BASE_LABEL_Y)
     label_x = panel_x0 + ((panel_x1 - panel_x0 + 1) - label_w) // 2
     radius = s(BASE_RADIUS)
     arch, slope = 2.4 * scale, s(4)
@@ -138,7 +145,12 @@ def build(scale, out_path, outline_path=None):
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else 'assets/images'
     build(1.0, os.path.join(out_dir, 'cartridge.png'))
-    build(1.3, os.path.join(out_dir, 'cartridge_large.png'), os.path.join(out_dir, 'cartridge_large_outline.png'))
+    build(
+        LARGE_WIDTH / BASE_W,
+        os.path.join(out_dir, 'cartridge_large.png'),
+        os.path.join(out_dir, 'cartridge_large_outline.png'),
+        label_size=(LABEL_SOURCE_W - 2 * LABEL_BLEED, LABEL_SOURCE_H - 2 * LABEL_BLEED),
+    )
 
 
 if __name__ == '__main__':

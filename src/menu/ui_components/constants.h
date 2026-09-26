@@ -392,13 +392,17 @@
 #define CARTRIDGE_LABEL_Y               (6)
 #define CARTRIDGE_LABEL_WIDTH           (44)
 #define CARTRIDGE_LABEL_HEIGHT          (51)
-/** @brief Large cartridge on the selected tile: sprite size, then label window position and size. */
-#define CARTRIDGE_LARGE_WIDTH           (114)
-#define CARTRIDGE_LARGE_HEIGHT          (81)
-#define CARTRIDGE_LARGE_LABEL_X         (28)
-#define CARTRIDGE_LARGE_LABEL_Y         (8)
-#define CARTRIDGE_LARGE_LABEL_WIDTH     (57)
-#define CARTRIDGE_LARGE_LABEL_HEIGHT    (66)
+/**
+ * @brief Large cartridge on the selected tile: sprite size, then label window position and size.
+ * It fills the tile's width; the window plus CARTRIDGE_LABEL_BLEED on each side is exactly the
+ * 74x86 source label, so the selected label is drawn unscaled.
+ */
+#define CARTRIDGE_LARGE_WIDTH           (146)
+#define CARTRIDGE_LARGE_HEIGHT          (103)
+#define CARTRIDGE_LARGE_LABEL_X         (38)
+#define CARTRIDGE_LARGE_LABEL_Y         (10)
+#define CARTRIDGE_LARGE_LABEL_WIDTH     (70)
+#define CARTRIDGE_LARGE_LABEL_HEIGHT    (82)
 /** @brief The selection outline sprite (cartridge_large_outline.png) extends this far past the large cartridge. */
 #define CARTRIDGE_OUTLINE_OFFSET        (3)
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */

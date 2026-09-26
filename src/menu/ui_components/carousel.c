@@ -174,9 +174,9 @@ static void draw_folder_icon (int x, int y, int size) {
  * scrolling) the nearer style is scaled with point sampling. Bilinear filtering would blend
  * the black of transparent pixels into the cartridge edges and show strip seams.
  */
-static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int32_t selected, float x, float y, float size, bool large) {
+static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int32_t selected, float x, float y, float size, float cartridge_width, bool large) {
     tile_style_t *style = large ? &large_style : &small_style;
-    float scale = size / style->tile_size;
+    float scale = cartridge_width / style->cartridge_width;
     bool native = (fabsf(scale - 1.0f) < 0.001f);
 
     if (native) {
@@ -189,7 +189,7 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
         return;
     }
 
-    float cx = x + (size - (style->cartridge_width * scale)) / 2;
+    float cx = x + (size - cartridge_width) / 2;
     float cy = y + (size - (style->cartridge_height * scale)) / 2;
     if (native) {
         cx = roundf(cx);
@@ -352,8 +352,11 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
             continue;
         }
         float y = CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - size) / 2);
+        // Interpolate the cartridge width itself so switching sprites halfway through doesn't jump.
+        float t = fminf(fabsf(d), 1.0f);
+        float cartridge_width = CARTRIDGE_LARGE_WIDTH + ((CARTRIDGE_WIDTH - CARTRIDGE_LARGE_WIDTH) * t);
         bool focused = fabsf(d) < 0.5f;
-        draw_tile(directory, &list[i], i, selected, x, y, size, focused);
+        draw_tile(directory, &list[i], i, selected, x, y, size, cartridge_width, focused);
         if (!focused) {
             draw_tile_caption(&list[i], x + (size / 2));
         }
