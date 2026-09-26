@@ -14,11 +14,9 @@
 #include "boot/boot.h"
 #include "flashcart/flashcart.h"
 #include "fonts.h"
-#include "background_music.h"
 #include "hdmi.h"
 #include "menu_state.h"
 #include "menu.h"
-#include "audio_player.h"
 #include "png_decoder.h"
 #include "settings.h"
 #include "sound.h"
@@ -29,7 +27,6 @@
 #define MENU_DIRECTORY              "/menu"
 #define MENU_SETTINGS_FILE          "config.ini"
 #define MENU_CUSTOM_FONT_FILE       "custom.font64"
-#define MENU_CUSTOM_BGM_FILE        "custom.wav64"
 #define MENU_ROM_LOAD_HISTORY_FILE  "history.ini"
 
 #define MENU_CACHE_DIRECTORY        "cache"
@@ -70,7 +67,6 @@ static void menu_init (boot_params_t *boot_params) {
     actions_init();
     sound_init_default();
     sound_init_sfx();
-    sound_init_bgm();
 
     hdmi_clear_game_id();
 
@@ -119,10 +115,6 @@ static void menu_init (boot_params_t *boot_params) {
     fonts_init(path_get(path));
     path_pop(path);
 
-    // path_push(path, MENU_CUSTOM_BGM_FILE);
-    // bgm_init(path_get(path));
-    // path_pop(path);
-
     path_push(path, MENU_CACHE_DIRECTORY);
     directory_create(path_get(path));
 
@@ -132,7 +124,6 @@ static void menu_init (boot_params_t *boot_params) {
     path_free(path);
 
     sound_use_sfx(menu->settings.soundfx_enabled);
-    sound_use_bgm(menu->settings.bgm_enabled);
 
     menu->browser.directory = path_init(menu->storage_prefix, menu->settings.default_directory);
     if (!directory_exists(path_get(menu->browser.directory))) {
@@ -195,7 +186,6 @@ static view_t menu_views[] = {
     { MENU_MODE_SYSTEM_INFO, view_system_info_init, view_system_info_display },
     { MENU_MODE_IMAGE_VIEWER, view_image_viewer_init, view_image_viewer_display },
     { MENU_MODE_TEXT_VIEWER, view_text_viewer_init, view_text_viewer_display },
-    { MENU_MODE_MUSIC_PLAYER, view_music_player_init, view_music_player_display },
     { MENU_MODE_CREDITS, view_credits_init, view_credits_display },
     { MENU_MODE_SETTINGS_EDITOR, view_settings_init, view_settings_display },
     { MENU_MODE_RTC, view_rtc_init, view_rtc_display },
@@ -205,13 +195,11 @@ static view_t menu_views[] = {
     { MENU_MODE_FLASHCART, view_flashcart_info_init, view_flashcart_info_display },
     { MENU_MODE_LOAD_ROM, view_load_rom_init, view_load_rom_display },
     { MENU_MODE_LOAD_DISK, view_load_disk_init, view_load_disk_display },
-    { MENU_MODE_LOAD_EMULATOR, view_load_emulator_init, view_load_emulator_display },
     { MENU_MODE_ERROR, view_error_init, view_error_display },
     { MENU_MODE_FAULT, view_fault_init, view_fault_display },
     { MENU_MODE_FAVORITE, view_favorite_init, view_favorite_display },
     { MENU_MODE_HISTORY, view_history_init, view_history_display },
     { MENU_MODE_DATEL_CODE_EDITOR, view_datel_code_editor_init, view_datel_code_editor_display },
-    { MENU_MODE_EXTRACT_FILE, view_extract_file_init, view_extract_file_display }
 };
 
 /**

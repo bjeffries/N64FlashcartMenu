@@ -173,14 +173,9 @@ void ui_components_file_list_draw(entry_t *list, int entries, int selected) {
                 case ENTRY_TYPE_DIR: style = STL_YELLOW; break;
                 case ENTRY_TYPE_ROM: style = STL_DEFAULT; break;
                 case ENTRY_TYPE_DISK: style = STL_DEFAULT; break;
-                case ENTRY_TYPE_EMULATOR: style = STL_DEFAULT; break;
                 case ENTRY_TYPE_SAVE: style = STL_GREEN; break;
                 case ENTRY_TYPE_IMAGE: style = STL_BLUE; break;
-                case ENTRY_TYPE_MUSIC: style = STL_BLUE; break;
                 case ENTRY_TYPE_TEXT: style = STL_ORANGE; break;
-                case ENTRY_TYPE_ARCHIVE: style = STL_ORANGE; break;
-                case ENTRY_TYPE_ARCHIVED: style = STL_DEFAULT; break;
-                case ENTRY_TYPE_ROM_PATCH: style = STL_GREEN; break;
                 case ENTRY_TYPE_ROM_CHEAT: style = STL_GREEN; break;
                 case ENTRY_TYPE_ROM_META: style = STL_GREEN; break;
                 case ENTRY_TYPE_OTHER: style = STL_GRAY; break;

@@ -52,8 +52,6 @@ typedef struct {
     /** @brief Wrap file list scrolling (infinite/circular navigation) */
     bool wrap_file_list_scrolling;
 
-    /** @brief Enable Background music */
-    bool bgm_enabled;
 
     /** @brief Enable Sound effects within the menu */
     bool soundfx_enabled;

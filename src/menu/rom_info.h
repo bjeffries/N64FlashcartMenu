@@ -161,7 +161,6 @@ typedef struct {
 
     struct {
         bool cheats_enabled;        /**< Cheats enabled */
-        bool patches_enabled;       /**< Patches enabled */
         bool clear_rdram_enabled;   /**< Zero RDRAM before boot (workaround for ROMs with incomplete BSS init) */
     } settings;                     /**< The ROM settings */
 
@@ -277,17 +276,5 @@ rom_err_t rom_config_setting_set_cheats (path_t *path, rom_info_t *rom_info, boo
  * @return rom_err_t Error code
  */
 rom_err_t rom_config_setting_set_clear_rdram (path_t *path, rom_info_t *rom_info, bool enabled);
-
-#ifdef FEATURE_PATCHER_GUI_ENABLED
-/**
- * @brief Set the patcher setting for the ROM.
- * 
- * @param path Pointer to the path structure
- * @param rom_info Pointer to the ROM information structure
- * @param enabled True to enable cheats, false to disable
- * @return rom_err_t Error code
- */
-rom_err_t rom_config_setting_set_patches (path_t *path, rom_info_t *rom_info, bool enabled);
-#endif // FEATURE_PATCHER_GUI_ENABLED
 
 #endif // ROM_INFO_H__

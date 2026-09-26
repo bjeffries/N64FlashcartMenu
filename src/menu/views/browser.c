@@ -1,6 +1,4 @@
 #include <errno.h>
-#include <miniz.h>
-#include <miniz_zip.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -8,29 +6,21 @@
 
 #include "../cart_load.h"
 #include "../fonts.h"
-#include "../zip_entry_count.h"
 #include "utils/fs.h"
 #include "views.h"
 #include "../sound.h"
 
-static const char *archive_extensions[] = { "zip", NULL };
 static const char *cheat_extensions[] = {"cht", "cheats", "datel", "gameshark", NULL};
 static const char *disk_extensions[] = { "ndd", NULL };
-static const char *emulator_extensions[] = { "nes", "sfc", "smc", "gb", "gbc", "sms", "gg", "sg", "chf", "rzx", "mx1", "mx2", "emu", NULL };
 static const char *image_extensions[] = { "png", NULL };
-static const char *music_extensions[] = { "mp3", NULL };
 static const char *n64_rom_extensions[] = { "z64", "n64", "v64", "rom", NULL };
-static const char *patch_extensions[] = { "bps", "ips", "aps", "ups", "xdelta", NULL };
 static const char *save_extensions[] = { "sav", "eep", "sra", "srm", "fla", NULL };
 static const char *text_extensions[] = { "txt", "ini", "yml", "yaml", NULL };
 static const char *rom_meta_extensions[] = { "meta", "metadata", NULL };
 
-#define ARCHIVE_MAX_ENTRIES_JUMPER_PAK 512
 // Fixed cap keeps memory use predictable on 4MB systems when scanning huge folders.
 #define DIRECTORY_MAX_ENTRIES_JUMPER_PAK 1024
 
-static bool archive_entry_limit_exceeded = false;
-static bool archive_entry_precheck_failed = false;
 static bool directory_entry_limit_exceeded = false;
 
 static const char *hidden_root_paths[] = {
@@ -119,25 +109,13 @@ static int compare_entry (const void *pa, const void *pb) {
             return -1;
         } else if (b->type == ENTRY_TYPE_DIR) {
             return 1;
-        } else if (a->type == ENTRY_TYPE_ARCHIVE) {
-            return -1;
-        } else if (b->type == ENTRY_TYPE_ARCHIVE) {
-            return 1;
         } else if (a->type == ENTRY_TYPE_DISK) {
             return -1;
         } else if (b->type == ENTRY_TYPE_DISK) {
             return 1;
-        } else if (a->type == ENTRY_TYPE_EMULATOR) {
-            return -1;
-        } else if (b->type == ENTRY_TYPE_EMULATOR) {
-            return 1;
         } else if (a->type == ENTRY_TYPE_IMAGE) {
             return -1;
         } else if (b->type == ENTRY_TYPE_IMAGE) {
-            return 1;
-        } else if (a->type == ENTRY_TYPE_MUSIC) {
-            return -1;
-        } else if (b->type == ENTRY_TYPE_MUSIC) {
             return 1;
         } else if (a->type == ENTRY_TYPE_ROM) {
             return -1;
@@ -146,10 +124,6 @@ static int compare_entry (const void *pa, const void *pb) {
         } else if (a->type == ENTRY_TYPE_ROM_CHEAT) {
             return -1;
         } else if (b->type == ENTRY_TYPE_ROM_CHEAT) {
-            return 1;
-        } else if (a->type == ENTRY_TYPE_ROM_PATCH) {
-            return -1;
-        } else if (b->type == ENTRY_TYPE_ROM_PATCH) {
             return 1;
         } else if (a->type == ENTRY_TYPE_SAVE) {
             return -1;
@@ -170,11 +144,6 @@ static int compare_entry (const void *pa, const void *pb) {
 }
 
 static void browser_list_free (menu_t *menu) {
-    if (menu->browser.archive) {
-        mz_zip_reader_end(&menu->browser.zip);
-    }
-    menu->browser.archive = false;
-
     for (int i = menu->browser.entries - 1; i >= 0; i--) {
         free(menu->browser.list[i].name);
     }
@@ -209,74 +178,6 @@ static bool browser_list_reserve(menu_t *menu, int32_t required) {
 
     menu->browser.list = grown;
     menu->browser.list_capacity = new_capacity;
-    return false;
-}
-
-static bool load_archive (menu_t *menu) {
-    browser_list_free(menu);
-    archive_entry_limit_exceeded = false;
-    archive_entry_precheck_failed = false;
-
-    uint64_t prechecked_entries = 0;
-    if (!zip_try_read_entry_count(path_get(menu->browser.directory), &prechecked_entries)) {
-        archive_entry_precheck_failed = true;
-        return true;
-    }
-
-    if (!is_memory_expanded() && prechecked_entries > ARCHIVE_MAX_ENTRIES_JUMPER_PAK) {
-        archive_entry_limit_exceeded = true;
-        return true;
-    }
-
-    mz_zip_zero_struct(&menu->browser.zip);
-    if (!mz_zip_reader_init_file(&menu->browser.zip, path_get(menu->browser.directory), 0)) {
-        return true;
-    }
-
-    menu->browser.archive = true;
-    int32_t zip_entries = (int32_t)mz_zip_reader_get_num_files(&menu->browser.zip);
-
-    if (!is_memory_expanded() && zip_entries > ARCHIVE_MAX_ENTRIES_JUMPER_PAK) {
-        archive_entry_limit_exceeded = true;
-        browser_list_free(menu);
-        return true;
-    }
-
-    menu->browser.entries = 0;
-
-    for (int32_t i = 0; i < zip_entries; i++) {
-        if (browser_list_reserve(menu, menu->browser.entries + 1)) {
-            browser_list_free(menu);
-            return true;
-        }
-
-        entry_t *entry = &menu->browser.list[menu->browser.entries];
-
-        mz_zip_archive_file_stat info;
-        if (!mz_zip_reader_file_stat(&menu->browser.zip, i, &info)) {
-            browser_list_free(menu);
-            return true;
-        }
-
-        entry->name = strdup(info.m_filename);
-        if (!entry->name) {
-            browser_list_free(menu);
-            return true;
-        }
-
-        entry->type = ENTRY_TYPE_ARCHIVED;
-        entry->size = info.m_uncomp_size;
-        entry->index = i;
-        menu->browser.entries++;
-    }
-
-    if (menu->browser.entries > 0) {
-        menu->browser.selected = 0;
-        menu->browser.entry = &menu->browser.list[menu->browser.selected];
-    }
-
-    qsort(menu->browser.list, menu->browser.entries, sizeof(entry_t), compare_entry);
-
     return false;
 }
 
@@ -356,22 +257,14 @@ static bool load_directory (menu_t *menu) {
                 entry->type = ENTRY_TYPE_ROM;
             } else if (file_has_extensions(entry->name, disk_extensions)) {
                 entry->type = ENTRY_TYPE_DISK;
-            } else if (file_has_extensions(entry->name, patch_extensions)) {
-                entry->type = ENTRY_TYPE_ROM_PATCH;
             } else if (file_has_extensions(entry->name, cheat_extensions)) {
                 entry->type = ENTRY_TYPE_ROM_CHEAT;
-            } else if (file_has_extensions(entry->name, emulator_extensions)) {
-                entry->type = ENTRY_TYPE_EMULATOR;
             } else if (file_has_extensions(entry->name, save_extensions)) {
                 entry->type = ENTRY_TYPE_SAVE;
             } else if (file_has_extensions(entry->name, image_extensions)) {
                 entry->type = ENTRY_TYPE_IMAGE;
             } else if (file_has_extensions(entry->name, text_extensions)) {
                 entry->type = ENTRY_TYPE_TEXT;
-            } else if (file_has_extensions(entry->name, music_extensions)) {
-                entry->type = ENTRY_TYPE_MUSIC;
-            } else if (file_has_extensions(entry->name, archive_extensions)) {
-                entry->type = ENTRY_TYPE_ARCHIVE;
             } else if (file_has_extensions(entry->name, rom_meta_extensions)) {
                 entry->type = ENTRY_TYPE_ROM_META;
             } else {
@@ -419,12 +312,12 @@ static bool reload_directory (menu_t *menu) {
     return false;
 }
 
-static bool push_directory (menu_t *menu, char *directory, bool archive) {
+static bool push_directory (menu_t *menu, char *directory) {
     path_t *previous_directory = path_clone(menu->browser.directory);
 
     path_push(menu->browser.directory, directory);
 
-    if (archive ? load_archive(menu) : load_directory(menu)) {
+    if (load_directory(menu)) {
         path_free(menu->browser.directory);
         menu->browser.directory = previous_directory;
         return true;
@@ -486,7 +379,7 @@ static bool select_file (menu_t *menu, path_t *file) {
 }
 
 static void show_properties (menu_t *menu, void *arg) {
-    menu->next_mode = menu->browser.entry->type == ENTRY_TYPE_ARCHIVED ? MENU_MODE_EXTRACT_FILE : MENU_MODE_FILE_INFO;
+    menu->next_mode = MENU_MODE_FILE_INFO;
 }
 
 static void delete_entry (menu_t *menu, void *arg) {
@@ -511,11 +404,6 @@ static void delete_entry (menu_t *menu, void *arg) {
     }
 }
 
-static void extract_entry (menu_t *menu, void *arg) {
-    menu->load_pending.extract_file = true;
-    menu->next_mode = MENU_MODE_EXTRACT_FILE;
-}
-
 static void set_default_directory (menu_t *menu, void *arg) {
     free(menu->settings.default_directory);
     menu->settings.default_directory = strdup(strip_fs_prefix(path_get(menu->browser.directory)));
@@ -527,14 +415,6 @@ static component_context_menu_t entry_context_menu = {
         { .text = "Show entry properties", .action = show_properties },
         { .text = "Delete selected entry", .action = delete_entry },
         { .text = "Set current directory as default", .action = set_default_directory },
-        COMPONENT_CONTEXT_MENU_LIST_END,
-    }
-};
-
-static component_context_menu_t archive_context_menu = {
-    .list = {
-        { .text = "Show entry properties", .action = show_properties },
-        { .text = "Extract selected entry", .action = extract_entry },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
@@ -557,7 +437,7 @@ static component_context_menu_t settings_context_menu = {
 };
 
 static void process (menu_t *menu) {
-    if (ui_components_context_menu_process(menu, menu->browser.archive ? &archive_context_menu : &entry_context_menu)) {
+    if (ui_components_context_menu_process(menu, &entry_context_menu)) {
         return;
     }
 
@@ -599,24 +479,8 @@ static void process (menu_t *menu) {
     if (menu->actions.enter && menu->browser.entry) {
         sound_play_effect(SFX_ENTER);
         switch (menu->browser.entry->type) {
-            case ENTRY_TYPE_ARCHIVE:
-                if (push_directory(menu, menu->browser.entry->name, true)) {
-                    menu->browser.valid = false;
-                    menu_show_error(
-                        menu,
-                        archive_entry_limit_exceeded
-                            ? "Archive is too large for Jumper Pak\nUse a smaller archive or an Expansion Pak"
-                            : archive_entry_precheck_failed
-                                ? "Could not inspect archive safely\nTry another archive"
-                            : "Couldn't open file archive"
-                    );
-                }
-                break;
-            case ENTRY_TYPE_ARCHIVED:
-                menu->next_mode = MENU_MODE_EXTRACT_FILE;
-                break;
             case ENTRY_TYPE_DIR:
-                if (push_directory(menu, menu->browser.entry->name, false)) {
+                if (push_directory(menu, menu->browser.entry->name)) {
                     menu->browser.valid = false;
                     menu_show_error(
                         menu,
@@ -629,23 +493,14 @@ static void process (menu_t *menu) {
             case ENTRY_TYPE_DISK:
                 menu->next_mode = MENU_MODE_LOAD_DISK;
                 break;
-            case ENTRY_TYPE_EMULATOR:
-                menu->next_mode = MENU_MODE_LOAD_EMULATOR;
-                break;
             case ENTRY_TYPE_IMAGE:
                 menu->next_mode = MENU_MODE_IMAGE_VIEWER;
-                break;
-            case ENTRY_TYPE_MUSIC:
-                menu->next_mode = MENU_MODE_MUSIC_PLAYER;
                 break;
             case ENTRY_TYPE_ROM:
                 menu->next_mode = MENU_MODE_LOAD_ROM;
                 break;
             case ENTRY_TYPE_ROM_CHEAT:
                 menu->next_mode = MENU_MODE_FILE_INFO; // FIXME: Implement MENU_MODE_LOAD_ROM_CHEAT.
-                break;
-            case ENTRY_TYPE_ROM_PATCH:
-                menu->next_mode = MENU_MODE_FILE_INFO; // FIXME: Implement MENU_MODE_LOAD_ROM_PATCH.
                 break;
             case ENTRY_TYPE_TEXT:
                 menu->next_mode = MENU_MODE_TEXT_VIEWER;
@@ -670,7 +525,7 @@ static void process (menu_t *menu) {
         }
         sound_play_effect(SFX_EXIT);
     } else if (menu->actions.options && menu->browser.entry) {
-        ui_components_context_menu_show(menu->browser.archive ? &archive_context_menu : &entry_context_menu);
+        ui_components_context_menu_show(&entry_context_menu);
         sound_play_effect(SFX_SETTING);
     } else if (menu->actions.settings) {
         ui_components_context_menu_show(&settings_context_menu);
@@ -704,8 +559,6 @@ static void draw (menu_t *menu, surface_t *d) {
             case ENTRY_TYPE_DISK: action = "A: Load"; break;
             case ENTRY_TYPE_IMAGE: action = "A: Show"; break;
             case ENTRY_TYPE_TEXT: action = "A: View"; break;
-            case ENTRY_TYPE_MUSIC: action = "A: Play"; break;
-            case ENTRY_TYPE_ARCHIVE: action = "A: Open"; break;
             default: action = "A: Info"; break;
         }
     }
@@ -744,7 +597,7 @@ static void draw (menu_t *menu, surface_t *d) {
         );
     }
 
-    ui_components_context_menu_draw(menu->browser.archive ? &archive_context_menu : &entry_context_menu);
+    ui_components_context_menu_draw(&entry_context_menu);
 
     ui_components_context_menu_draw(&settings_context_menu);
 
@@ -755,7 +608,6 @@ static void draw (menu_t *menu, surface_t *d) {
 void view_browser_init (menu_t *menu) {
     if (!menu->browser.valid) {
         ui_components_context_menu_init(&entry_context_menu);
-        ui_components_context_menu_init(&archive_context_menu);
         ui_components_context_menu_init(&settings_context_menu);
         if (load_directory(menu)) {
             path_free(menu->browser.directory);

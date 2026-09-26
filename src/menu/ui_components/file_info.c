@@ -15,13 +15,9 @@ static const char *n64_rom_extensions[] = { "z64", "n64", "v64", "rom", NULL };
 static const char *text_extensions[] = { "txt", NULL };
 static const char *config_extensions[] = { "ini", "cfg", "yml", "yaml", "toml", NULL };
 static const char *save_extensions[] = { "sav", "eep", "eeprom", "sra", "srm", "ram", "fla", "flashram", NULL };
-static const char *patch_extensions[] = { "aps", "bps", "ips", "pps", "ups", "xdelta", NULL };
-static const char *archive_extensions[] = { "zip", "rar", "7z", "tar", "gz", NULL };
 static const char *image_extensions[] = { "png", "jpg", "gif", NULL };
-static const char *music_extensions[] = { "mp3", "wav", "ogg", "wma", "flac", NULL };
 static const char *controller_pak_extensions[] = { "mpk", "pak", NULL };
 static const char *controller_pak_note_extensions[] = { "mpkn", "paknote", NULL };
-static const char *emulator_extensions[] = { "nes", "smc", "gb", "gbc", "sms", "gg", "chf", NULL };
 static const char *cheat_extensions[] = {"cht", "cheats", "datel", "gameshark", NULL};
 
 /**
@@ -42,22 +38,14 @@ static const char *format_file_type(char *name, file_info_t *info) {
         return " Type: Config file\n";
     } else if (file_has_extensions(name, save_extensions)) {
         return " Type: N64 save\n";
-    } else if (file_has_extensions(name, patch_extensions)) {
-        return " Type: ROM patch\n";
-    } else if (file_has_extensions(name, archive_extensions)) {
-        return " Type: Archive\n";
     } else if (file_has_extensions(name, image_extensions)) {
         return " Type: Image file\n";
-    } else if (file_has_extensions(name, music_extensions)) {
-        return " Type: Music file\n";
     } else if (file_has_extensions(name, controller_pak_extensions)) {
         info->pak_file_attributes.is_controller_pak_dump = true;
         return " Type: Controller Pak file\n";
     } else if (file_has_extensions(name, controller_pak_note_extensions)) {
         info->pak_file_attributes.is_controller_pak_dump_note = true;
         return " Type: Controller Pak note file\n";
-    } else if (file_has_extensions(name, emulator_extensions)) {
-        return " Type: Emulator ROM file\n";
     } else if (file_has_extensions(name, cheat_extensions)) {
         return " Type: Cheats file\n";
     }
@@ -108,31 +96,7 @@ void ui_components_file_info_draw(char* filename, file_info_t *info) {
 
     const char *file_type = format_file_type(filename, info);
     const char *file_mode = info->directory ? "Directory" : "File";
-    const char *zip_file_access = info->zip_file_attributes.encrypted ? "(Encrypted)" : info->zip_file_attributes.writeable ? "" : "(Read only)";
-    if (info->zip_file_attributes.compressed_size > 0) {
-        ui_components_main_text_draw(
-            STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "\n"
-            "\n"
-            " Actual Size: %llu bytes\n"
-            " Compressed Size: %llu bytes\n"
-            " Attributes: %s %s %s\n"
-            "%s"
-            " Modified: %s"
-            " CRC32: %08X",
-            info->size,
-            info->zip_file_attributes.compressed_size,
-            file_mode,
-            zip_file_access,
-            format_fat_file_attributes_type(filename, info),
-            file_type,
-            ctime(&info->mtime),
-            info->zip_file_attributes.crc32
-        );
-    } else if (info->directory) {
+    if (info->directory) {
         ui_components_main_text_draw(
             STL_DEFAULT,
             ALIGN_LEFT, VALIGN_TOP,

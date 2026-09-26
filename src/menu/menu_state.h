@@ -9,7 +9,6 @@
 
 
 #include <miniz.h>
-#include <miniz_zip.h>
 #include <time.h>
 
 #include "boot/boot.h"
@@ -30,7 +29,6 @@ typedef enum {
     MENU_MODE_SYSTEM_INFO,
     MENU_MODE_IMAGE_VIEWER,
     MENU_MODE_TEXT_VIEWER,
-    MENU_MODE_MUSIC_PLAYER,
     MENU_MODE_CREDITS,
     MENU_MODE_SETTINGS_EDITOR,
     MENU_MODE_RTC,
@@ -40,31 +38,24 @@ typedef enum {
     MENU_MODE_FLASHCART,
     MENU_MODE_LOAD_ROM,
     MENU_MODE_LOAD_DISK,
-    MENU_MODE_LOAD_EMULATOR,
     MENU_MODE_ERROR,
     MENU_MODE_FAULT,
     MENU_MODE_BOOT,
     MENU_MODE_FAVORITE,
     MENU_MODE_HISTORY,
     MENU_MODE_DATEL_CODE_EDITOR,
-    MENU_MODE_EXTRACT_FILE
 } menu_mode_t;
 
 /** @brief File entry type enumeration */
 typedef enum {
     ENTRY_TYPE_DIR,
     ENTRY_TYPE_DISK,
-    ENTRY_TYPE_EMULATOR,  
     ENTRY_TYPE_IMAGE,
-    ENTRY_TYPE_MUSIC,
     ENTRY_TYPE_OTHER,
     ENTRY_TYPE_ROM,
     ENTRY_TYPE_ROM_CHEAT,
-    ENTRY_TYPE_ROM_PATCH,
     ENTRY_TYPE_SAVE,
     ENTRY_TYPE_TEXT,
-    ENTRY_TYPE_ARCHIVE,
-    ENTRY_TYPE_ARCHIVED,
     ENTRY_TYPE_ROM_META
 } entry_type_t;
 
@@ -119,8 +110,6 @@ typedef struct {
     struct {
         bool valid;
         bool reload;
-        bool archive;
-        mz_zip_archive zip;
         path_t *directory;
         entry_t *list;
         int32_t list_capacity;
@@ -142,8 +131,6 @@ typedef struct {
     struct {
         bool rom_file;
         bool disk_file;
-        bool emulator_file;
-        bool extract_file;
     } load_pending;
 } menu_t;
 

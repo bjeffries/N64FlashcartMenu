@@ -21,7 +21,6 @@ static settings_t init = {
     .show_cheat_files = false,
     .show_rom_configuration_files = false,
     .soundfx_enabled = false,
-    .bgm_enabled = false,
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     .rom_autoload_enabled = false,
     .rom_autoload_path = "",
@@ -65,7 +64,6 @@ void settings_load (settings_t *settings) {
     settings->show_cheat_files = ini_get_bool(ini, "menu", "show_cheat_files", init.show_cheat_files);
     settings->show_rom_configuration_files = ini_get_bool(ini, "menu", "show_rom_configuration_files", init.show_rom_configuration_files);
     settings->soundfx_enabled = ini_get_bool(ini, "menu", "soundfx_enabled", init.soundfx_enabled);
-    settings->bgm_enabled = ini_get_bool(ini, "menu", "bgm_enabled", init.bgm_enabled);
 
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     settings->rom_autoload_enabled = ini_get_bool(ini, "menu", "autoload_rom_enabled", init.rom_autoload_enabled);
@@ -101,7 +99,6 @@ void settings_save (settings_t *settings) {
     ini_set_bool(ini, "menu", "show_cheat_files", settings->show_cheat_files);
     ini_set_bool(ini, "menu", "show_rom_configuration_files", settings->show_rom_configuration_files);
     ini_set_bool(ini, "menu", "soundfx_enabled", settings->soundfx_enabled);
-    ini_set_bool(ini, "menu", "bgm_enabled", settings->bgm_enabled);
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     ini_set_bool(ini, "menu", "autoload_rom_enabled", settings->rom_autoload_enabled);
     ini_set_string(ini, "autoload", "rom_path", settings->rom_autoload_path);

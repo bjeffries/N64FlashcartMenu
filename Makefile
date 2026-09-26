@@ -37,22 +37,18 @@ SRCS = \
 	libs/miniz/miniz.c \
 	menu/ini_parser.c \
 	menu/actions.c \
-	menu/audio_player.c \
 	menu/bookkeeping.c \
 	menu/cart_load.c \
 	menu/datel_codes.c \
 	menu/disk_info.c \
 	menu/fonts.c \
 	menu/hdmi.c \
-	menu/id3_parser.c \
-	menu/jpeg_decoder.c \
 	menu/menu.c \
 	menu/path.c \
 	menu/png_decoder.c \
 	menu/rom_info.c \
 	menu/settings.c \
 	menu/sound.c \
-	menu/zip_entry_count.c \
 	menu/ui_components/background.c \
 	menu/ui_components/boxart.c \
 	menu/ui_components/common.c \
@@ -65,16 +61,13 @@ SRCS = \
 	menu/views/credits.c \
 	menu/views/datel_code_editor.c \
 	menu/views/error.c \
-	menu/views/extract_file.c \
 	menu/views/fault.c \
 	menu/views/file_info.c \
 	menu/views/history_favorites.c \
 	menu/views/image_viewer.c \
 	menu/views/text_viewer.c \
 	menu/views/load_disk.c \
-	menu/views/load_emulator.c \
 	menu/views/load_rom.c \
-	menu/views/music_player.c \
 	menu/views/startup.c \
 	menu/views/system_info.c \
 	menu/views/settings_editor.c \
@@ -93,7 +86,6 @@ FONTS = \
 SOUNDS_WAV = \
 	cursorsound.wav \
 	back.wav \
-	bgm.wav \
 	enter.wav \
 	error.wav \
 	settings.wav

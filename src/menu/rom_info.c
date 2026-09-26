@@ -780,7 +780,6 @@ static void extract_rom_info (match_t *match, rom_header_t *rom_header, rom_info
     rom_info->meta.size_limit_exceeded = false;
 
     rom_info->settings.cheats_enabled = false;
-    rom_info->settings.patches_enabled = false;
     rom_info->settings.clear_rdram_enabled = false;
 }
 
@@ -1182,7 +1181,6 @@ static void load_rom_config_from_file (path_t *path, rom_info_t *rom_info) {
     if (rom_config_ini) {
         // general
         rom_info->settings.cheats_enabled = ini_get_bool(rom_config_ini, "", "cheats_enabled", false);
-        rom_info->settings.patches_enabled = ini_get_bool(rom_config_ini, "", "patches_enabled", false);
         rom_info->settings.clear_rdram_enabled = ini_get_bool(rom_config_ini, "", "clear_rdram_enabled", false);
         
         // overrides
@@ -1328,13 +1326,6 @@ rom_err_t rom_config_setting_set_clear_rdram (path_t *path, rom_info_t *rom_info
     rom_info->settings.clear_rdram_enabled = enabled;
     return save_rom_config_setting_to_file(path, "", "clear_rdram_enabled", enabled, false);
 }
-
-#ifdef FEATURE_PATCHER_GUI_ENABLED
-rom_err_t rom_config_setting_set_patches (path_t *path, rom_info_t *rom_info, bool enabled) {
-    rom_info->settings.patches_enabled = enabled;
-    return save_rom_config_setting_to_file(path, "", "patches_enabled", enabled, false);
-}
-#endif
 
 rom_err_t rom_config_load (path_t *path, rom_info_t *rom_info) {
     FILE *f;

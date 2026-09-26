@@ -58,12 +58,6 @@ static void set_soundfx_enabled_type (menu_t *menu, void *arg) {
     settings_save(&menu->settings);
 }
 
-static void set_bgm_enabled_type (menu_t *menu, void *arg) {
-    menu->settings.bgm_enabled = (bool)(uintptr_t)(arg);
-    sound_use_bgm(menu->settings.bgm_enabled);
-    settings_save(&menu->settings);
-}
-
 static void set_pal60_type (menu_t *menu, void *arg) {
     bool pal60_try_enable = (bool)(uintptr_t)(arg);
     tv_type_t tv_type = get_tv_type();
@@ -169,18 +163,6 @@ static component_context_menu_t set_soundfx_enabled_type_context_menu = {
     .list = {
         {.text = "On", .action = set_soundfx_enabled_type, .arg = (void *)(uintptr_t)(true) },
         {.text = "Off", .action = set_soundfx_enabled_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_bgm_enabled_current_selection (menu_t *menu) {
-    return menu->settings.bgm_enabled ? 0 : 1;
-}
-
-static component_context_menu_t set_bgm_enabled_type_context_menu = {
-    .get_default_selection = get_bgm_enabled_current_selection,
-    .list = {
-        {.text = "On", .action = set_bgm_enabled_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_bgm_enabled_type, .arg = (void *)(uintptr_t)(false) },
     COMPONENT_CONTEXT_MENU_LIST_END,
 }};
 
@@ -311,7 +293,6 @@ static component_context_menu_t set_rumble_enabled_type_context_menu = {
 static component_context_menu_t options_context_menu = { .list = {
     { .text = "Show Hidden Files", .submenu = &set_protected_entries_type_context_menu },
     { .text = "Sound Effects", .submenu = &set_soundfx_enabled_type_context_menu },
-    { .text = "Background Music", .submenu = &set_bgm_enabled_type_context_menu },
     { .text = "Use Saves Folder", .submenu = &set_use_saves_folder_type_context_menu },
     { .text = "Show Saves Folder", .submenu = &set_show_saves_folder_type_context_menu },
     { .text = "Show Save Files", .submenu = &set_show_save_files_type_context_menu },
@@ -383,7 +364,6 @@ static void draw (menu_t *menu, surface_t *d) {
         "To change the following menu settings, press 'A':\n"
         "     Show Hidden Files : %s\n"
         "     Sound Effects     : %s\n"
-        "     Background Music  : %s\n"
         "     Use Saves folder  : %s\n"
         "     Show Saves folder : %s\n"
         "     Show Save files   : %s\n"
@@ -407,7 +387,6 @@ static void draw (menu_t *menu, surface_t *d) {
         menu->settings.default_directory,
         format_switch(menu->settings.show_protected_entries),
         format_switch(menu->settings.soundfx_enabled),
-        format_switch(menu->settings.bgm_enabled),
         format_switch(menu->settings.use_saves_folder),
         format_switch(menu->settings.show_saves_folder),
         format_switch(menu->settings.show_save_files),
