@@ -11,15 +11,6 @@ static inline const char *format_boolean_type (bool bool_value) {
 
 static const char *format_cart_type () {
     switch (cart_type) {
-        case CART_CI:
-            return "64drive";
-
-        case CART_EDX:
-            return "Series X EverDrive-64";
-
-        case CART_ED:
-            return "Series V EverDrive-64";
-
         case CART_SC:
             return "SummerCart64";
 

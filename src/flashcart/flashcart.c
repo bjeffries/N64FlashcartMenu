@@ -13,9 +13,6 @@
 #include "utils/utils.h"
 #include "flashcart.h"
 #include "flashcart_utils.h"
-#include "ed64/ed64_vseries.h"
-#include "ed64/ed64_xseries.h"
-#include "64drive/64drive.h"
 #include "sc64/sc64.h"
 
 /** @brief Save sizes for different flashcart save types. */
@@ -162,23 +159,11 @@ flashcart_err_t flashcart_init (const char **storage_prefix) {
     bool sd_card_initialized = debug_init_sdfs(*storage_prefix, -1);
 
     switch (cart_type) {
-        case CART_CI:   // 64drive
-            flashcart = d64_get_flashcart();
-            break;
-
-        case CART_EDX:  // Official EverDrive 64 Series X 
-            flashcart = ed64_xseries_get_flashcart();
-            break;
-
-        case CART_ED:   // Series V EverDrive-64 or clone
-            flashcart = ed64_vseries_get_flashcart();
-            break;
-
         case CART_SC:   // SummerCart64
             flashcart = sc64_get_flashcart();
             break;
 
-        default:        // Probably emulator
+        default:        // Emulator or unsupported cart
             *storage_prefix = "rom:/";
             debug_init_isviewer();
             break;

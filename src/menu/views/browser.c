@@ -37,8 +37,6 @@ static const char *hidden_root_paths[] = {
     "/menu.bin",
     "/menu",
     "/N64FlashcartMenu.n64",
-    "/ED64",
-    "/ED64P",
     "/sc64menu.n64",
     // Windows garbage
     "/System Volume Information",

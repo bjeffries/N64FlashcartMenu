@@ -26,15 +26,7 @@ SRCS = \
 	boot/cheats.c \
 	boot/cic.c \
 	boot/reboot.S \
-	flashcart/64drive/64drive_ll.c \
-	flashcart/64drive/64drive.c \
 	flashcart/flashcart_utils.c \
-	flashcart/ed64/ed64_proseries.c \
-	flashcart/ed64/ed64_vseries.c \
-	flashcart/ed64/ed64_vseries_ll.c \
-	flashcart/ed64/ed64_xseries.c \
-	flashcart/ed64/ed64_xseries_ll.c \
-	flashcart/ed64/ed64_pseudo_state.c \
 	flashcart/flashcart.c \
 	flashcart/sc64/sc64_ll.c \
 	flashcart/sc64/sc64.c \
@@ -161,23 +153,11 @@ $(@info $(shell mkdir -p ./$(OUTPUT_DIR) &> /dev/null))
 $(OUTPUT_DIR)/$(PROJECT_NAME).n64: $(PROJECT_NAME).z64
 	@mv $< $@
 
-64drive: $(OUTPUT_DIR)/$(PROJECT_NAME).n64
-	@cp $< $(OUTPUT_DIR)/menu.bin
-.PHONY: 64drive
-
-ed64: $(OUTPUT_DIR)/$(PROJECT_NAME).n64
-	@cp $< $(OUTPUT_DIR)/OS64.v64
-.PHONY: ed64
-
-ed64-clone: $(OUTPUT_DIR)/$(PROJECT_NAME).n64
-	@cp $< $(OUTPUT_DIR)/OS64P.v64
-.PHONY: ed64-clone
-
 sc64: $(OUTPUT_DIR)/$(PROJECT_NAME).n64
 	@cp $< $(OUTPUT_DIR)/sc64menu.n64
 .PHONY: sc64
 
-all: $(OUTPUT_DIR)/$(PROJECT_NAME).n64 64drive ed64 ed64-clone sc64
+all: $(OUTPUT_DIR)/$(PROJECT_NAME).n64 sc64
 .PHONY: all
 
 clean:
