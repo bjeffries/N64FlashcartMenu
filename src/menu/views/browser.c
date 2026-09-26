@@ -333,6 +333,10 @@ static bool reload_directory (menu_t *menu) {
     if (menu->browser.selected >= menu->browser.entries) {
         menu->browser.selected = menu->browser.entries - 1;
     }
+    // An empty folder has no selection (-1); once it has entries again, select the first.
+    if (menu->browser.selected < 0 && menu->browser.entries > 0) {
+        menu->browser.selected = 0;
+    }
     menu->browser.entry = menu->browser.selected >= 0 ? &menu->browser.list[menu->browser.selected] : NULL;
 
     return false;

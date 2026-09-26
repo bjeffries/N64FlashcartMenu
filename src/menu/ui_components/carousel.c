@@ -345,6 +345,9 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         ui_components_main_text_draw(STL_GRAY, ALIGN_CENTER, VALIGN_TOP, "\n\n\n\n\nThis folder has no games");
         return;
     }
+    if (selected < 0 || selected >= entries) {
+        return;
+    }
 
     bool settled = scroll_update(selected);
 
