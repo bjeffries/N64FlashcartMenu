@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate the pixel-art N64 cartridges drawn over every Library label.
 
-Writes two sprites (RGBA, transparent background) into assets/images/:
-  cartridge.png        unselected tiles
-  cartridge_large.png  the selected tile, ~30% larger
+Writes three sprites (RGBA, transparent background) into assets/images/:
+  cartridge.png                unselected tiles
+  cartridge_large.png          the selected tile, ~30% larger
+  cartridge_large_outline.png  white selection outline around the large cartridge's
+                               silhouette, OUTLINE_OFFSET px bigger on every side
 
 Each sprite is an overlay: the label is drawn first, then the cartridge on top,
 and the label shows through a transparent window with rounded corners and a
@@ -18,6 +20,7 @@ import sys
 from PIL import Image
 
 BODY = (0xC4, 0xC4, 0xC4, 0xFF)
+WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
 HIGHLIGHT = (0xD8, 0xD8, 0xD8, 0xFF)
 SEAM = (0x8A, 0x8A, 0x8A, 0xFF)
 OUTLINE = (0x9A, 0x9A, 0x9A, 0xFF)
@@ -30,6 +33,10 @@ BASE_WING = 15
 BASE_LABEL_Y, BASE_LABEL_W, BASE_LABEL_H = 6, 44, 51
 BASE_RADIUS = 4
 
+OUTLINE_GAP = 1         # transparent pixels between the cartridge and its selection outline
+OUTLINE_WIDTH = 2       # outline thickness
+OUTLINE_OFFSET = OUTLINE_GAP + OUTLINE_WIDTH
+
 
 def in_rounded_rect(x, y, rx, ry, rw, rh, radius):
     """True if pixel (x, y) is inside the rounded rectangle, testing the pixel centre."""
@@ -38,7 +45,25 @@ def in_rounded_rect(x, y, rx, ry, rw, rh, radius):
     return (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= radius ** 2
 
 
-def build(scale, out_path):
+def build_outline(mask, w, h, out_path):
+    """White ring OUTLINE_GAP..OUTLINE_OFFSET px outside the silhouette in `mask`."""
+    ow, oh = w + 2 * OUTLINE_OFFSET, h + 2 * OUTLINE_OFFSET
+    img = Image.new('RGBA', (ow, oh), CLEAR)
+    px = img.load()
+    solid = [(x, y) for y in range(h) for x in range(w) if mask[y][x]]
+    for y in range(oh):
+        for x in range(ow):
+            sx, sy = x - OUTLINE_OFFSET, y - OUTLINE_OFFSET
+            if 0 <= sx < w and 0 <= sy < h and mask[sy][sx]:
+                continue
+            d = min((sx - mx) ** 2 + (sy - my) ** 2 for mx, my in solid) ** 0.5
+            if OUTLINE_GAP < d <= OUTLINE_OFFSET + 0.25:
+                px[x, y] = WHITE
+    img.save(out_path)
+    print(f'{out_path}: {ow}x{oh} (outline offset {OUTLINE_OFFSET})')
+
+
+def build(scale, out_path, outline_path=None):
     s = lambda v: round(v * scale)
     w, h, wing = s(BASE_W), s(BASE_H), s(BASE_WING)
     panel_x0, panel_x1 = wing + 1, w - wing - 2          # centre panel columns (inclusive)
@@ -94,6 +119,9 @@ def build(scale, out_path):
         px[groove_w - 1, y] = SEAM
         px[w - groove_w, y] = SEAM
 
+    # Filled silhouette for the selection outline, taken before the label window is cut out.
+    mask = [[px[x, y][3] != 0 for x in range(w)] for y in range(h)]
+
     # Label window: transparent rounded rectangle inside a 1px dark rim.
     for y in range(label_y, label_y + label_h):
         for x in range(label_x, label_x + label_w):
@@ -103,11 +131,14 @@ def build(scale, out_path):
     img.save(out_path)
     print(f'{out_path}: {w}x{h}, label window at ({label_x},{label_y}) {label_w}x{label_h}')
 
+    if outline_path:
+        build_outline(mask, w, h, outline_path)
+
 
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else 'assets/images'
     build(1.0, os.path.join(out_dir, 'cartridge.png'))
-    build(1.3, os.path.join(out_dir, 'cartridge_large.png'))
+    build(1.3, os.path.join(out_dir, 'cartridge_large.png'), os.path.join(out_dir, 'cartridge_large_outline.png'))
 
 
 if __name__ == '__main__':

@@ -101,6 +101,7 @@ SOUNDS_XM ?=
 IMAGES = \
 	cartridge.png \
 	cartridge_large.png \
+	cartridge_large_outline.png \
 	button_a.png \
 	button_b.png \
 	button_c_right.png \

@@ -52,6 +52,8 @@ typedef struct {
 static label_slot_t label_cache[LABEL_CACHE_SIZE];
 static bool label_cache_ready = false;
 
+static sprite_t *selection_outline = NULL;
+
 static bool scroll_ready = false;       // false: snap to the selection on the next draw
 static float scroll_position = 0;       // selection index currently in the focus frame (fractional while moving)
 static uint64_t scroll_last_us = 0;
@@ -155,16 +157,6 @@ void ui_components_carousel_title (const char *name, bool directory, char *out, 
         snprintf(base, sizeof(base), "%s", out);
         snprintf(out, out_size, "The %s%s", base, rest);
     }
-}
-
-static void draw_selection_border (int x, int y, int size) {
-    // 2px outline, with the corner pixels left out so the corners read as rounded.
-    int t = CAROUSEL_SELECTION_BORDER;
-    color_t color = CAROUSEL_SELECTION_COLOR;
-    ui_components_box_draw(x + 1, y, x + size - 1, y + t, color);
-    ui_components_box_draw(x + 1, y + size - t, x + size - 1, y + size, color);
-    ui_components_box_draw(x, y + 1, x + t, y + size - 1, color);
-    ui_components_box_draw(x + size - t, y + 1, x + size, y + size - 1, color);
 }
 
 static void draw_folder_icon (int x, int y, int size) {
@@ -348,10 +340,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         return;
     }
 
-    scroll_update(selected);
-
-    // The focus frame stays put; tiles slide through it.
-    draw_selection_border(CAROUSEL_SELECTED_X, CAROUSEL_TILE_Y, CAROUSEL_SELECTED_TILE_SIZE);
+    bool settled = scroll_update(selected);
 
     int32_t first = MAX(0, (int32_t) floorf(scroll_position) - 3);
     int32_t last = MIN(entries - 1, (int32_t) ceilf(scroll_position) + 5);
@@ -370,8 +359,22 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         }
     }
 
-    char title[128];
     entry_t *entry = &list[selected];
+
+    // Selection outline around the focused cartridge, once it has finished moving into place.
+    if (settled && entry->type != ENTRY_TYPE_DIR) {
+        if (!selection_outline) {
+            selection_outline = sprite_load("rom:/cartridge_large_outline.sprite");
+        }
+        int cx = CAROUSEL_SELECTED_X + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_WIDTH) / 2);
+        int cy = CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2);
+        rdpq_mode_push();
+            rdpq_set_mode_copy(true);
+            rdpq_sprite_blit(selection_outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
+        rdpq_mode_pop();
+    }
+
+    char title[128];
     ui_components_carousel_title(entry->name, entry->type == ENTRY_TYPE_DIR, title, sizeof(title));
 
     ui_components_text_draw(

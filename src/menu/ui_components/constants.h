@@ -399,6 +399,8 @@
 #define CARTRIDGE_LARGE_LABEL_Y         (8)
 #define CARTRIDGE_LARGE_LABEL_WIDTH     (57)
 #define CARTRIDGE_LARGE_LABEL_HEIGHT    (66)
+/** @brief The selection outline sprite (cartridge_large_outline.png) extends this far past the large cartridge. */
+#define CARTRIDGE_OUTLINE_OFFSET        (3)
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
 #define CARTRIDGE_LABEL_BLEED           (2)
 /** @brief Baseline of the captions under unselected tiles. */
@@ -438,10 +440,6 @@
 /** @brief While ←/→ is held, move one tile every this many frames (12 per second at 60fps). */
 #define CAROUSEL_REPEAT_FRAMES          (5)
 
-/** @brief Selected tile outline (unselected tiles have no background or outline). */
-#define CAROUSEL_SELECTION_COLOR        RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
-/** @brief Selected tile outline thickness (pixels). */
-#define CAROUSEL_SELECTION_BORDER       (2)
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
 #define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x6A, 0x6A, 0x6A, 0xFF)
 /** @brief Folder icon color. */
