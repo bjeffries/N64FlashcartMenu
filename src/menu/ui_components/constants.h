@@ -371,16 +371,20 @@
 #define CAROUSEL_SELECTED_X             (200)
 /** @brief Baseline of the screen header ("Library"). */
 #define LIBRARY_HEADER_Y                (48)
-/** @brief Top of the carousel tiles. */
-#define CAROUSEL_TILE_Y                 (64)
-/** @brief Carousel tile width and height. */
+/** @brief Top of the selected tile. */
+#define CAROUSEL_TILE_Y                 (60)
+/** @brief Selected tile width and height (~30% larger than the others). */
+#define CAROUSEL_SELECTED_TILE_SIZE     (146)
+/** @brief Unselected tile width and height. */
 #define CAROUSEL_TILE_SIZE              (112)
+/** @brief Top of the unselected tiles, vertically centred on the selected one. */
+#define CAROUSEL_SMALL_TILE_Y           (CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - CAROUSEL_TILE_SIZE) / 2))
 /** @brief Horizontal distance between tile left edges. */
 #define CAROUSEL_TILE_PITCH             (CAROUSEL_TILE_SIZE + 10)
-/** @brief Extra space on each side of the selected tile. */
-#define CAROUSEL_SELECTED_GAP           (36)
+/** @brief Space on each side of the selected tile. */
+#define CAROUSEL_SELECTED_GAP           (28)
 
-/** @brief Size of the cartridge sprite (assets/images/cartridge.png, see scripts/make_cartridge.py). */
+/** @brief Size of the cartridge sprites (assets/images/cartridge*.png, see scripts/make_cartridge.py). */
 #define CARTRIDGE_WIDTH                 (88)
 #define CARTRIDGE_HEIGHT                (62)
 /** @brief Position and size of the transparent label window in the cartridge sprite. */
@@ -388,12 +392,19 @@
 #define CARTRIDGE_LABEL_Y               (6)
 #define CARTRIDGE_LABEL_WIDTH           (44)
 #define CARTRIDGE_LABEL_HEIGHT          (51)
+/** @brief Large cartridge on the selected tile: sprite size, then label window position and size. */
+#define CARTRIDGE_LARGE_WIDTH           (114)
+#define CARTRIDGE_LARGE_HEIGHT          (81)
+#define CARTRIDGE_LARGE_LABEL_X         (28)
+#define CARTRIDGE_LARGE_LABEL_Y         (8)
+#define CARTRIDGE_LARGE_LABEL_WIDTH     (57)
+#define CARTRIDGE_LARGE_LABEL_HEIGHT    (66)
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
 #define CARTRIDGE_LABEL_BLEED           (2)
 /** @brief Baseline of the captions under unselected tiles. */
-#define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + CAROUSEL_TILE_SIZE + 20)
+#define CAROUSEL_CAPTION_Y              (CAROUSEL_SMALL_TILE_Y + CAROUSEL_TILE_SIZE + 20)
 /** @brief Baseline of the selected entry's title (40px font). */
-#define CAROUSEL_TITLE_Y                (CAROUSEL_CAPTION_Y + 44)
+#define CAROUSEL_TITLE_Y                (CAROUSEL_TILE_Y + CAROUSEL_SELECTED_TILE_SIZE + 44)
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
 

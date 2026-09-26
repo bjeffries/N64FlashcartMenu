@@ -96,7 +96,8 @@ SOUNDS_WAV = \
 SOUNDS_XM ?=
 
 IMAGES = \
-	cartridge.png
+	cartridge.png \
+	cartridge_large.png
 
 OBJS = $(addprefix $(BUILD_DIR)/, $(addsuffix .o,$(basename $(SRCS))))
 MINIZ_OBJS = $(filter $(BUILD_DIR)/libs/miniz/%.o,$(OBJS))
