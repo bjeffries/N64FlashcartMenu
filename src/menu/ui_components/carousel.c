@@ -293,7 +293,7 @@ static float tile_size (float d) {
 }
 
 /** @brief Move the scroll position toward the selection; returns true once it has arrived. */
-static bool scroll_update (int32_t selected) {
+static bool scroll_update (int32_t selected, int32_t entries) {
     uint64_t now = get_ticks_us();
 
     if (!scroll_ready) {
@@ -307,9 +307,15 @@ static bool scroll_update (int32_t selected) {
     scroll_last_us = now;
 
     float distance = selected - scroll_position;
-    // Big jumps (wrap-around, fast repeats) animate as a single step instead of sweeping the list.
+    // Big jumps animate as a single step instead of sweeping the list.
     if (fabsf(distance) > CAROUSEL_MAX_ANIMATED_STEPS) {
-        scroll_position = selected - copysignf(1.0f, distance);
+        if (fabsf(distance) > entries / 2.0f) {
+            // Wrapped around the end of the list: keep moving the way the player pressed, so the
+            // new tile slides in from the side they are heading towards.
+            scroll_position = selected + copysignf(1.0f, distance);
+        } else {
+            scroll_position = selected - copysignf(1.0f, distance);
+        }
         distance = selected - scroll_position;
     }
 
@@ -349,7 +355,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         return;
     }
 
-    bool settled = scroll_update(selected);
+    bool settled = scroll_update(selected, entries);
 
     int32_t first = MAX(0, (int32_t) floorf(scroll_position) - 3);
     int32_t last = MIN(entries - 1, (int32_t) ceilf(scroll_position) + 5);

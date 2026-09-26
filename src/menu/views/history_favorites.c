@@ -79,11 +79,11 @@ static void process (menu_t *menu) {
     hold_frames = horizontal ? hold_frames + 1 : 0;
 
     if (entry_count > 1 && move_now) {
-        if (menu->actions.go_left && selected > 0) {
-            selected--;
+        if (menu->actions.go_left) {
+            selected = (selected + entry_count - 1) % entry_count;
             sound_play_effect(SFX_CURSOR);
-        } else if (menu->actions.go_right && selected < entry_count - 1) {
-            selected++;
+        } else if (menu->actions.go_right) {
+            selected = (selected + 1) % entry_count;
             sound_play_effect(SFX_CURSOR);
         }
     }

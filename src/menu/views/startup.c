@@ -32,14 +32,13 @@ void view_startup_init (menu_t *menu) {
     }
 #endif
     
+    // Always open on the Library. (Upstream showed Menu Information on first run; it's in the
+    // Settings tab now, and B from there would have landed on Settings instead of the Library.)
     if (menu->settings.first_run) {
         menu->settings.first_run = false;
         settings_save(&menu->settings);
-        menu->next_mode = MENU_MODE_CREDITS;
     }
-    else {
-        menu->next_mode = MENU_MODE_BROWSER;
-    }
+    menu->next_mode = MENU_MODE_BROWSER;
 }
 
 void view_startup_display (menu_t *menu, surface_t *display) {

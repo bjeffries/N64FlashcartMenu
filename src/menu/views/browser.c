@@ -458,8 +458,6 @@ static void process (menu_t *menu) {
         return;
     }
 
-    int scroll_speed = 1;
-
     // Held directions repeat every frame; throttle that to one tile every CAROUSEL_REPEAT_FRAMES.
     bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
     bool move_now = horizontal && (hold_frames % CAROUSEL_REPEAT_FRAMES == 0);
@@ -467,29 +465,13 @@ static void process (menu_t *menu) {
 
     // C-buttons also report a direction (go_fast); in the Library they are action buttons instead.
     if (menu->browser.entries > 1 && move_now) {
+        // The Library is circular: left from the first game goes to the last, and vice versa.
+        int32_t entries = menu->browser.entries;
         if (menu->actions.go_left) {
-            menu->browser.selected -= scroll_speed;
-            if (menu->settings.wrap_file_list_scrolling) {
-                // Wrap around to end if we go past the beginning
-                menu->browser.selected = (menu->browser.selected % menu->browser.entries + menu->browser.entries) % menu->browser.entries;
-            } else {
-                // Clamp to beginning
-                if (menu->browser.selected < 0) {
-                    menu->browser.selected = 0;
-                }
-            }
+            menu->browser.selected = (menu->browser.selected + entries - 1) % entries;
             sound_play_effect(SFX_CURSOR);
         } else if (menu->actions.go_right) {
-            menu->browser.selected += scroll_speed;
-            if (menu->settings.wrap_file_list_scrolling) {
-                // Wrap around to beginning if we go past the end
-                menu->browser.selected = menu->browser.selected % menu->browser.entries;
-            } else {
-                // Clamp to end
-                if (menu->browser.selected >= menu->browser.entries) {
-                    menu->browser.selected = menu->browser.entries - 1;
-                }
-            }
+            menu->browser.selected = (menu->browser.selected + 1) % entries;
             sound_play_effect(SFX_CURSOR);
         }
         menu->browser.entry = &menu->browser.list[menu->browser.selected];
@@ -590,7 +572,7 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
 
-    // Games show Play / Configure / Remove, as in the mockup; there is only room for Back on folders.
+    // Games show Play / Configure / Hide; there is only room for Back on folders.
     int x = GAME_INFO_VALUE_X;
     entry_t *entry = menu->browser.entry;
     bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
@@ -600,7 +582,7 @@ static void draw (menu_t *menu, surface_t *d) {
             x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Configure") + LIBRARY_HINT_GAP;
         }
         if (is_game) {
-            ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Remove");
+            ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
         }
     }
     if (!is_game && !path_is_root(menu->browser.directory)) {
