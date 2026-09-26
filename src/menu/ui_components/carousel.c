@@ -151,11 +151,14 @@ void ui_components_carousel_title (const char *name, bool directory, char *out, 
     }
 }
 
-static void draw_tile_background (int x, int y, int size, color_t color) {
-    // Filled square with 2px rounded corners.
-    ui_components_box_draw(x + 2, y, x + size - 2, y + size, color);
-    ui_components_box_draw(x, y + 2, x + size, y + size - 2, color);
-    ui_components_box_draw(x + 1, y + 1, x + size - 1, y + size - 1, color);
+static void draw_selection_border (int x, int y, int size) {
+    // 2px outline, with the corner pixels left out so the corners read as rounded.
+    int t = CAROUSEL_SELECTION_BORDER;
+    color_t color = CAROUSEL_SELECTION_COLOR;
+    ui_components_box_draw(x + 1, y, x + size - 1, y + t, color);
+    ui_components_box_draw(x + 1, y + size - t, x + size - 1, y + size, color);
+    ui_components_box_draw(x, y + 1, x + t, y + size - 1, color);
+    ui_components_box_draw(x + size - t, y + 1, x + size, y + size - 1, color);
 }
 
 static void draw_folder_icon (int x, int y, int size) {
@@ -170,7 +173,9 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
     bool is_selected = (position == selected);
     tile_style_t *style = is_selected ? &large_style : &small_style;
 
-    draw_tile_background(x, y, style->tile_size, is_selected ? CAROUSEL_TILE_SELECTED_COLOR : CAROUSEL_TILE_COLOR);
+    if (is_selected) {
+        draw_selection_border(x, y, style->tile_size);
+    }
 
     if (entry->type == ENTRY_TYPE_DIR) {
         draw_folder_icon(x, y, style->tile_size);

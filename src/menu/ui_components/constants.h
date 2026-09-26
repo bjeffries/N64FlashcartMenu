@@ -408,10 +408,10 @@
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
 
-/** @brief Unselected tile background. */
-#define CAROUSEL_TILE_COLOR             RGBA32(0x33, 0x33, 0x33, 0xFF)
-/** @brief Selected tile background. */
-#define CAROUSEL_TILE_SELECTED_COLOR    RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+/** @brief Selected tile outline (unselected tiles have no background or outline). */
+#define CAROUSEL_SELECTION_COLOR        RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+/** @brief Selected tile outline thickness (pixels). */
+#define CAROUSEL_SELECTION_BORDER       (2)
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
 #define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x6A, 0x6A, 0x6A, 0xFF)
 /** @brief Folder icon color. */
