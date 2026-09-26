@@ -59,6 +59,7 @@ SRCS = \
 	menu/ui_components/file_list.c \
 	menu/ui_components/game_info.c \
 	menu/ui_components/icons.c \
+	menu/ui_components/tab_header.c \
 	menu/ui_components/tabs.c \
 	menu/usb_comm.c \
 	menu/views/browser.c \
@@ -75,6 +76,7 @@ SRCS = \
 	menu/views/startup.c \
 	menu/views/system_info.c \
 	menu/views/settings_editor.c \
+	menu/views/settings_hub.c \
 	menu/views/rtc.c \
 	menu/views/flashcart_info.c \
 	menu/views/cpakfs_manager.c \

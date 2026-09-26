@@ -334,7 +334,7 @@ static void process (menu_t *menu) {
         if (show_message_reset_settings) {
             show_message_reset_settings = false;
         } else {
-            menu->next_mode = MENU_MODE_BROWSER;
+            menu->next_mode = MENU_MODE_SETTINGS_HUB;
         }
         sound_play_effect(SFX_EXIT);
     } else if (menu->actions.options){

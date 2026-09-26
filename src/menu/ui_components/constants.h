@@ -434,6 +434,13 @@
 /** @brief Other info page dots. */
 #define GAME_INFO_DOT_OFF_COLOR         RGBA32(0x55, 0x55, 0x55, 0xFF)
 
+/** @brief Space between tab names in the header. */
+#define TAB_HEADER_GAP                  (20)
+/** @brief Baseline of the first Settings tab row. */
+#define SETTINGS_HUB_Y                  (110)
+/** @brief Distance between Settings tab rows. */
+#define SETTINGS_HUB_ROW_PITCH          (36)
+
 /** @brief Space between button hints. */
 #define LIBRARY_HINT_GAP                (14)
 

@@ -431,29 +431,12 @@ static component_context_menu_t entry_context_menu = {
     }
 };
 
-static void set_menu_next_mode (menu_t *menu, void *arg) {
-    menu_mode_t next_mode = (menu_mode_t) (arg);
-    menu->next_mode = next_mode;
-}
-
-static component_context_menu_t settings_context_menu = {
-    .list = {
-        { .text = "Controller Pak manager", .action = set_menu_next_mode, .arg = (void *) (MENU_MODE_CONTROLLER_PAKFS) },
-        { .text = "Menu settings", .action = set_menu_next_mode, .arg = (void *) (MENU_MODE_SETTINGS_EDITOR) },
-        { .text = "Time (RTC) settings", .action = set_menu_next_mode, .arg = (void *) (MENU_MODE_RTC) },
-        { .text = "Menu information", .action = set_menu_next_mode, .arg = (void *) (MENU_MODE_CREDITS) },
-        { .text = "Flashcart information", .action = set_menu_next_mode, .arg = (void *) (MENU_MODE_FLASHCART) },
-        { .text = "N64 information", .action = set_menu_next_mode, .arg = (void *) (MENU_MODE_SYSTEM_INFO) },
-        COMPONENT_CONTEXT_MENU_LIST_END,
-    }
-};
-
 static void process (menu_t *menu) {
     if (ui_components_context_menu_process(menu, &entry_context_menu)) {
         return;
     }
 
-    if (ui_components_context_menu_process(menu, &settings_context_menu)) {
+    if (ui_components_tab_process(menu, TAB_LIBRARY)) {
         return;
     }
 
@@ -509,12 +492,14 @@ static void process (menu_t *menu) {
                 }
                 break;
             case ENTRY_TYPE_DISK:
+                menu->load.return_mode = MENU_MODE_BROWSER;
                 menu->next_mode = MENU_MODE_LOAD_DISK;
                 break;
             case ENTRY_TYPE_IMAGE:
                 menu->next_mode = MENU_MODE_IMAGE_VIEWER;
                 break;
             case ENTRY_TYPE_ROM:
+                menu->load.return_mode = MENU_MODE_BROWSER;
                 menu->load.play_now = true;
                 menu->next_mode = MENU_MODE_LOAD_ROM;
                 break;
@@ -544,6 +529,7 @@ static void process (menu_t *menu) {
         }
         sound_play_effect(SFX_EXIT);
     } else if (menu->actions.configure && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_ROM) {
+        menu->load.return_mode = MENU_MODE_BROWSER;
         menu->load.open_configure = true;
         menu->next_mode = MENU_MODE_LOAD_ROM;
         sound_play_effect(SFX_SETTING);
@@ -557,19 +543,13 @@ static void process (menu_t *menu) {
         // Z: file options (properties, delete, set default folder)
         ui_components_context_menu_show(&entry_context_menu);
         sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.settings) {
-        ui_components_context_menu_show(&settings_context_menu);
-        sound_play_effect(SFX_SETTING);
     }
 }
 
 static void draw (menu_t *menu, surface_t *d) {
     rdpq_attach_clear(d, NULL);
 
-    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Library");
-    int r_x = VISIBLE_AREA_X1 - ui_components_icon_width(ICON_R);
-    ui_components_icon_draw(ICON_R, r_x, LIBRARY_HEADER_Y - 15);
-    ui_components_icon_draw(ICON_L, r_x - 6 - ui_components_icon_width(ICON_L), LIBRARY_HEADER_Y - 15);
+    ui_components_tab_header_draw(TAB_LIBRARY);
 
     ui_components_carousel_draw(menu->browser.directory, menu->browser.list, menu->browser.entries, menu->browser.selected);
 
@@ -594,15 +574,15 @@ static void draw (menu_t *menu, surface_t *d) {
 
     ui_components_context_menu_draw(&entry_context_menu);
 
-    ui_components_context_menu_draw(&settings_context_menu);
-
     rdpq_detach_show();
 }
 
 void view_browser_init (menu_t *menu) {
+    // Favorites and History share the carousel, so its cached labels may belong to another list.
+    ui_components_carousel_invalidate();
+
     if (!menu->browser.valid) {
         ui_components_context_menu_init(&entry_context_menu);
-        ui_components_context_menu_init(&settings_context_menu);
         if (load_directory(menu)) {
             path_free(menu->browser.directory);
             menu->browser.directory = path_init(menu->storage_prefix, "");

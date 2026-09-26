@@ -106,7 +106,7 @@ static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position
         *slot = (label_slot_t) { .position = position };
 
         if (entry->type == ENTRY_TYPE_ROM) {
-            path_t *path = path_clone_push(directory, entry->name);
+            path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
             slot->has_id = labels_rom_id(path_get(path), &slot->id);
             path_free(path);
         }
@@ -130,7 +130,9 @@ static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position
  *        into a display title like "The Legend of Zelda - Majora's Mask".
  */
 void ui_components_carousel_title (const char *name, bool directory, char *out, size_t out_size) {
-    snprintf(out, out_size, "%s", name);
+    // Favorites and History pass full paths; only the file name is shown.
+    const char *slash = strrchr(name, '/');
+    snprintf(out, out_size, "%s", slash ? slash + 1 : name);
 
     if (!directory) {
         char *ext = strrchr(out, '.');

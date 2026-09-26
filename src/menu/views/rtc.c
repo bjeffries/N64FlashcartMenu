@@ -99,7 +99,7 @@ void rtc_ui_component_editdatetime_draw ( struct tm t, rtc_field_t selected_fiel
 static void process (menu_t *menu) {
     if (menu->actions.back && !is_editing_mode) {
         sound_play_effect(SFX_EXIT);
-        menu->next_mode = MENU_MODE_BROWSER;
+        menu->next_mode = MENU_MODE_SETTINGS_HUB;
     }
     else if (menu->actions.enter && !is_editing_mode && menu->current_time >= 0) {
         rtc_tm = *gmtime(&menu->current_time);

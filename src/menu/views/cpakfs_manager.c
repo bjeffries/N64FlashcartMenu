@@ -465,7 +465,7 @@ static void process (menu_t *menu) {
                     memset(&stats_per_port[i], 0, sizeof(stats_per_port[i]));
                 }
                 sound_play_effect(SFX_EXIT);
-                menu->next_mode = MENU_MODE_BROWSER;
+                menu->next_mode = MENU_MODE_SETTINGS_HUB;
             } else if (menu->actions.options && use_rtc && has_mem) {
                 sound_play_effect(SFX_SETTING);
                 ui_components_context_menu_show(&options_context_menu);
@@ -606,7 +606,7 @@ static void process (menu_t *menu) {
             if (!show_format_controller_pak_confirm_message) {
                 if (menu->actions.back) {
                     sound_play_effect(SFX_EXIT);
-                    menu->next_mode = MENU_MODE_BROWSER;
+                    menu->next_mode = MENU_MODE_SETTINGS_HUB;
                 } else if (menu->actions.enter) {
                     sound_play_effect(SFX_ENTER);
                     show_format_controller_pak_confirm_message = true;

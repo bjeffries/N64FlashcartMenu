@@ -247,7 +247,7 @@ void ui_components_file_list_free(void);
 /**
  * @brief Draw the Library carousel row and the selected entry's title.
  *
- * @param directory Directory the entries belong to (used to load labels).
+ * @param directory Directory the entries belong to, or NULL if each entry's name is a full path.
  * @param list List of entries.
  * @param entries Number of entries.
  * @param selected Index of the selected entry.
@@ -286,6 +286,27 @@ int ui_components_icon_width(ui_icon_t icon);
  */
 int ui_components_button_hint_draw(ui_icon_t icon, int x, int baseline, const char *text);
 
+/** @brief Top-level tabs, switched with L / R. */
+typedef enum {
+    TAB_LIBRARY,
+    TAB_FAVORITES,
+    TAB_HISTORY,
+    TAB_SETTINGS,
+    TAB_COUNT,
+} menu_tab_t;
+
+/**
+ * @brief Draw the tab strip (current tab white, others gray) and the L / R icons.
+ */
+void ui_components_tab_header_draw(menu_tab_t current);
+
+/**
+ * @brief Handle L / R (previous / next tab) and Start (Settings tab).
+ *
+ * @return true if a tab switch was requested (menu->next_mode is set).
+ */
+bool ui_components_tab_process(menu_t *menu, menu_tab_t current);
+
 /**
  * @brief Forget cached labels; call whenever the directory listing changes.
  */
@@ -297,7 +318,7 @@ void ui_components_carousel_invalidate(void);
  * Page 0 is the overview (players, accessories, region, credits, dates), page 1 the
  * boot details, page 2 the description.
  *
- * @param directory Directory containing the entry.
+ * @param directory Directory containing the entry, or NULL if the entry's name is a full path.
  * @param entry Selected entry (folders draw nothing).
  * @param bookkeeping History, used for the last played date.
  * @param page Page to draw (0 .. ui_components_game_info_page_count() - 1).

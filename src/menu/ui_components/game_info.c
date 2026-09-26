@@ -370,7 +370,7 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
         return;
     }
 
-    path_t *path = path_clone_push(directory, entry->name);
+    path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
     current_load(path, entry, bookkeeping);
     path_free(path);
 

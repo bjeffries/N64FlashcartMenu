@@ -44,6 +44,7 @@ typedef enum {
     MENU_MODE_FAVORITE,
     MENU_MODE_HISTORY,
     MENU_MODE_DATEL_CODE_EDITOR,
+    MENU_MODE_SETTINGS_HUB,
 } menu_mode_t;
 
 /** @brief File entry type enumeration */
@@ -133,6 +134,7 @@ typedef struct {
         bool combined_disk_rom;
         bool play_now;          // Library "Play Cartridge": boot without stopping on the ROM details screen
         bool open_configure;    // Library "Configure": open the per-game options straight away
+        menu_mode_t return_mode; // Tab to go back to from the ROM / disk screens (Library, Favorites, History)
     } load;
 
     struct {

@@ -86,6 +86,7 @@ static void menu_init (boot_params_t *boot_params) {
     bookkeeping_load(&menu->bookkeeping);
     menu->load.load_history_id = -1;
     menu->load.load_favorite_id = -1;
+    menu->load.return_mode = MENU_MODE_BROWSER;
     path_pop(path);
 
     // Force interlacing off in VI settings for TVs and other devices that struggle with interlaced video input.
@@ -211,6 +212,7 @@ static view_t menu_views[] = {
     { MENU_MODE_FAVORITE, view_favorite_init, view_favorite_display },
     { MENU_MODE_HISTORY, view_history_init, view_history_display },
     { MENU_MODE_DATEL_CODE_EDITOR, view_datel_code_editor_init, view_datel_code_editor_display },
+    { MENU_MODE_SETTINGS_HUB, view_settings_hub_init, view_settings_hub_display },
 };
 
 /**
