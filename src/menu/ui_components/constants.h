@@ -404,7 +404,7 @@
 #define CARTRIDGE_LARGE_LABEL_WIDTH     (70)
 #define CARTRIDGE_LARGE_LABEL_HEIGHT    (82)
 /** @brief The selection outline sprite (cartridge_large_outline.png) extends this far past the large cartridge. */
-#define CARTRIDGE_OUTLINE_OFFSET        (3)
+#define CARTRIDGE_OUTLINE_OFFSET        (4)
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
 #define CARTRIDGE_LABEL_BLEED           (2)
 /** @brief Baseline of the captions under unselected tiles. */

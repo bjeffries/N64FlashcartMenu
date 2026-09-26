@@ -39,8 +39,8 @@ LARGE_WIDTH = 146       # the selected tile's width (CAROUSEL_SELECTED_TILE_SIZE
 LABEL_SOURCE_W, LABEL_SOURCE_H = 74, 86   # Analogue 3D label resolution
 LABEL_BLEED = 2         # label pixels hidden under the cartridge on each side (CARTRIDGE_LABEL_BLEED)
 
-OUTLINE_GAP = 1         # transparent pixels between the cartridge and its selection outline
-OUTLINE_WIDTH = 2       # outline thickness
+OUTLINE_GAP = 0         # transparent pixels between the cartridge and its selection outline
+OUTLINE_WIDTH = 4       # outline thickness
 OUTLINE_OFFSET = OUTLINE_GAP + OUTLINE_WIDTH
 
 
