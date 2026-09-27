@@ -708,11 +708,13 @@ static void draw_loading (surface_t *d, float progress, const char *message) {
     ui_components_loading_screen_draw(d, progress, message, rom_filename ? rom_filename : "");
 }
 
-/** @brief Play the corona to the end, then the game starts (or the error shows). */
+/** @brief Play the corona (and the wind) to the end, then the game starts (or the error shows). */
 static void finish_carousel_loading (void) {
     ui_components_loading_animation_done();
+    sound_loading_wind_play();
     while (!ui_components_loading_animation_finished()) {
         draw_loading(display_get(), 1.0f, NULL);
+        sound_poll();
     }
 }
 
@@ -962,6 +964,7 @@ static void draw_creating_save (float progress) {
 
 static void load (menu_t *menu) {
     debugf("Load ROM: load function called\n");
+    sound_stop_boot();      // it streams from rom:/, which loading overwrites
     cart_load_err_t err;
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     if (!menu->settings.loading_progress_bar_enabled) {
@@ -1036,6 +1039,7 @@ static void load (menu_t *menu) {
 static void deinit (void) {
     if (load_over_carousel) {
         ui_components_loading_animation_free();
+        sound_loading_wind_free();
         load_over_carousel = false;
     }
     ui_components_boxart_free(boxart);
@@ -1125,6 +1129,7 @@ void view_load_rom_init (menu_t *menu) {
     loading_menu = menu;
     if (load_over_carousel) {
         ui_components_loading_animation_prepare();
+        sound_loading_wind_prepare();
     }
 
     if (play_now) {

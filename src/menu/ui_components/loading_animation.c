@@ -24,8 +24,9 @@
 #define APPROACH_LAST       (54)
 #define CORONA_LAST         (57)    // 55-57: corona fades in
 #define FRAME_MS            (1000 / BOOT_ANIMATION_FPS)
-#define DONE_HOLD_MS        (150)   // show the full corona this long,
-#define RING_FADE_MS        (200)   // then fade it out (after loading: 100% is still totality)
+#define DONE_HOLD_MS        (350)   // show the full corona this long,
+#define RING_FADE_MS        (550)   // then fade it out (after loading: 100% is still totality).
+                                    // With the corona that's 1s: the length of the loading wind.
 
 // The sun's centre in the boot animation (make_eclipse_intro.py: SUN_CENTRE = 213.5, 200).
 #define SUN_X               (213)

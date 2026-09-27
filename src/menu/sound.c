@@ -21,6 +21,11 @@ static bool sfx_opened = false;
 static wav64_t boot_sound;
 static bool boot_sound_opened = false;
 
+// "Game loaded" wind: 16-bit mono PCM held in memory (rom:/ is overwritten while a game loads).
+static int16_t *wind_samples = NULL;
+static int wind_length = 0;
+static waveform_t wind_waveform;
+
 /**
  * @brief Reconfigure the sound system with the specified frequency.
  * 
@@ -116,8 +121,69 @@ void sound_play_boot (void) {
     wav64_play(&boot_sound, SOUND_BOOT_CHANNEL);
 }
 
+void sound_stop_boot (void) {
+    if (boot_sound_opened) {
+        mixer_ch_stop(SOUND_BOOT_CHANNEL);
+        wav64_close(&boot_sound);
+        boot_sound_opened = false;
+    }
+}
+
+static void wind_read (void *ctx, samplebuffer_t *sbuf, int wpos, int wlen, bool seeking) {
+    int16_t *dst = (int16_t *) samplebuffer_append(sbuf, wlen);
+    for (int i = 0; i < wlen; i++) {
+        dst[i] = (wpos + i < wind_length) ? wind_samples[wpos + i] : 0;
+    }
+}
+
+void sound_loading_wind_prepare (void) {
+    if (!sound_initialized || !sfx_enabled || wind_samples) {
+        return;
+    }
+    int size;
+    uint8_t *wav = asset_load("rom:/loading_wind.wav", &size);
+    // A plain 44-byte header (make_sounds.py): 16-bit mono PCM, little-endian samples.
+    if (!wav || size <= 44) {
+        free(wav);
+        return;
+    }
+    uint32_t rate = wav[24] | (wav[25] << 8) | (wav[26] << 16) | (wav[27] << 24);
+    wind_length = (size - 44) / 2;
+    wind_samples = malloc(wind_length * sizeof(int16_t));
+    for (int i = 0; i < wind_length; i++) {
+        wind_samples[i] = (int16_t) (wav[44 + (i * 2)] | (wav[45 + (i * 2)] << 8));
+    }
+    free(wav);
+
+    wind_waveform = (waveform_t) {
+        .name = "loading_wind",
+        .bits = 16,
+        .channels = 1,
+        .frequency = (float) rate,
+        .len = wind_length,
+        .read = wind_read,
+    };
+}
+
+void sound_loading_wind_play (void) {
+    if (wind_samples) {
+        mixer_ch_set_vol(SOUND_LOADING_CHANNEL, 0.5f, 0.5f);
+        mixer_ch_play(SOUND_LOADING_CHANNEL, &wind_waveform);
+    }
+}
+
+void sound_loading_wind_free (void) {
+    if (wind_samples) {
+        mixer_ch_stop(SOUND_LOADING_CHANNEL);
+        free(wind_samples);
+        wind_samples = NULL;
+        wind_length = 0;
+    }
+}
+
 void sound_deinit (void) {
     if (sound_initialized) {
+        sound_loading_wind_free();
         if (boot_sound_opened) {
             mixer_ch_stop(SOUND_BOOT_CHANNEL);
             wav64_close(&boot_sound);

@@ -11,6 +11,7 @@
 
 #define SOUND_SFX_CHANNEL           (0) /**< First Channel of sound effects 0-7 (8 in total) */
 #define SOUND_BOOT_CHANNEL          (8) /**< Boot animation cue: stereo, channels 8-9 */
+#define SOUND_LOADING_CHANNEL       (9) /**< Wind when a game has loaded (the boot cue is over by then) */
 #define SOUND_MP3_PLAYER_CHANNEL    (10) /**< First Channel for MP3 player sound 10-15 (6 in total [surround sound possible]) */
 
 
@@ -73,6 +74,26 @@ void sound_deinit(void);
  * ends (in sound_poll).
  */
 void sound_play_boot(void);
+
+/**
+ * @brief Stop the boot sound if it is still playing.
+ *
+ * Call before loading a game: it streams from rom:/, which the game overwrites on the SC64.
+ */
+void sound_stop_boot(void);
+
+/**
+ * @brief Read the "game loaded" wind (rom:/loading_wind.wav) into memory, if sound effects are on.
+ *
+ * Call before loading a game: rom:/ can't be read once loading starts.
+ */
+void sound_loading_wind_prepare(void);
+
+/** @brief Play the wind prepared by sound_loading_wind_prepare() (does nothing if it wasn't). */
+void sound_loading_wind_play(void);
+
+/** @brief Stop and free the wind. */
+void sound_loading_wind_free(void);
 
 /**
  * @brief Poll the sound system.

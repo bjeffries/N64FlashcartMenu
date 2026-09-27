@@ -7,6 +7,8 @@ Writes 44.1 kHz mono 16-bit WAVs into assets/sounds/ (converted to wav64 by the 
   back.wav         back / cancel        - the same two notes, falling
   settings.wav     toggle / change      - a single gentle tone
   error.wav        something failed     - two low, soft falling notes
+  loading_wind.wav game finished loading - soft wind that swells and fades out (22.05 kHz; the
+                   menu plays it from memory, so it isn't converted to wav64)
 
 Every note has a few milliseconds of fade-in (no clicks) and a smooth exponential decay,
 with a touch of the second harmonic for warmth. Tweak NOTES / VOLUME below and rebuild.
@@ -16,6 +18,7 @@ Usage: scripts/make_sounds.py [out_dir=assets/sounds]
 
 import math
 import os
+import random
 import struct
 import sys
 import wave
@@ -55,6 +58,42 @@ def render(notes):
     return [int(max(-1.0, min(1.0, s * scale)) * 32767) for s in samples]
 
 
+WIND_RATE = 22050
+WIND_SECONDS = 1.0      # matches the corona + ring fade after a game finishes loading
+WIND_ATTACK = 0.15      # swell in
+WIND_END = 0.95         # silent from here
+WIND_VOLUME = 0.45
+WIND_WHISTLE = 0.06     # faint C5 / G5 resonance, in key with the boot music (C major)
+
+
+def wind():
+    """Band-passed noise whose centre drifts like a gust, with a smooth swell and a long fade."""
+    random.seed(64)
+    count = int(WIND_RATE * WIND_SECONDS)
+    low = band = 0.0
+    samples = []
+    for n in range(count):
+        t = n / WIND_RATE
+        # State-variable filter: broad band-pass drifting 380 -> 700 -> 420 Hz.
+        centre = 380 + 320 * math.sin(math.pi * min(1.0, t / 0.8))
+        f = 2 * math.sin(math.pi * centre / WIND_RATE)
+        q = 1.3
+        noise = random.uniform(-1.0, 1.0)
+        high = noise - low - q * band
+        band += f * high
+        low += f * band
+        whistle = math.sin(2 * math.pi * 523.25 * t) + 0.5 * math.sin(2 * math.pi * 783.99 * t)
+        if t < WIND_ATTACK:
+            envelope = math.sin((t / WIND_ATTACK) * math.pi / 2) ** 2
+        elif t < WIND_END:
+            envelope = math.cos(((t - WIND_ATTACK) / (WIND_END - WIND_ATTACK)) * math.pi / 2) ** 2
+        else:
+            envelope = 0.0
+        samples.append(envelope * (band + WIND_WHISTLE * whistle * envelope))
+    peak = max(abs(s) for s in samples)
+    return [int(s / peak * WIND_VOLUME * 32767) for s in samples]
+
+
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else 'assets/sounds'
     for name, notes in NOTES.items():
@@ -66,6 +105,15 @@ def main():
             w.setframerate(RATE)
             w.writeframes(struct.pack('<%dh' % len(data), *data))
         print(f'{path}: {len(data) / RATE * 1000:.0f} ms')
+
+    data = wind()
+    path = os.path.join(out_dir, 'loading_wind.wav')
+    with wave.open(path, 'wb') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(WIND_RATE)
+        w.writeframes(struct.pack('<%dh' % len(data), *data))
+    print(f'{path}: {len(data) / WIND_RATE * 1000:.0f} ms')
 
 
 if __name__ == '__main__':

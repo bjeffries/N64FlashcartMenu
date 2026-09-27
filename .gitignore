@@ -15,6 +15,7 @@
 # Emulator test data built from local ROMs (scripts/make_devsd.py)
 /devsd
 /filesystem/*.wav64
+/filesystem/*.wav
 /filesystem/*.sprite
 /filesystem/boot
 
