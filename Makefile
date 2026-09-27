@@ -88,7 +88,8 @@ SRCS = \
 	utils/utf_converter.c \
 
 # Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
-# 12px (carousel captions) is off-grid, so it is anti-aliased instead of monochrome.
+# 12px (captions, info rows) is off-grid, so it is anti-aliased instead of monochrome, with 1px
+# extra letter spacing for readability.
 FONT_SIZES = 12 20 40
 FONT_TTF = $(ASSETS_DIR)/fonts/AnalogueOS-Regular.ttf
 
@@ -146,7 +147,7 @@ $(FILESYSTEM_DIR)/%.sprite: MKSPRITE_FLAGS=--format RGBA16 --compress 1
 $(@info $(shell mkdir -p ./$(FILESYSTEM_DIR) &> /dev/null))
 
 $(FILESYSTEM_DIR)/AnalogueOS-%.font64: FONT_FLAGS=--monochrome
-$(FILESYSTEM_DIR)/AnalogueOS-12.font64: FONT_FLAGS=
+$(FILESYSTEM_DIR)/AnalogueOS-12.font64: FONT_FLAGS=--char-spacing 1
 $(FILESYSTEM_DIR)/AnalogueOS-%.font64: $(FONT_TTF)
 	@echo "    [FONT] $@"
 	@mkdir -p $(BUILD_DIR)/fonts/$*
