@@ -430,8 +430,10 @@
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
-/** @brief Distance between info rows in a group: the small font's ascent + 3px (at least 16). */
-#define GAME_INFO_ROW_PITCH             (MAX(16, fonts_ascent(FNT_SMALL) + 3))
+/** @brief Font of the info panel (and the captions under unselected games), drawn with a shadow. */
+#define GAME_INFO_FONT                  FNT_DEFAULT
+/** @brief Distance between info rows in a group: the info font's ascent + 3px (at least 16). */
+#define GAME_INFO_ROW_PITCH             (MAX(16, fonts_ascent(GAME_INFO_FONT) + 3))
 /** @brief Extra space between groups of info rows. */
 #define GAME_INFO_GROUP_GAP             (6)
 /** @brief Info value badges (player count, accessories, region): grey fill with white text,
@@ -441,12 +443,12 @@
 #define GAME_INFO_PLAYER_ON_COLOR       PALETTE_HIGHLIGHT
 #define GAME_INFO_PLAYER_OFF_COLOR      PALETTE_TONE_2
 
-/** @brief About page: text line height and the first line's ascent (from the small font's ascent),
+/** @brief About page: text line height and the first line's ascent (from the info font's ascent),
  *         and the bottom of the text area. */
-#define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_ascent(FNT_SMALL) + 3))
-#define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_ascent(FNT_SMALL)))
-/** @brief Info value badges: from 2px above the small font's ascent to 3px below the baseline. */
-#define GAME_INFO_BADGE_TOP(y)          ((y) - fonts_ascent(FNT_SMALL) - 2)
+#define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_ascent(GAME_INFO_FONT) + 3))
+#define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_ascent(GAME_INFO_FONT)))
+/** @brief Info value badges: from 2px above the info font's ascent to 3px below the baseline. */
+#define GAME_INFO_BADGE_TOP(y)          ((y) - fonts_ascent(GAME_INFO_FONT) - 2)
 #define GAME_INFO_ABOUT_BOTTOM          (LIBRARY_BUTTONS_Y - 34)
 
 /** @brief Size of an info page dot. */

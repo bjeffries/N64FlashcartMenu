@@ -111,33 +111,48 @@ static const char *format_date (time_t t, char *buffer, size_t size) {
     return buffer;
 }
 
+/** @brief Draw text in the info font with its shadow (1px right and down, STL_SHADOW) behind it. */
+static void draw_shadowed (rdpq_textparms_t parms, int x, int y, const char *text) {
+    menu_font_style_t style = parms.style_id;
+    parms.style_id = STL_SHADOW;
+    ui_components_text_draw(&parms, GAME_INFO_FONT, x + TEXT_SHADOW_OFFSET, y + TEXT_SHADOW_OFFSET, text);
+    parms.style_id = style;
+    ui_components_text_draw(&parms, GAME_INFO_FONT, x, y, text);
+}
+
+/** @brief Lay out a paragraph twice (shadow and text) and draw both. */
+static void render_shadowed_paragraph (rdpq_textparms_t parms, int x, int y, const char *text) {
+    menu_font_style_t style = parms.style_id;
+    for (int layer = 0; layer < 2; layer++) {
+        int nbytes = strlen(text);
+        parms.style_id = (layer == 0) ? STL_SHADOW : style;
+        rdpq_paragraph_t *layout = rdpq_paragraph_build(&parms, GAME_INFO_FONT, text, &nbytes);
+        int offset = (layer == 0) ? TEXT_SHADOW_OFFSET : 0;
+        rdpq_paragraph_render(layout, x + offset, y + offset);
+        rdpq_paragraph_free(layout);
+    }
+}
+
 static void draw_text (int x, int y, menu_font_style_t style, const char *text) {
     char upper[128];
     snprintf(upper, sizeof(upper), "%s", text);
     for (char *c = upper; *c; c++) {
         *c = toupper((unsigned char) (*c));
     }
-    ui_components_text_draw(
-        &(rdpq_textparms_t) { .style_id = style, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_ELLIPSES },
-        FNT_SMALL, x, y, upper
-    );
+    draw_shadowed((rdpq_textparms_t) { .style_id = style, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_ELLIPSES }, x, y, upper);
 }
 
 /** @brief Grey badge with white text for the RUMBLE PAK / USA style tags. Returns its width. */
 static int draw_badge (int x, int y, const char *text) {
     int nbytes = strlen(text);
-    rdpq_paragraph_t *layout = rdpq_paragraph_build(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },
-        FNT_SMALL, text, &nbytes
-    );
+    rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, GAME_INFO_FONT, text, &nbytes);
     int width = (int) (layout->advance_x) + (BADGE_PADDING * 2);
+    rdpq_paragraph_free(layout);
     if (x + width > VISIBLE_AREA_X1) {
-        rdpq_paragraph_free(layout);
         return -1;
     }
     ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
-    rdpq_paragraph_render(layout, x + BADGE_PADDING, y);
-    rdpq_paragraph_free(layout);
+    render_shadowed_paragraph((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x + BADGE_PADDING, y, text);
     return width;
 }
 
@@ -339,17 +354,15 @@ static void draw_about_page (rom_info_t *info) {
     int nbytes = strlen(description ? description : "");
     if (!description) {
         about_max_scroll = 0;
-        ui_components_text_draw(
-            &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_WORD },
-            FNT_SMALL, x, GAME_INFO_Y, "No description yet. Add a metadata file for this game to show one here."
+        draw_shadowed(
+            (rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_WORD },
+            x, GAME_INFO_Y, "No description yet. Add a metadata file for this game to show one here."
         );
         return;
     }
 
-    rdpq_paragraph_t *layout = rdpq_paragraph_build(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_WORD },
-        FNT_SMALL, description, &nbytes
-    );
+    rdpq_textparms_t parms = { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_WORD };
+    rdpq_paragraph_t *layout = rdpq_paragraph_build(&parms, GAME_INFO_FONT, description, &nbytes);
 
     int line_height = GAME_INFO_ABOUT_LINE_HEIGHT;
     int visible_lines = (bottom - top) / line_height;
@@ -360,17 +373,17 @@ static void draw_about_page (rom_info_t *info) {
 
     // Clip to the info area and shift the text up by the scrolled lines.
     rdpq_set_scissor(0, top, DISPLAY_WIDTH, bottom);
-    rdpq_paragraph_render(layout, x, GAME_INFO_Y - (about_scroll * line_height));
-    rdpq_set_scissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
     rdpq_paragraph_free(layout);
+    render_shadowed_paragraph(parms, x, GAME_INFO_Y - (about_scroll * line_height), description);
+    rdpq_set_scissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
     // "..." where there is more text above or below.
     rdpq_textparms_t hint = { .style_id = STL_GRAY };
     if (about_scroll > 0) {
-        rdpq_text_printf(&hint, FNT_SMALL, VISIBLE_AREA_X1 - 12, top - 4, "...");
+        draw_shadowed(hint, VISIBLE_AREA_X1 - 12, top - 4, "...");
     }
     if (about_scroll < about_max_scroll) {
-        rdpq_text_printf(&hint, FNT_SMALL, VISIBLE_AREA_X1 - 12, bottom + 10, "...");
+        draw_shadowed(hint, VISIBLE_AREA_X1 - 12, bottom + 10, "...");
     }
 }
 

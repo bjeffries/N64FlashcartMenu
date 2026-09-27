@@ -280,7 +280,7 @@ static void draw_tile_caption (entry_t *entry, int32_t position, float centre_x)
                 .align = ALIGN_CENTER,
                 .wrap = WRAP_ELLIPSES,
             },
-            FNT_DEFAULT,
+            GAME_INFO_FONT,
             x + offset,
             CAROUSEL_CAPTION_Y + offset,
             title
