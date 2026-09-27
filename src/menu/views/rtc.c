@@ -127,24 +127,24 @@ static void draw_fields (struct tm *t, bool editing) {
         menu_font_style_t style = (!editing || selected) ? STL_DEFAULT : STL_GRAY;
 
         if (editing) {
-            rdpq_text_printf(&(rdpq_textparms_t) { .style_id = selected ? STL_DEFAULT : STL_GRAY },
-                FNT_SMALL, x, TIME_VALUE_Y - 36, "%s", FIELD_NAMES[i]);
+            ui_components_body_text_draw(&(rdpq_textparms_t) { .style_id = selected ? STL_DEFAULT : STL_GRAY },
+                x, TIME_VALUE_Y - 36, FIELD_NAMES[i]);
         }
         rdpq_textmetrics_t metrics = rdpq_text_printf(&(rdpq_textparms_t) { .style_id = style },
-            FNT_TITLE, x, TIME_VALUE_Y, "%s", values[i]);
+            TITLE_FONT, x, TIME_VALUE_Y, "%s", values[i]);
         if (selected) {
             ui_components_box_draw(x, TIME_VALUE_Y + 8, x + (int) (metrics.advance_x), TIME_VALUE_Y + 11, EDIT_UNDERLINE_COLOR);
         }
         x += (int) (metrics.advance_x);
 
         metrics = rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY },
-            FNT_TITLE, x, TIME_VALUE_Y, "%s", separators[i]);
+            TITLE_FONT, x, TIME_VALUE_Y, "%s", separators[i]);
         x += (int) (metrics.advance_x) + ((i == RTC_EDIT_DAY) ? 28 : 0);
     }
 
     char weekday[16];
     strftime(weekday, sizeof(weekday), "%A", t);
-    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_DEFAULT, CAROUSEL_SELECTED_X, TIME_VALUE_Y + 40, "%s", weekday);
+    ui_components_body_text_draw(&(rdpq_textparms_t) { .style_id = STL_GRAY }, CAROUSEL_SELECTED_X, TIME_VALUE_Y + 40, weekday);
 }
 
 static void draw (menu_t *menu, surface_t *d) {
@@ -155,9 +155,9 @@ static void draw (menu_t *menu, surface_t *d) {
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;
     if (menu->current_time < 0) {
-        ui_components_text_draw(
+        ui_components_body_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
-            FNT_DEFAULT, CAROUSEL_SELECTED_X, TIME_VALUE_Y,
+            CAROUSEL_SELECTED_X, TIME_VALUE_Y,
             "No real-time clock was found."
         );
     } else {
@@ -175,9 +175,9 @@ static void draw (menu_t *menu, surface_t *d) {
         struct tm now = *gmtime(&shown);
         draw_fields(is_editing_mode ? &rtc_tm : &now, is_editing_mode);
 
-        ui_components_text_draw(
+        ui_components_body_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
-            FNT_SMALL, CAROUSEL_SELECTED_X, TIME_HELP_Y,
+            CAROUSEL_SELECTED_X, TIME_HELP_Y,
             is_editing_mode
                 ? "Left / Right: choose a field. Up / Down: change it."
                 : "Games with a clock (like Animal Forest) and the Last Played dates use this time. "
