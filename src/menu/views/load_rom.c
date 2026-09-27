@@ -664,6 +664,15 @@ static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, b
         view_history_favorites_draw_behind_loading(menu);
     }
     if (animate) {
+        // Nearing totality, the rest of the screen fades to black (fully black from 100%).
+        if (progress > LOADING_FADE_START) {
+            float fade = MIN(1.0f, (progress - LOADING_FADE_START) / (1.0f - LOADING_FADE_START));
+            rdpq_set_mode_standard();
+            rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+            rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+            rdpq_set_prim_color(RGBA32(0x00, 0x00, 0x00, (uint8_t) (fade * 0xFF)));
+            rdpq_fill_rectangle(0, 0, d->width, d->height);
+        }
         ui_components_loading_animation_draw(progress);
     }
     if (show_expansion_pak_warning) {

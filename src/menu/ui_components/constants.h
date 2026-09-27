@@ -517,6 +517,8 @@
 /** @brief Game loading animation: centre of the eclipse (centre of the bottom-right quadrant). */
 #define LOADING_ANIMATION_CENTER_X      ((DISPLAY_WIDTH * 3) / 4)
 #define LOADING_ANIMATION_CENTER_Y      ((DISPLAY_HEIGHT * 3) / 4)
+/** @brief Game loading: from this progress on, the screen behind the eclipse fades to black. */
+#define LOADING_FADE_START              (0.8f)
 /** @brief Emulators only (no SummerCart64): how long the pretend game load takes. */
 #define SIMULATED_LOAD_MS               (3000)
 /** @brief Holding ←/→ this long switches from tiles to letters (Library, Favorites). */
