@@ -460,14 +460,14 @@
 #define TIME_VALUE_Y                    (150)
 #define TIME_HELP_Y                     (240)
 
-/** @brief Distance between option list rows. */
-#define OPTION_LIST_ROW_PITCH           (32)
-/** @brief Tightest row spacing used to fit a long list on screen before it scrolls. */
-#define OPTION_LIST_MIN_ROW_PITCH       (24)
+/** @brief Distance between option list rows: a 22px row band plus a 2px black gap. */
+#define OPTION_LIST_ROW_PITCH           (24)
+/** @brief Rows an option list shows before it scrolls. */
+#define OPTION_LIST_VISIBLE_ROWS        (13)
 /** @brief Background band behind read-only information rows. */
 #define OPTION_LIST_INFO_BAND_COLOR     RGBA32(0x1E, 0x1E, 0x1E, 0xFF)
-/** @brief Left edge of option values. */
-#define OPTION_LIST_VALUE_X             (360)
+/** @brief Left edge of option values (the label column is about 25 characters wide). */
+#define OPTION_LIST_VALUE_X             (330)
 
 /** @brief Space between button hints. */
 #define LIBRARY_HINT_GAP                (14)

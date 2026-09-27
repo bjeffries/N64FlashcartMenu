@@ -137,14 +137,10 @@ const char *ui_components_option_list_action_name (option_list_t *list) {
 
 /**
  * @brief Draw the rows between y_top and y_bottom (baselines), the selected row's description
- *        below them, and the open picker on top. Rows are squeezed together (down to
- *        OPTION_LIST_MIN_ROW_PITCH) before anything scrolls.
+ *        just below the last row, and the open picker on top.
  */
 void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_top, int y_bottom) {
     int pitch = OPTION_LIST_ROW_PITCH;
-    if (list->count > 1 && (list->count - 1) * pitch > (y_bottom - y_top)) {
-        pitch = MAX(OPTION_LIST_MIN_ROW_PITCH, (y_bottom - y_top) / (list->count - 1));
-    }
     int visible = MAX(1, (y_bottom - y_top) / pitch + 1);
 
     // Keep the selected row on screen.
@@ -156,7 +152,8 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         }
     }
 
-    for (int row = 0; row < visible && list->first_visible + row < list->count; row++) {
+    int rows_drawn = 0;
+    for (int row = 0; row < visible && list->first_visible + row < list->count; row++, rows_drawn++) {
         int i = list->first_visible + row;
         option_t *option = &list->options[i];
         int y = y_top + (row * pitch);
@@ -204,7 +201,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
     if (list->selected >= 0 && list->options[list->selected].description) {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16, .wrap = WRAP_WORD },
-            FNT_SMALL, CAROUSEL_SELECTED_X + 16, y_bottom + OPTION_LIST_ROW_PITCH,
+            FNT_SMALL, CAROUSEL_SELECTED_X + 16, y_top + (rows_drawn * pitch) + 8,
             list->options[list->selected].description
         );
     }
@@ -222,7 +219,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
 void ui_components_option_screen_draw (menu_t *menu, const char *title, option_list_t *list) {
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", title);
 
-    ui_components_option_list_draw(menu, list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * 8));
+    ui_components_option_list_draw(menu, list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * (OPTION_LIST_VISIBLE_ROWS - 1)));
 
     int x = GAME_INFO_VALUE_X;
     const char *action = ui_components_option_list_action_name(list);

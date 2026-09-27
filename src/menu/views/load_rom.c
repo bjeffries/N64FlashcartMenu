@@ -614,7 +614,7 @@ static void config_draw (menu_t *menu, surface_t *d) {
         FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
     );
 
-    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * 6));
+    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * 9));
 
     int x = GAME_INFO_VALUE_X;
     x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, ui_components_option_list_action_name(&config_list)) + LIBRARY_HINT_GAP;
