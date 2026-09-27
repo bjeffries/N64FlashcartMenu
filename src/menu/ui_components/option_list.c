@@ -3,8 +3,9 @@
  * @brief Vertical option list in the Settings tab style
  * @ingroup ui_components
  *
- * Rows are scrolled with up/down; the selected row gets the white bar. A flips toggles in
- * place, opens the picker of a multiple-choice option, or runs an action.
+ * Only rows that can be changed are selectable (up/down skip the rest); the selected row gets
+ * the white bar. A flips toggles in place, opens the picker of a multiple-choice option, or runs
+ * an action. Read-only information rows sit on a dark band and can't be selected.
  */
 
 #include <string.h>
@@ -16,7 +17,29 @@
 #include "utils/utils.h"
 
 
+static bool is_selectable (option_t *option) {
+    switch (option->type) {
+        case OPTION_TOGGLE:
+        case OPTION_CHOICE: return true;
+        case OPTION_ACTION: return option->action != NULL;
+        default: return false;
+    }
+}
+
+/** @brief Next selectable row from `from` in `direction` (+1 / -1), or -1 if there is none. */
+static int find_selectable (option_list_t *list, int from, int direction) {
+    for (int i = from; i >= 0 && i < list->count; i += direction) {
+        if (is_selectable(&list->options[i])) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static component_context_menu_t *open_picker (option_list_t *list) {
+    if (list->selected < 0) {
+        return NULL;
+    }
     option_t *option = &list->options[list->selected];
     if (option->type == OPTION_CHOICE && option->picker && option->picker->row_selected >= 0) {
         return option->picker;
@@ -34,10 +57,10 @@ static const char *choice_text (menu_t *menu, option_t *option) {
 }
 
 /**
- * @brief Reset the selection and prepare the pickers; call from the view's init.
+ * @brief Select the first changeable row and prepare the pickers; call from the view's init.
  */
 void ui_components_option_list_init (option_list_t *list) {
-    list->selected = 0;
+    list->selected = find_selectable(list, 0, +1);
     list->first_visible = 0;
     for (int i = 0; i < list->count; i++) {
         if (list->options[i].picker) {
@@ -57,18 +80,19 @@ bool ui_components_option_list_process (menu_t *menu, option_list_t *list) {
         ui_components_context_menu_process(menu, picker);
         return true;
     }
+    if (list->selected < 0) {
+        return false;       // nothing on this screen can be changed
+    }
 
-    if (menu->actions.go_up && list->selected > 0) {
-        list->selected--;
-        sound_play_effect(SFX_CURSOR);
+    if (menu->actions.go_up || menu->actions.go_down) {
+        int next = find_selectable(list, list->selected + (menu->actions.go_up ? -1 : +1), menu->actions.go_up ? -1 : +1);
+        if (next >= 0) {
+            list->selected = next;
+            sound_play_effect(SFX_CURSOR);
+        }
         return true;
     }
-    if (menu->actions.go_down && list->selected < list->count - 1) {
-        list->selected++;
-        sound_play_effect(SFX_CURSOR);
-        return true;
-    }
-    if (!menu->actions.enter || list->count == 0) {
+    if (!menu->actions.enter) {
         return false;
     }
 
@@ -87,54 +111,61 @@ bool ui_components_option_list_process (menu_t *menu, option_list_t *list) {
             }
             sound_play_effect(SFX_SETTING);
             break;
-        case OPTION_INFO:
-            break;
         case OPTION_ACTION:
-            if (option->action) {       // rows without an action are read-only information
-                option->action(menu);
-                sound_play_effect(SFX_ENTER);
-            }
+            option->action(menu);
+            sound_play_effect(SFX_ENTER);
+            break;
+        default:
             break;
     }
     return true;
 }
 
 /**
- * @brief What A does on the selected row ("Toggle", "Change" or "Open"), for the button hints.
+ * @brief What A does on the selected row ("Toggle", "Change" or "Open"), or NULL if nothing is selectable.
  */
 const char *ui_components_option_list_action_name (option_list_t *list) {
-    if (list->count == 0) {
+    if (list->selected < 0) {
         return NULL;
     }
     switch (list->options[list->selected].type) {
         case OPTION_TOGGLE: return "Toggle";
         case OPTION_CHOICE: return "Change";
-        case OPTION_INFO: return NULL;
-        default: return list->options[list->selected].action ? "Open" : NULL;
+        default: return "Open";
     }
 }
 
 /**
  * @brief Draw the rows between y_top and y_bottom (baselines), the selected row's description
- *        below them, and the open picker on top.
+ *        below them, and the open picker on top. Rows are squeezed together (down to
+ *        OPTION_LIST_MIN_ROW_PITCH) before anything scrolls.
  */
 void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_top, int y_bottom) {
-    int visible = MAX(1, (y_bottom - y_top) / OPTION_LIST_ROW_PITCH + 1);
+    int pitch = OPTION_LIST_ROW_PITCH;
+    if (list->count > 1 && (list->count - 1) * pitch > (y_bottom - y_top)) {
+        pitch = MAX(OPTION_LIST_MIN_ROW_PITCH, (y_bottom - y_top) / (list->count - 1));
+    }
+    int visible = MAX(1, (y_bottom - y_top) / pitch + 1);
 
     // Keep the selected row on screen.
-    if (list->selected < list->first_visible) {
-        list->first_visible = list->selected;
-    } else if (list->selected >= list->first_visible + visible) {
-        list->first_visible = list->selected - visible + 1;
+    if (list->selected >= 0) {
+        if (list->selected < list->first_visible) {
+            list->first_visible = list->selected;
+        } else if (list->selected >= list->first_visible + visible) {
+            list->first_visible = list->selected - visible + 1;
+        }
     }
 
     for (int row = 0; row < visible && list->first_visible + row < list->count; row++) {
         int i = list->first_visible + row;
         option_t *option = &list->options[i];
-        int y = y_top + (row * OPTION_LIST_ROW_PITCH);
+        int y = y_top + (row * pitch);
         bool is_selected = (i == list->selected);
+        bool selectable = is_selectable(option);
 
-        if (is_selected) {
+        if (!selectable) {
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 17, VISIBLE_AREA_X1, y + 5, OPTION_LIST_INFO_BAND_COLOR);
+        } else if (is_selected) {
             ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
         }
         rdpq_text_printf(
@@ -152,11 +183,11 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
             value = choice_text(menu, option);
         } else if (option->value) {
             value = option->value(menu);
-            value_style = (option->type == OPTION_INFO) ? STL_DEFAULT : STL_GRAY;
+            value_style = selectable ? STL_GRAY : STL_DEFAULT;
         }
         if (value) {
             ui_components_text_draw(
-                &(rdpq_textparms_t) { .style_id = value_style, .width = VISIBLE_AREA_X1 - OPTION_LIST_VALUE_X, .wrap = WRAP_ELLIPSES },
+                &(rdpq_textparms_t) { .style_id = value_style, .width = VISIBLE_AREA_X1 - OPTION_LIST_VALUE_X - 8, .wrap = WRAP_ELLIPSES },
                 FNT_DEFAULT, OPTION_LIST_VALUE_X, y, value
             );
         }
@@ -167,10 +198,10 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, y_top - 22, "...");
     }
     if (list->first_visible + visible < list->count) {
-        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, y_top + (visible * OPTION_LIST_ROW_PITCH) - 10, "...");
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, y_top + (visible * pitch) - 10, "...");
     }
 
-    if (list->count > 0 && list->options[list->selected].description) {
+    if (list->selected >= 0 && list->options[list->selected].description) {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16, .wrap = WRAP_WORD },
             FNT_SMALL, CAROUSEL_SELECTED_X + 16, y_bottom + OPTION_LIST_ROW_PITCH,

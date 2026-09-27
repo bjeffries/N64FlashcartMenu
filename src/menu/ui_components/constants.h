@@ -462,6 +462,10 @@
 
 /** @brief Distance between option list rows. */
 #define OPTION_LIST_ROW_PITCH           (32)
+/** @brief Tightest row spacing used to fit a long list on screen before it scrolls. */
+#define OPTION_LIST_MIN_ROW_PITCH       (24)
+/** @brief Background band behind read-only information rows. */
+#define OPTION_LIST_INFO_BAND_COLOR     RGBA32(0x1E, 0x1E, 0x1E, 0xFF)
 /** @brief Left edge of option values. */
 #define OPTION_LIST_VALUE_X             (360)
 
