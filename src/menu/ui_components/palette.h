@@ -25,6 +25,7 @@ typedef enum {
     UI_PALETTE_DUSK,
     UI_PALETTE_DAWN,
     UI_PALETTE_COUNT,
+    UI_PALETTE_DEFAULT = UI_PALETTE_GALAXY,     /**< Before settings load, and for unknown keys */
 } ui_palette_id_t;
 
 /** @brief One palette: five colours. */
@@ -47,7 +48,7 @@ void ui_palette_set(ui_palette_id_t id);
 ui_palette_id_t ui_palette_get(void);
 /** @brief A palette's details. */
 const ui_palette_t *ui_palette_info(ui_palette_id_t id);
-/** @brief The palette saved under a config.ini key ("galaxy", ...); Monochrome if unknown. */
+/** @brief The palette saved under a config.ini key ("galaxy", ...); the default if unknown. */
 ui_palette_id_t ui_palette_from_key(const char *key);
 
 /* The current palette's colours */

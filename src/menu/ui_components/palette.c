@@ -46,12 +46,12 @@ static const ui_palette_t palettes[UI_PALETTE_COUNT] = {
     },
 };
 
-static ui_palette_id_t current = UI_PALETTE_MONOCHROME;
-const ui_palette_t *ui_palette = &palettes[UI_PALETTE_MONOCHROME];
+static ui_palette_id_t current = UI_PALETTE_DEFAULT;
+const ui_palette_t *ui_palette = &palettes[UI_PALETTE_DEFAULT];
 
 
 void ui_palette_set (ui_palette_id_t id) {
-    current = (id < UI_PALETTE_COUNT) ? id : UI_PALETTE_MONOCHROME;
+    current = (id < UI_PALETTE_COUNT) ? id : UI_PALETTE_DEFAULT;
     ui_palette = &palettes[current];
 }
 
@@ -60,7 +60,7 @@ ui_palette_id_t ui_palette_get (void) {
 }
 
 const ui_palette_t *ui_palette_info (ui_palette_id_t id) {
-    return &palettes[(id < UI_PALETTE_COUNT) ? id : UI_PALETTE_MONOCHROME];
+    return &palettes[(id < UI_PALETTE_COUNT) ? id : UI_PALETTE_DEFAULT];
 }
 
 ui_palette_id_t ui_palette_from_key (const char *key) {
@@ -69,5 +69,5 @@ ui_palette_id_t ui_palette_from_key (const char *key) {
             return (ui_palette_id_t) i;
         }
     }
-    return UI_PALETTE_MONOCHROME;
+    return UI_PALETTE_DEFAULT;
 }

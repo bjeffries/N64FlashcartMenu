@@ -116,11 +116,11 @@ static void draw_shadowed (rdpq_textparms_t parms, int x, int y, const char *tex
 }
 
 /** @brief Lay out a paragraph twice (shadow and text) and draw both. */
-static void render_shadowed_paragraph (rdpq_textparms_t parms, int x, int y, const char *text) {
+static void render_paragraph_with_shadow (rdpq_textparms_t parms, int x, int y, const char *text, menu_font_style_t shadow_style) {
     menu_font_style_t style = parms.style_id;
     for (int layer = 0; layer < 2; layer++) {
         int nbytes = strlen(text);
-        parms.style_id = (layer == 0) ? STL_SHADOW : style;
+        parms.style_id = (layer == 0) ? shadow_style : style;
         rdpq_paragraph_t *layout = rdpq_paragraph_build(&parms, GAME_INFO_FONT, text, &nbytes);
         int offset = (layer == 0) ? TEXT_SHADOW_OFFSET : 0;
         rdpq_paragraph_render(layout, x + offset, y + offset);
@@ -147,7 +147,8 @@ static int draw_badge (int x, int y, const char *text) {
         return -1;
     }
     ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
-    render_shadowed_paragraph((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x + BADGE_PADDING, y, text);
+    // The badge is the same tone as the normal shadow, so its text gets the dark one.
+    render_paragraph_with_shadow((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x + BADGE_PADDING, y, text, STL_SHADOW_DARK);
     return width;
 }
 
@@ -369,7 +370,7 @@ static void draw_about_page (rom_info_t *info) {
     // Clip to the info area and shift the text up by the scrolled lines.
     rdpq_set_scissor(0, top, DISPLAY_WIDTH, bottom);
     rdpq_paragraph_free(layout);
-    render_shadowed_paragraph(parms, x, GAME_INFO_Y - (about_scroll * line_height), description);
+    render_paragraph_with_shadow(parms, x, GAME_INFO_Y - (about_scroll * line_height), description, STL_SHADOW);
     rdpq_set_scissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
     // "..." where there is more text above or below.
