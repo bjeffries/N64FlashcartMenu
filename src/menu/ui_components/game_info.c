@@ -140,12 +140,17 @@ static void draw_text (int x, int y, menu_font_style_t style, const char *text) 
     draw_shadowed((rdpq_textparms_t) { .style_id = style, .width = right - x, .wrap = WRAP_ELLIPSES }, x, y, upper);
 }
 
-/** @brief One RMB PAK / USA style tag (plain value text). Returns its width, or -1 if it doesn't fit. */
-static int draw_tag (int x, int y, const char *text) {
+static int tag_width (const char *text) {
     int nbytes = strlen(text);
     rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, GAME_INFO_FONT, text, &nbytes);
     int width = (int) (layout->advance_x);
     rdpq_paragraph_free(layout);
+    return width;
+}
+
+/** @brief One RMB PAK / USA style tag (plain value text). Returns its width, or -1 if it doesn't fit. */
+static int draw_tag (int x, int y, const char *text) {
+    int width = tag_width(text);
     if (x + width > value_right) {
         return -1;
     }
@@ -186,20 +191,16 @@ static void draw_accessories (int x, int y, rom_info_t *info) {
         return;
     }
     for (int i = 0; i < count; i++) {
+        if (x + tag_width(badges[i]) > value_right) {
+            break;      // the rest don't fit (and no separator before them)
+        }
         if (i > 0) {
             // Square separator, centred in the gap and on the capitals.
             int sx = x - (TAG_GAP / 2) - (TAG_SEPARATOR_SIZE / 2);
             int sy = y - (fonts_cap_height(GAME_INFO_FONT) / 2) - (TAG_SEPARATOR_SIZE / 2);
-            if (x + 1 > value_right) {
-                break;
-            }
             ui_components_box_draw(sx, sy, sx + TAG_SEPARATOR_SIZE, sy + TAG_SEPARATOR_SIZE, TEXT_SECONDARY_COLOR);
         }
-        int width = draw_tag(x, y, badges[i]);
-        if (width < 0) {
-            break;
-        }
-        x += width + TAG_GAP;
+        x += draw_tag(x, y, badges[i]) + TAG_GAP;
     }
 }
 
