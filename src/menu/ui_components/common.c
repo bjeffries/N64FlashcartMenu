@@ -62,7 +62,7 @@ void ui_components_text_draw (const rdpq_textparms_t *parms, menu_font_type_t fo
 void ui_components_loading_screen_draw (surface_t *d, float progress, const char *message, const char *file_name) {
     ui_components_attach_clear(d);
 
-    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
+    rdpq_text_printf(NULL, FNT_BAR, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
 
     char title[128];
     ui_components_carousel_title(file_name, false, title, sizeof(title));

@@ -34,7 +34,7 @@ static void load_default_font (char *custom_font_path) {
 }
 
 // Height of each font's capitals (the font is chosen at build time: MENU_FONT in the Makefile).
-static int cap_heights[FNT_SMALL + 1];
+static int cap_heights[FNT_LAST + 1];
 
 static void measure_cap_height (menu_font_type_t id) {
     int nbytes = 1;
@@ -51,7 +51,7 @@ static void load_font (menu_font_type_t id, const char *path) {
 
 
 void fonts_apply_palette (void) {
-    for (int id = FNT_DEFAULT; id <= FNT_SMALL; id++) {
+    for (int id = FNT_DEFAULT; id <= FNT_LAST; id++) {
         register_styles((rdpq_font_t *) rdpq_text_get_font(id));
     }
 }
@@ -73,7 +73,8 @@ void fonts_init (char *custom_font_path) {
     load_default_font(custom_font_path);
     load_font(FNT_TITLE, "rom:/font-title.font64");
     load_font(FNT_SMALL, "rom:/font-small.font64");
-    for (int id = FNT_DEFAULT; id <= FNT_SMALL; id++) {
+    load_font(FNT_BAR, "rom:/font-bar.font64");
+    for (int id = FNT_DEFAULT; id <= FNT_LAST; id++) {
         measure_cap_height(id);
     }
 }

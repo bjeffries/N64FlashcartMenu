@@ -58,7 +58,7 @@ int ui_components_icon_width (ui_icon_t icon) {
  */
 static float text_advance (const char *text, bool ink_only) {
     int nbytes = strlen(text);
-    rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_DEFAULT, text, &nbytes);
+    rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_BAR, text, &nbytes);
     float width = ink_only ? paragraph->bbox.x1 : paragraph->advance_x;
     rdpq_paragraph_free(paragraph);
     return width;
@@ -90,12 +90,12 @@ void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
 int ui_components_button_hint_draw (ui_icon_t icon, int x, int baseline, const char *text) {
     sprite_t *sprite = icon_get(icon);
     // Centred on the label's capitals.
-    ui_components_icon_draw(icon, x, baseline - (fonts_cap_height(FNT_DEFAULT) / 2) - (sprite->height / 2));
+    ui_components_icon_draw(icon, x, baseline - (fonts_cap_height(FNT_BAR) / 2) - (sprite->height / 2));
 
     int text_x = x + sprite->width + HINT_ICON_GAP;
     rdpq_textmetrics_t metrics = rdpq_text_printf(
         &(rdpq_textparms_t) { .style_id = STL_DEFAULT },
-        FNT_DEFAULT, text_x, baseline, "%s", text
+        FNT_BAR, text_x, baseline, "%s", text
     );
     return (text_x - x) + (int) (metrics.advance_x);
 }

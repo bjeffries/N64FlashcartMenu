@@ -240,7 +240,7 @@ static void draw_list (void) {
 static void draw (menu_t *menu, surface_t *display) {
     ui_components_attach_clear(display);
 
-    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Cheat Codes");
+    rdpq_text_printf(NULL, FNT_BAR, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Cheat Codes");
 
     char title[128];
     ui_components_carousel_title(path_last_get(menu->load.rom_path), false, title, sizeof(title));

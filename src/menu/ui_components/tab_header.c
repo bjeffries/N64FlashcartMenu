@@ -36,7 +36,7 @@ static void measure (void) {
     layout.total = 0;
     for (int i = 0; i < TAB_COUNT; i++) {
         int nbytes = strlen(tabs[i].name);
-        rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_DEFAULT, tabs[i].name, &nbytes);
+        rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_BAR, tabs[i].name, &nbytes);
         layout.ink_x0[i] = (int) paragraph->bbox.x0;
         layout.ink_width[i] = (int) (paragraph->bbox.x1 - paragraph->bbox.x0);
         rdpq_paragraph_free(paragraph);
@@ -65,7 +65,7 @@ void ui_components_tab_header_draw (menu_tab_t current) {
     for (int i = 0; i < TAB_COUNT; i++) {
         rdpq_text_printf(
             &(rdpq_textparms_t) { .style_id = (i == current) ? STL_DEFAULT : STL_GRAY },
-            FNT_DEFAULT, x - layout.ink_x0[i], LIBRARY_HEADER_Y, "%s", tabs[i].name
+            FNT_BAR, x - layout.ink_x0[i], LIBRARY_HEADER_Y, "%s", tabs[i].name
         );
         x += layout.ink_width[i] + layout.gap;
     }

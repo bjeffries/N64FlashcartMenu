@@ -91,7 +91,8 @@ SRCS = \
 	utils/utf_converter.c \
 
 # Menu font: pixeloperator or analogue. Each role is "<font file> <size> <mkfont flags>", built as
-# rom:/font-default (text), font-title (titles) and font-small (info panel, captions, descriptions).
+# rom:/font-default (text), font-title (titles), font-small (info panel, captions, descriptions) and
+# font-bar (top and bottom bars: tabs, screen titles, button hints).
 MENU_FONT ?= pixeloperator
 ifeq ($(MENU_FONT),analogue)
 # Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
@@ -100,6 +101,7 @@ ifeq ($(MENU_FONT),analogue)
 FONT_DEFAULT = AnalogueOS-Regular.ttf 20 --monochrome
 FONT_TITLE = AnalogueOS-Regular.ttf 40 --monochrome
 FONT_SMALL = AnalogueOS-Regular.ttf 12 --char-spacing 1
+FONT_BAR = AnalogueOS-Regular.ttf 20 --monochrome
 else
 # Pixel Operator (CC0) for titles, labels, tabs and button hints: drawn on a 16-unit pixel grid,
 # so 16px and 32px are crisp. At 16px its letter gap is already 1px; at 32px -1 takes it from 2px
@@ -109,9 +111,12 @@ else
 # Other weights and variants are in assets/fonts/pixel_operator/.
 FONT_DEFAULT = pixel_operator/PixelOperator.ttf 16 --monochrome
 FONT_TITLE = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
+# Top and bottom bars (tabs, screen titles, button hints): 24px is off the 16-unit grid, so line
+# widths vary slightly (1-2px); -1 takes its letter gap from 2px to 1px.
+FONT_BAR = pixel_operator/PixelOperator.ttf 24 --monochrome --char-spacing -1
 FONT_SMALL = pixel_operator/PixelOperator8.ttf 16 --monochrome --char-spacing -1
 endif
-FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_SMALL)))
+FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_SMALL)) $(firstword $(FONT_BAR)))
 
 SOUNDS_WAV = \
 	cursorsound.wav \
@@ -150,6 +155,7 @@ FILESYSTEM = \
 	$(FILESYSTEM_DIR)/font-default.font64 \
 	$(FILESYSTEM_DIR)/font-title.font64 \
 	$(FILESYSTEM_DIR)/font-small.font64 \
+	$(FILESYSTEM_DIR)/font-bar.font64 \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite))) \
@@ -185,6 +191,7 @@ $(BUILD_DIR)/font-$(MENU_FONT).stamp:
 $(FILESYSTEM_DIR)/font-default.font64: FONT_SPEC=$(FONT_DEFAULT)
 $(FILESYSTEM_DIR)/font-title.font64: FONT_SPEC=$(FONT_TITLE)
 $(FILESYSTEM_DIR)/font-small.font64: FONT_SPEC=$(FONT_SMALL)
+$(FILESYSTEM_DIR)/font-bar.font64: FONT_SPEC=$(FONT_BAR)
 $(FILESYSTEM_DIR)/font-%.font64: $(FONT_FILES) $(BUILD_DIR)/font-$(MENU_FONT).stamp Makefile
 	@echo "    [FONT] $@ ($(notdir $(word 1,$(FONT_SPEC))) $(word 2,$(FONT_SPEC))px)"
 	@mkdir -p $(BUILD_DIR)/fonts/$*
