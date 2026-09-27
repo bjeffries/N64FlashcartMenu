@@ -44,6 +44,20 @@ void ui_components_box_draw (int x0, int y0, int x1, int y1, color_t color) {
  * @param y Baseline (or top edge if parms->height is set).
  * @param text UTF-8 text.
  */
+void ui_components_screen_title_draw (const char *name, const char *subtitle) {
+    rdpq_textmetrics_t metrics = rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_DEFAULT },
+        TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", name);
+    if (subtitle && subtitle[0] != '\0') {
+        int x = CAROUSEL_SELECTED_X + (int) (metrics.advance_x);
+        char text[160];
+        snprintf(text, sizeof(text), "  >  %s", subtitle);
+        ui_components_text_draw(
+            &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_ELLIPSES },
+            TITLE_FONT, x, LIBRARY_HEADER_Y, text
+        );
+    }
+}
+
 void ui_components_body_text_draw (const rdpq_textparms_t *parms, int x, int y, const char *text) {
     ui_components_body_text_draw_shadowed(parms, x, y, text, STL_SHADOW);
 }

@@ -633,16 +633,11 @@ static void config_process (menu_t *menu) {
 static void config_draw (menu_t *menu, surface_t *d) {
     ui_components_attach_clear(d);
 
-    rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Config");
-
     char title[128];
     ui_components_carousel_title(rom_filename, false, title, sizeof(title));
-    ui_components_text_draw(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },    // long titles run off the edge of the screen
-        FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
-    );
+    ui_components_screen_title_draw("Config", title);
 
-    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * (CONFIG_LIST_VISIBLE_ROWS - 1)));
+    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * (OPTION_LIST_VISIBLE_ROWS - 1)));
 
     ui_components_button_hints_draw((button_hint_t[]) {
         { ICON_A, ui_components_option_list_action_name(&config_list) },

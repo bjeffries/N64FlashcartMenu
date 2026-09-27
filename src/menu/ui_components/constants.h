@@ -486,8 +486,7 @@
 #define SETTINGS_HUB_ROW_PITCH          (36)
 
 /** @brief Config screen: baseline of the game title and of the first option row. */
-#define CONFIG_TITLE_Y                  (100)
-#define CONFIG_LIST_Y                   (150)
+#define CONFIG_LIST_Y                   (SETTINGS_LIST_Y)
 /** @brief Loading screen: baseline of the game title, and top of the progress bar. */
 #define LOADING_TITLE_Y                 (220)
 #define LOADING_BAR_Y                   (250)
@@ -511,8 +510,8 @@
 #define OPTION_LIST_ROW_PITCH           (36)
 /** @brief Rows an option list shows before it scrolls, leaving room for the description below. */
 #define OPTION_LIST_VISIBLE_ROWS        (8)
-/** @brief Rows the Config screen's option list shows (the game title sits above it). */
-#define CONFIG_LIST_VISIBLE_ROWS        (6)
+/** @brief Baseline of the first Cheat Codes row (its column headers sit above it). */
+#define CHEAT_LIST_Y                    (110)
 /** @brief Scroll bar at the right edge of scrolling tables (option lists, Cheat Codes). */
 #define TABLE_SCROLLBAR_WIDTH           (4)
 #define TABLE_SCROLLBAR_X               (VISIBLE_AREA_X1 - TABLE_SCROLLBAR_WIDTH)

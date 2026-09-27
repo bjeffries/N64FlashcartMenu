@@ -21,7 +21,7 @@
 #define VALUE_GAP           (10)    // space between the address and the value
 #define DESCRIPTION_GAP     (16)    // space between the value and the description
 #define DESCRIPTION_MAX     (14)    // characters that fit in the description column
-#define VISIBLE_ROWS        (6)
+#define VISIBLE_ROWS        (8)
 
 static cheat_file_code_t *cheat_codes;
 static int selected = 0;
@@ -182,7 +182,7 @@ static int draw_code (cheat_file_code_t *code, int x, int y, bool row_selected, 
 
 static void draw_column_headers (void) {
     // Between the game title and the first row.
-    int y = CONFIG_LIST_Y - fonts_cap_height(TITLE_FONT) - 12;
+    int y = CHEAT_LIST_Y - fonts_cap_height(TITLE_FONT) - 12;
     int x = CAROUSEL_SELECTED_X + 44;
     rdpq_textparms_t parms = { .style_id = STL_GRAY };
     ui_components_body_text_draw(&parms, CAROUSEL_SELECTED_X + 16, y, "#");
@@ -204,7 +204,7 @@ static void draw_list (void) {
     for (int row = 0; row < VISIBLE_ROWS && first_visible + row < MAX_CHEAT_CODES; row++) {
         int i = first_visible + row;
         cheat_file_code_t *code = &cheat_codes[i];
-        int y = CONFIG_LIST_Y + (row * CHEAT_ROW_PITCH);
+        int y = CHEAT_LIST_Y + (row * CHEAT_ROW_PITCH);
         bool is_selected = (i == selected);
         bool editing_row = editing && is_selected;
 
@@ -233,20 +233,15 @@ static void draw_list (void) {
             TITLE_FONT, CHEAT_STATE_X, y, "%s", code->enabled ? "On" : "Off");
     }
 
-    ui_components_table_scrollbar_draw(CONFIG_LIST_Y, CHEAT_ROW_PITCH, first_visible, MAX_CHEAT_CODES, VISIBLE_ROWS);
+    ui_components_table_scrollbar_draw(CHEAT_LIST_Y, CHEAT_ROW_PITCH, first_visible, MAX_CHEAT_CODES, VISIBLE_ROWS);
 }
 
 static void draw (menu_t *menu, surface_t *display) {
     ui_components_attach_clear(display);
 
-    rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Cheat Codes");
-
     char title[128];
     ui_components_carousel_title(path_last_get(menu->load.rom_path), false, title, sizeof(title));
-    ui_components_text_draw(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },    // long titles run off the edge of the screen
-        TITLE_FONT, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
-    );
+    ui_components_screen_title_draw("Cheat Codes", title);
 
     draw_list();
 
@@ -255,14 +250,14 @@ static void draw (menu_t *menu, surface_t *display) {
     } else if (editing) {
         ui_components_body_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
-            CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH),
+            CAROUSEL_SELECTED_X + 16, CHEAT_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH),
             "Left / Right: choose a digit. Up / Down: change it."
         );
         ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Done" }, { ICON_B, "Cancel" } }, 2);
     } else {
         ui_components_body_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16, .wrap = WRAP_WORD },
-            CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH),
+            CAROUSEL_SELECTED_X + 16, CHEAT_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH),
             "Codes are applied when Cheats is On in Config. Changes are saved when you go back."
         );
         bool empty = is_empty(&cheat_codes[selected]);

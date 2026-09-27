@@ -93,6 +93,12 @@ void ui_components_text_draw(const rdpq_textparms_t *parms, menu_font_type_t fon
 void ui_components_body_text_draw(const rdpq_textparms_t *parms, int x, int y, const char *text);
 
 /**
+ * @brief Draw a screen's name in the top bar, optionally followed by "  >  subtitle" in grey
+ *        (e.g. "Config  >  1080 Snowboarding"), cut short with "..." at the right edge.
+ */
+void ui_components_screen_title_draw(const char *name, const char *subtitle);
+
+/**
  * @brief Draw body text with a chosen shadow style (e.g. STL_SHADOW_DARK on grey surfaces).
  */
 void ui_components_body_text_draw_shadowed(const rdpq_textparms_t *parms, int x, int y, const char *text, menu_font_style_t shadow_style);
