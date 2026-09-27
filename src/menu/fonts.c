@@ -15,6 +15,7 @@ static void register_styles (rdpq_font_t *font) {
     rdpq_font_style(font, STL_GRAY, &((rdpq_fontstyle_t) { .color = TEXT_SECONDARY_COLOR }));
     rdpq_font_style(font, STL_BLACK, &((rdpq_fontstyle_t) { .color = TEXT_ON_LIGHT_COLOR }));
     rdpq_font_style(font, STL_FADE, &((rdpq_fontstyle_t) { .color = TEXT_COLOR }));
+    rdpq_font_style(font, STL_SHADOW, &((rdpq_fontstyle_t) { .color = TEXT_SHADOW_COLOR }));
 }
 
 static void load_default_font (char *custom_font_path) {

@@ -39,6 +39,7 @@ typedef enum {
     STL_GRAY,        /**< Gray font style */
     STL_BLACK,       /**< Black font style (text on light badges) */
     STL_FADE,        /**< Between background and text colour, set with fonts_set_fade_level() */
+    STL_SHADOW,      /**< Text shadow: dimmer than text, lighter than the background */
 } menu_font_style_t;
 
 /**

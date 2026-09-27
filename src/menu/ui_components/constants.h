@@ -553,6 +553,13 @@
 #define TEXT_COLOR                      PALETTE_HIGHLIGHT
 /** @brief Secondary text: labels, unselected tabs and captions, values you can't change (STL_GRAY). */
 #define TEXT_SECONDARY_COLOR            PALETTE_TONE_3
+/**
+ * @brief Text shadow (STL_SHADOW), drawn 1px right and down behind small text. On a dark background
+ *        it has to be lighter than the background to show; it also gives 1px horizontal strokes a
+ *        second line, so they appear in both interlaced fields (less flicker on a CRT).
+ */
+#define TEXT_SHADOW_COLOR               PALETTE_TONE_2
+#define TEXT_SHADOW_OFFSET              (1)
 /** @brief Text on highlight-coloured backgrounds, e.g. the selected keyboard key (STL_BLACK). */
 #define TEXT_ON_LIGHT_COLOR             PALETTE_BACKGROUND
 /** @brief What the boot and game-loading animations fade to: always black, whatever the palette. */

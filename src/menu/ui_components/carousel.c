@@ -269,18 +269,23 @@ static void draw_tile_caption (entry_t *entry, int32_t position, float centre_x)
         *c = toupper((unsigned char) (*c));
     }
 
-    ui_components_text_draw(
-        &(rdpq_textparms_t) {
-            .style_id = STL_GRAY,
-            .width = CAROUSEL_TILE_SIZE,
-            .align = ALIGN_CENTER,
-            .wrap = WRAP_ELLIPSES,
-        },
-        FNT_DEFAULT,    // PixelOperator 16px: fits more of the name under a small tile
-        roundf(centre_x - (CAROUSEL_TILE_SIZE / 2)),
-        CAROUSEL_CAPTION_Y,
-        title
-    );
+    // PixelOperator 16px fits more of the name under a small tile; its thin strokes get a shadow.
+    int x = roundf(centre_x - (CAROUSEL_TILE_SIZE / 2));
+    for (int layer = 0; layer < 2; layer++) {
+        int offset = (layer == 0) ? TEXT_SHADOW_OFFSET : 0;
+        ui_components_text_draw(
+            &(rdpq_textparms_t) {
+                .style_id = (layer == 0) ? STL_SHADOW : STL_GRAY,
+                .width = CAROUSEL_TILE_SIZE,
+                .align = ALIGN_CENTER,
+                .wrap = WRAP_ELLIPSES,
+            },
+            FNT_DEFAULT,
+            x + offset,
+            CAROUSEL_CAPTION_Y + offset,
+            title
+        );
+    }
 }
 
 /**
