@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, GifImagePlugin
 
 WIDTH, HEIGHT = 640, 480
 FPS, FRAME_COUNT, SUPERSAMPLE = 30, 90, 4
-SUN_CENTRE = (211.75, 200)
+SUN_CENTRE = (213.5, 200)
 SUN_RADIUS = MOON_RADIUS = 28
 MOON_START_GAP = 2
 MOON_APPROACH_OFFSET = (-190, 40)
@@ -35,7 +35,7 @@ C_FORM_START, C_FORM_END = 58, 72
 MOON_FINAL_RIGHT_SHIFT = 8
 TEXT_FADE_START, TEXT_FADE_END = 73, 81
 TITLE_HOLD_START, TITLE_HOLD_END = 82, 90
-TITLE_TEXT, TITLE_FONT_SIZE, TITLE_FONT_WEIGHT = 'ECLIPSE', 93, 500
+TITLE_TEXT, TITLE_FONT_SIZE, TITLE_FONT_WEIGHT = 'ECLIPSE', 93, 300
 TITLE_SPACING, TITLE_C_SLOT_WIDTH = 6, 64
 TITLE_OPTICAL_OFFSET_X = -2  # Centre visible ink, accounting for font sidebearings.
 TITLE_COLOUR = (255, 255, 255)
@@ -71,7 +71,7 @@ def title_mask():
     for glyph in glyphs:
         mask.paste(glyph, (x, round(SUN_CENTRE[1] * SUPERSAMPLE) - glyph.height // 2))
         x += glyph.width + TITLE_SPACING * SUPERSAMPLE
-    return mask, {'font': 'Oxanium Medium', 'font_size_px': TITLE_FONT_SIZE,
+    return mask, {'font': 'Oxanium Light', 'font_size_px': TITLE_FONT_SIZE,
                   'title_width_px': width / SUPERSAMPLE, 'title_left_px': left / SUPERSAMPLE,
                   'spacing_px': TITLE_SPACING, 'eclipse_centre': list(SUN_CENTRE)}
 
