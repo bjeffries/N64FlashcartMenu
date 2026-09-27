@@ -19,7 +19,7 @@
 #define ADDRESS_DIGITS      (8)
 #define DIGIT_WIDTH         (14)    // fixed cell per hex digit (title font) so codes line up
 #define VALUE_GAP           (10)    // space between the address and the value
-#define DESCRIPTION_GAP     (6)     // space between the value and the description
+#define DESCRIPTION_GAP     (16)    // space between the value and the description
 #define DESCRIPTION_MAX     (14)    // characters that fit in the description column
 #define VISIBLE_ROWS        (6)
 

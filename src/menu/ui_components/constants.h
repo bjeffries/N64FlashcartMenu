@@ -578,6 +578,11 @@
  */
 #define TEXT_SHADOW_COLOR               PALETTE_TONE_2
 #define TEXT_SHADOW_OFFSET              (1)
+/** @brief Shadow for text on grey surfaces lighter than the background (keyboard keys). */
+#define TEXT_SHADOW_DARK_COLOR          PALETTE_BACKGROUND
+/** @brief Softer text on a highlight-coloured surface (the selected keyboard key), and its shadow. */
+#define TEXT_SOFT_COLOR                 PALETTE_TONE_3
+#define TEXT_SHADOW_SOFT_COLOR          palette_mix(PALETTE_TONE_3, PALETTE_HIGHLIGHT, 0x80)
 /** @brief Text on highlight-coloured backgrounds, e.g. the selected keyboard key (STL_BLACK). */
 #define TEXT_ON_LIGHT_COLOR             PALETTE_BACKGROUND
 /** @brief What the boot and game-loading animations fade to: always black, whatever the palette. */

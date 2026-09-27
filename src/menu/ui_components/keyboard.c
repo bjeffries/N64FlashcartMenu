@@ -173,11 +173,12 @@ keyboard_result_t ui_components_keyboard_process (menu_t *menu) {
 static void draw_key (int x, int y, int width, const char *label, bool selected, bool highlighted) {
     color_t background = selected ? KEYBOARD_KEY_SELECTED_COLOR : (highlighted ? KEYBOARD_KEY_ACTIVE_COLOR : KEYBOARD_KEY_COLOR);
     ui_components_box_draw(x, y, x + width, y + KEY_HEIGHT, background);
-    // Body text, centred vertically on its capitals.
+    // Body text, centred vertically on its capitals. Grey keys: normal text with a dark shadow (the
+    // default shadow is the keys' own grey). Selected (highlight) key: softer text and shadow.
     int baseline = y + (KEY_HEIGHT / 2) + (fonts_cap_height(BODY_FONT) / 2);
-    ui_components_body_text_draw(
-        &(rdpq_textparms_t) { .style_id = selected ? STL_BLACK : STL_DEFAULT, .width = width, .align = ALIGN_CENTER },
-        x, baseline, label
+    ui_components_body_text_draw_shadowed(
+        &(rdpq_textparms_t) { .style_id = selected ? STL_SOFT : STL_DEFAULT, .width = width, .align = ALIGN_CENTER },
+        x, baseline, label, selected ? STL_SHADOW_SOFT : STL_SHADOW_DARK
     );
 }
 

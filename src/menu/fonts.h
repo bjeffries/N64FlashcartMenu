@@ -38,6 +38,9 @@ typedef enum {
     STL_BLACK,       /**< Black font style (text on light badges) */
     STL_FADE,        /**< Between background and text colour, set with fonts_set_fade_level() */
     STL_SHADOW,      /**< Text shadow: dimmer than text, lighter than the background */
+    STL_SHADOW_DARK, /**< Text shadow on grey surfaces (keyboard keys): the background colour */
+    STL_SOFT,        /**< Mid-tone text on a highlight-coloured surface (selected keyboard key) */
+    STL_SHADOW_SOFT, /**< Shadow for STL_SOFT: between it and the highlight */
 } menu_font_style_t;
 
 /**
