@@ -432,6 +432,11 @@
 /** @brief Player icon for a player slot the game doesn't support. */
 #define GAME_INFO_PLAYER_OFF_COLOR      RGBA32(0xB0, 0xB0, 0xB0, 0xFF)
 
+/** @brief About page: text line height (12px font), the first line's ascent, and the bottom of the text area. */
+#define GAME_INFO_ABOUT_LINE_HEIGHT     (14)
+#define GAME_INFO_ABOUT_ASCENT          (10)
+#define GAME_INFO_ABOUT_BOTTOM          (LIBRARY_BUTTONS_Y - 34)
+
 /** @brief Distance between the info page dots. */
 #define GAME_INFO_DOT_PITCH             (11)
 /** @brief Current info page dot. */

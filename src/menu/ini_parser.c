@@ -26,7 +26,7 @@
 #define INI_MAX_NAME_LENGTH 64
 
 /** @brief Maximum length of a value (parse-time stack buffer) */
-#define INI_MAX_VALUE_LENGTH 256
+#define INI_MAX_VALUE_LENGTH 1024     // long enough for game descriptions in metadata.ini
 
 /** `@brief` Initial allocated capacity for the sections array */
 #define INI_INITIAL_SECTION_CAPACITY 2
@@ -164,15 +164,15 @@ static ini_t* ini_parse_mutable_content(char *content, size_t size) {
 
             if (*value_start == '"' || *value_start == '\'') {
                 // Quoted value: scan until matching closing quote,
-                // honouring \\ and \" / \' escape sequences.
+                // honouring \\, \" / \' and \n (line break) escape sequences.
                 char quote = *value_start;
                 const char *vp = value_start + 1;
                 while (*vp && *vp != quote && *vp != '\n' && *vp != '\r') {
                     if (*vp == '\\' && *(vp + 1) != '\0') {
                         char next = *(vp + 1);
-                        if (next == quote || next == '\\') {
+                        if (next == quote || next == '\\' || next == 'n') {
                             if (parsed_len < INI_MAX_VALUE_LENGTH - 1) {
-                                parsed_value[parsed_len++] = next;
+                                parsed_value[parsed_len++] = (next == 'n') ? '\n' : next;
                             }
                             vp += 2;
                             continue;
@@ -613,7 +613,7 @@ static bool value_needs_quoting(const char *value) {
     if (value[len - 1] == ' ' || value[len - 1] == '\t') return true;
     for (size_t i = 0; i < len; i++) {
         char c = value[i];
-        if (c == ';' || c == '#' || c == '"' || c == '\'') return true;
+        if (c == ';' || c == '#' || c == '"' || c == '\'' || c == '\n') return true;
     }
     return false;
 }
@@ -641,6 +641,10 @@ bool ini_save(ini_t *ini, const char *path) {
             if (value_needs_quoting(pair->value)) {
                 if (fprintf(file, "%s = \"", pair->key) < 0) { ok = false; break; }
                 for (const char *vp = pair->value; *vp; vp++) {
+                    if (*vp == '\n') {
+                        if (fputs("\\n", file) == EOF) { ok = false; break; }
+                        continue;
+                    }
                     if (*vp == '"' || *vp == '\\') {
                         if (fputc('\\', file) == EOF) { ok = false; break; }
                     }
@@ -676,6 +680,10 @@ bool ini_save(ini_t *ini, const char *path) {
             if (value_needs_quoting(pair->value)) {
                 if (fprintf(file, "%s = \"", pair->key) < 0) { ok = false; break; }
                 for (const char *vp = pair->value; *vp; vp++) {
+                    if (*vp == '\n') {
+                        if (fputs("\\n", file) == EOF) { ok = false; break; }
+                        continue;
+                    }
                     if (*vp == '"' || *vp == '\\') {
                         if (fputc('\\', file) == EOF) { ok = false; break; }
                     }

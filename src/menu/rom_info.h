@@ -167,6 +167,7 @@ typedef struct {
     struct {
         char *name;                 /**< The game release name */
         char *author;               /**< The game author or developer */
+        char *publisher;            /**< The game publisher */
         char *release_date;         /**< The game release date */
         char *osi_license;          /**< The game OSI license type */
         char *website;              /**< The game official website URL */
@@ -246,6 +247,24 @@ rom_tv_type_t rom_info_get_tv_type(rom_info_t *rom_info);
  * `@note` Only frees the meta struct fields, not the rom_info_t itself
  */
 void rom_info_free_meta(rom_info_t *rom_info);
+
+/**
+ * @brief Path of a game's metadata.ini in the per-game-code metadata folder
+ *        (<storage>menu/metadata/A/B/C/D/metadata.ini), on the same storage as the ROM.
+ *
+ * @param rom_path Full path of the ROM (its "sd:/" or "rom:/" prefix picks the storage).
+ * @param game_code The 4-character game code from the ROM header.
+ * @param out Output buffer.
+ * @param out_size Size of the output buffer.
+ */
+void rom_info_metadata_path(const char *rom_path, const char game_code[4], char *out, size_t out_size);
+
+/**
+ * @brief Read just the title ("name") from a game's metadata.ini, without loading the rest.
+ *
+ * @return true if a title was found.
+ */
+bool rom_info_metadata_title(const char *rom_path, const char game_code[4], char *out, size_t out_size);
 
 /**
  * @brief Override the TV type for the ROM.

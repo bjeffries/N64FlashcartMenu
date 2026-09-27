@@ -124,7 +124,10 @@ static void process (menu_t *menu) {
         sound_play_effect(SFX_SETTING);
     } else if ((menu->actions.go_up || menu->actions.go_down) && !menu->actions.go_fast) {
         int pages = ui_components_game_info_page_count(&entries[selected]);
-        if (pages > 1) {
+        // On the About page, up / down scroll the description first and change page at its ends.
+        if (ui_components_game_info_scroll(menu->actions.go_down ? 1 : -1)) {
+            sound_play_effect(SFX_CURSOR);
+        } else if (pages > 1) {
             info_page = (info_page + (menu->actions.go_down ? 1 : pages - 1)) % pages;
             sound_play_effect(SFX_CURSOR);
         }

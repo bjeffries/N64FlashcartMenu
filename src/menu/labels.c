@@ -79,7 +79,7 @@ void labels_deinit (void) {
     db_path_copy = NULL;
 }
 
-bool labels_rom_id (const char *rom_path, uint32_t *id) {
+bool labels_rom_id (const char *rom_path, uint32_t *id, char game_code[4]) {
     FILE *f = fopen(rom_path, "rb");
     if (!f) {
         return false;
@@ -108,6 +108,9 @@ bool labels_rom_id (const char *rom_path, uint32_t *id) {
     }
 
     *id = (uint32_t) mz_crc32(MZ_CRC32_INIT, buffer, length);
+    if (game_code) {
+        memcpy(game_code, (length >= 0x3F) ? &buffer[0x3B] : (const uint8_t *) "    ", 4);
+    }
     free(buffer);
     return true;
 }

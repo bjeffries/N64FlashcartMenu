@@ -771,6 +771,7 @@ static void extract_rom_info (match_t *match, rom_header_t *rom_header, rom_info
 
     rom_info->meta.name = strdup("");
     rom_info->meta.author = strdup("Not specified");
+    rom_info->meta.publisher = strdup("Not specified");
     rom_info->meta.release_date = strdup("Not specified");
     rom_info->meta.osi_license = strdup("Not specified");
     rom_info->meta.website = strdup("Not specified");
@@ -899,6 +900,7 @@ static bool load_metadata_from_zip_file (const char *zip_path, rom_info_t *rom_i
         bool ok = true;
         ok &= replace_owned_string(&rom_info->meta.name,              ini_get_string(meta_ini, "meta", "name",         ""));
         ok &= replace_owned_string(&rom_info->meta.author,            ini_get_string(meta_ini, "meta", "author",       "Not specified"));
+        ok &= replace_owned_string(&rom_info->meta.publisher,         ini_get_string(meta_ini, "meta", "publisher",    "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.release_date,      ini_get_string(meta_ini, "meta", "release-date", "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.osi_license,       ini_get_string(meta_ini, "meta", "osi-license",  "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.website,           ini_get_string(meta_ini, "meta", "website",      "Not specified"));
@@ -1050,6 +1052,7 @@ static bool load_rom_meta_from_embedded_zip (const char *rom_path, rom_header_t 
         bool ok = true;
         ok &= replace_owned_string(&rom_info->meta.name,              ini_get_string(meta_ini, "meta", "name",         ""));
         ok &= replace_owned_string(&rom_info->meta.author,            ini_get_string(meta_ini, "meta", "author",       "Not specified"));
+        ok &= replace_owned_string(&rom_info->meta.publisher,         ini_get_string(meta_ini, "meta", "publisher",    "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.release_date,      ini_get_string(meta_ini, "meta", "release-date", "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.osi_license,       ini_get_string(meta_ini, "meta", "osi-license",  "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.website,           ini_get_string(meta_ini, "meta", "website",      "Not specified"));
@@ -1067,6 +1070,34 @@ static bool load_rom_meta_from_embedded_zip (const char *rom_path, rom_header_t 
     
     debugf("[META] load_rom_meta_from_embedded_zip: returning %d\n", success);
     return success;
+}
+
+void rom_info_metadata_path (const char *rom_path, const char game_code[4], char *out, size_t out_size) {
+    // Same storage as the ROM ("sd:/" on the cart, "rom:/" for the emulator test data).
+    const char *separator = strstr(rom_path, ":/");
+    const char *prefix = separator ? rom_path : "sd:/";
+    int prefix_length = separator ? (int) (separator - rom_path) + 2 : 4;
+    snprintf(out, out_size, "%.*smenu/metadata/%c/%c/%c/%c/metadata.ini",
+        prefix_length, prefix, game_code[0], game_code[1], game_code[2], game_code[3]);
+}
+
+bool rom_info_metadata_title (const char *rom_path, const char game_code[4], char *out, size_t out_size) {
+    char path[256];
+    rom_info_metadata_path(rom_path, game_code, path, sizeof(path));
+    if (!file_exists(path)) {
+        return false;
+    }
+    ini_t *ini = ini_load(path);
+    if (!ini) {
+        return false;
+    }
+    const char *name = ini_get_string(ini, "meta", "name", "");
+    bool found = (name[0] != '\0');
+    if (found) {
+        snprintf(out, out_size, "%s", name);
+    }
+    ini_free(ini);
+    return found;
 }
 
 static void load_rom_meta_from_file (path_t *path, rom_info_t *rom_info) {
@@ -1094,18 +1125,9 @@ static void load_rom_meta_from_file (path_t *path, rom_info_t *rom_info) {
         debugf("[META] load_rom_meta_from_file: metadata.ini not found at '%s'\n", meta_path_str);
         // If that file does not exist, fall back to metadata database using game_code (like boxart uses).
         // TODO: we should probably check the homebrew path as well.
-        char gamecode_str[8];
-        path_t *fallback_meta_path= path_init("sd:/", "menu/metadata"); // should be menu->storage_prefix and METADATA_BASE_DIRECTORY
-        // FIXME: should use METADATA_BASE_DIRECTORY and path functions, but this is simpler for now since we just want to check for existence of the file.
-        snprintf(
-            gamecode_str,
-            sizeof(gamecode_str),
-            "%c/%c/%c/%c",
-            rom_info->game_code[0], rom_info->game_code[1], rom_info->game_code[2], rom_info->game_code[3]
-        );
-        path_push(fallback_meta_path, gamecode_str);
-
-        path_push(fallback_meta_path, "metadata.ini");
+        char fallback[256];
+        rom_info_metadata_path(path_get(path), rom_info->game_code, fallback, sizeof(fallback));
+        path_t *fallback_meta_path = path_create(fallback);
         debugf("[META] load_rom_meta_from_file: trying fallback path '%s'\n", path_get(fallback_meta_path));
         path_free(rom_info_meta_path);
         rom_info_meta_path = fallback_meta_path;
@@ -1119,6 +1141,7 @@ static void load_rom_meta_from_file (path_t *path, rom_info_t *rom_info) {
         bool ok = true;
         ok &= replace_owned_string(&rom_info->meta.name,              ini_get_string(rom_meta_ini, "meta", "name",         ""));
         ok &= replace_owned_string(&rom_info->meta.author,            ini_get_string(rom_meta_ini, "meta", "author",       "Not specified"));
+        ok &= replace_owned_string(&rom_info->meta.publisher,         ini_get_string(rom_meta_ini, "meta", "publisher",    "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.release_date,      ini_get_string(rom_meta_ini, "meta", "release-date", "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.osi_license,       ini_get_string(rom_meta_ini, "meta", "osi-license",  "Not specified"));
         ok &= replace_owned_string(&rom_info->meta.website,           ini_get_string(rom_meta_ini, "meta", "website",      "Not specified"));
@@ -1148,6 +1171,10 @@ void rom_info_free_meta(rom_info_t *rom_info) {
     if (rom_info->meta.author) {
         free(rom_info->meta.author);
         rom_info->meta.author = NULL;
+    }
+    if (rom_info->meta.publisher) {
+        free(rom_info->meta.publisher);
+        rom_info->meta.publisher = NULL;
     }
     if (rom_info->meta.release_date) {
         free(rom_info->meta.release_date);

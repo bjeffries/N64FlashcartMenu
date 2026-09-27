@@ -344,6 +344,13 @@ void ui_components_game_info_draw(path_t *directory, entry_t *entry, bookkeeping
 int ui_components_game_info_page_count(entry_t *entry);
 
 /**
+ * @brief Scroll the About page's description by a line (-1 up, +1 down).
+ *
+ * @return true if it scrolled; false when the About page isn't showing or the text is at that end.
+ */
+bool ui_components_game_info_scroll(int direction);
+
+/**
  * @brief Draw the info page indicator dots.
  *
  * @param page Current page.

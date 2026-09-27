@@ -47,6 +47,8 @@ typedef struct {
     bool large_loaded;      // the large label is only loaded once the entry has been selected
     surface_t *small;       // NULL when there is no label
     surface_t *large;
+    bool has_title;         // title from the game's metadata.ini (menu/metadata/A/B/C/D)
+    char title[64];
 } label_slot_t;
 
 static label_slot_t label_cache[LABEL_CACHE_SIZE];
@@ -108,7 +110,11 @@ static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position
 
         if (entry->type == ENTRY_TYPE_ROM) {
             path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
-            slot->has_id = labels_rom_id(path_get(path), &slot->id);
+            char game_code[4];
+            slot->has_id = labels_rom_id(path_get(path), &slot->id, game_code);
+            if (slot->has_id) {
+                slot->has_title = rom_info_metadata_title(path_get(path), game_code, slot->title, sizeof(slot->title));
+            }
             path_free(path);
         }
         if (slot->has_id) {
@@ -241,9 +247,20 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
     }
 }
 
-static void draw_tile_caption (entry_t *entry, float centre_x) {
+/** @brief Display title for the entry at a list position: its metadata title if known, else from the file name. */
+static void entry_title (entry_t *entry, int32_t position, char *out, size_t out_size) {
+    for (int i = 0; i < LABEL_CACHE_SIZE; i++) {
+        if (label_cache[i].position == position && label_cache[i].has_title) {
+            snprintf(out, out_size, "%s", label_cache[i].title);
+            return;
+        }
+    }
+    ui_components_carousel_title(entry->name, entry->type == ENTRY_TYPE_DIR, out, out_size);
+}
+
+static void draw_tile_caption (entry_t *entry, int32_t position, float centre_x) {
     char title[128];
-    ui_components_carousel_title(entry->name, entry->type == ENTRY_TYPE_DIR, title, sizeof(title));
+    entry_title(entry, position, title, sizeof(title));
     for (char *c = title; *c; c++) {
         *c = toupper((unsigned char) (*c));
     }
@@ -374,7 +391,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         bool focused = fabsf(d) < 0.5f;
         draw_tile(directory, &list[i], i, selected, x, y, size, cartridge_width, focused);
         if (!focused) {
-            draw_tile_caption(&list[i], x + (size / 2));
+            draw_tile_caption(&list[i], i, x + (size / 2));
         }
     }
 
@@ -401,7 +418,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     }
 
     char title[128];
-    ui_components_carousel_title(entry->name, entry->type == ENTRY_TYPE_DIR, title, sizeof(title));
+    entry_title(entry, selected, title, sizeof(title));
 
     ui_components_text_draw(
         &(rdpq_textparms_t) {

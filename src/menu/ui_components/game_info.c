@@ -12,6 +12,7 @@
 #include "../ui_components.h"
 #include "../fonts.h"
 #include "constants.h"
+#include "utils/utils.h"
 
 #define MAX_PLAYERS         (4)
 #define BADGE_PADDING       (3)
@@ -27,6 +28,12 @@ static struct {
     int64_t size;
     time_t last_played;
 } current;
+
+// About page scrolling, in lines of text.
+#define PAGE_ABOUT              (2)
+static int last_page_drawn = -1;
+static int about_scroll = 0;
+static int about_max_scroll = 0;
 
 
 static void current_free (void) {
@@ -44,6 +51,7 @@ static void current_load (path_t *path, entry_t *entry, bookkeeping_t *bookkeepi
 
     current_free();
     current.path = strdup(path_get(path));
+    about_scroll = 0;
 
     struct stat st;
     if (stat(path_get(path), &st) == 0) {
@@ -262,7 +270,7 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Publishers");
-    draw_value(y, NULL);
+    draw_value(y, info ? meta_value(info->meta.publisher) : NULL);
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Release");
@@ -318,29 +326,68 @@ static void draw_details_page (entry_t *entry, rom_info_t *info) {
 }
 
 /** @brief Page 3: description and links from the game's metadata. */
+/** @brief Page 3: the game's description, using the whole info area; scrolls when it doesn't fit. */
 static void draw_about_page (rom_info_t *info) {
-    int y = GAME_INFO_Y;
     const char *description = meta_value(info->meta.short_description);
+    int x = GAME_INFO_LABEL_X;
+    int top = GAME_INFO_Y - GAME_INFO_ABOUT_ASCENT;
+    int bottom = GAME_INFO_ABOUT_BOTTOM;
 
-    draw_row(y, "About");
-    ui_components_text_draw(
-        &(rdpq_textparms_t) {
-            .style_id = description ? STL_DEFAULT : STL_GRAY,
-            .width = VISIBLE_AREA_X1 - GAME_INFO_VALUE_X,
-            .height = (GAME_INFO_ROW_PITCH * 5) + 4,
-            .wrap = WRAP_WORD,
-        },
-        FNT_SMALL, GAME_INFO_VALUE_X, y - 9,
-        description ? description : "No description yet. Add a metadata file for this game to show one here."
+    int nbytes = strlen(description ? description : "");
+    if (!description) {
+        about_max_scroll = 0;
+        ui_components_text_draw(
+            &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_WORD },
+            FNT_SMALL, x, GAME_INFO_Y, "No description yet. Add a metadata file for this game to show one here."
+        );
+        return;
+    }
+
+    rdpq_paragraph_t *layout = rdpq_paragraph_build(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_WORD },
+        FNT_SMALL, description, &nbytes
     );
-    y += (GAME_INFO_ROW_PITCH * 5) + GAME_INFO_GROUP_GAP;
 
-    draw_row(y, "Website");
-    draw_value(y, meta_value(info->meta.website));
-    y += GAME_INFO_ROW_PITCH;
+    int line_height = GAME_INFO_ABOUT_LINE_HEIGHT;
+    int visible_lines = (bottom - top) / line_height;
+    about_max_scroll = MAX(0, layout->nlines - visible_lines);
+    if (about_scroll > about_max_scroll) {
+        about_scroll = about_max_scroll;
+    }
 
-    draw_row(y, "License");
-    draw_value(y, meta_value(info->meta.osi_license));
+    // Clip to the info area and shift the text up by the scrolled lines.
+    rdpq_set_scissor(0, top, DISPLAY_WIDTH, bottom);
+    rdpq_paragraph_render(layout, x, GAME_INFO_Y - (about_scroll * line_height));
+    rdpq_set_scissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    rdpq_paragraph_free(layout);
+
+    // "..." where there is more text above or below.
+    rdpq_textparms_t hint = { .style_id = STL_GRAY };
+    if (about_scroll > 0) {
+        rdpq_text_printf(&hint, FNT_SMALL, VISIBLE_AREA_X1 - 12, top - 4, "...");
+    }
+    if (about_scroll < about_max_scroll) {
+        rdpq_text_printf(&hint, FNT_SMALL, VISIBLE_AREA_X1 - 12, bottom + 10, "...");
+    }
+}
+
+/**
+ * @brief Scroll the About page's description by one line.
+ *
+ * @param direction -1 (up) or +1 (down).
+ * @return true if it scrolled; false if the About page isn't showing or the text is already at
+ *         that end (so up / down should change the page instead).
+ */
+bool ui_components_game_info_scroll (int direction) {
+    if (last_page_drawn != PAGE_ABOUT) {
+        return false;
+    }
+    int next = about_scroll + direction;
+    if (next < 0 || next > about_max_scroll) {
+        return false;
+    }
+    about_scroll = next;
+    return true;
 }
 
 /**
@@ -374,9 +421,14 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
 
     rom_info_t *info = current.is_rom ? &current.rom_info : NULL;
 
+    if (page != last_page_drawn) {
+        about_scroll = 0;
+    }
+    last_page_drawn = page;
+
     if (page == 1 && info) {
         draw_details_page(entry, info);
-    } else if (page == 2 && info) {
+    } else if (page == PAGE_ABOUT && info) {
         draw_about_page(info);
     } else {
         draw_overview_page(entry, info);

@@ -32,9 +32,10 @@ void labels_deinit(void);
  *
  * @param rom_path Path to the ROM file.
  * @param id Output label ID.
+ * @param game_code Optional output: the 4-character game code from the header (may be NULL).
  * @return true if the ROM could be read.
  */
-bool labels_rom_id(const char *rom_path, uint32_t *id);
+bool labels_rom_id(const char *rom_path, uint32_t *id, char game_code[4]);
 
 /**
  * @brief Load the label image for a label ID, downscaled to the given size.
