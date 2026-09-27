@@ -27,6 +27,7 @@ static int selected = 0;
 static int first_visible = 0;
 static bool changed = false;
 
+static bool confirm_clear = false;
 static bool editing = false;
 static int editing_digit = 0;
 static cheat_file_code_t editing_backup;
@@ -87,6 +88,10 @@ static void process_editing (menu_t *menu) {
         editing = false;
         changed = true;
         sound_play_effect(SFX_SETTING);
+        // A newly added code goes straight on to being named.
+        if (is_empty(&editing_backup)) {
+            ui_components_keyboard_open("Description", code->description, DESCRIPTION_MAX);
+        }
     } else if (menu->actions.back) {
         *code = editing_backup;
         editing = false;
@@ -102,6 +107,19 @@ static void process (menu_t *menu) {
     }
 
     cheat_file_code_t *code = &cheat_codes[selected];
+
+    if (confirm_clear) {
+        if (menu->actions.enter) {
+            *code = (cheat_file_code_t) { 0 };
+            changed = true;
+            confirm_clear = false;
+            sound_play_effect(SFX_SETTING);
+        } else if (menu->actions.back) {
+            confirm_clear = false;
+            sound_play_effect(SFX_EXIT);
+        }
+        return;
+    }
 
     if (ui_components_keyboard_is_open()) {
         if (ui_components_keyboard_process(menu) == KEYBOARD_DONE) {
@@ -138,8 +156,7 @@ static void process (menu_t *menu) {
         ui_components_keyboard_open("Description", code->description, DESCRIPTION_MAX);
         sound_play_effect(SFX_ENTER);
     } else if (menu->actions.remove && !is_empty(code)) {
-        *code = (cheat_file_code_t) { 0 };
-        changed = true;
+        confirm_clear = true;
         sound_play_effect(SFX_SETTING);
     } else if (menu->actions.back) {
         save_codes(menu);
@@ -263,6 +280,13 @@ static void draw (menu_t *menu, surface_t *display) {
         ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
     }
 
+    if (confirm_clear) {
+        ui_components_messagebox_draw(
+            "Clear this cheat code?\n\n"
+            "A: Clear    B: Cancel"
+        );
+    }
+
     rdpq_detach_show();
 }
 
@@ -273,6 +297,7 @@ void view_datel_code_editor_init (menu_t *menu) {
     }
 
     editing = false;
+    confirm_clear = false;
     changed = false;
     selected = 0;
     first_visible = 0;
