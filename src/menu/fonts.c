@@ -18,7 +18,7 @@ static void register_styles (rdpq_font_t *font) {
 }
 
 static void load_default_font (char *custom_font_path) {
-    char *font_path = "rom:/font-default.font64";
+    char *font_path = "rom:/AnalogueOS-20.font64";
 
     if (custom_font_path != NULL && strlen(custom_font_path) > 0) {
         // Only check file_exists if custom_font_path is a valid filesystem path (not rom:/)
@@ -31,16 +31,6 @@ static void load_default_font (char *custom_font_path) {
 
     register_styles(default_font);
     rdpq_text_register_font(FNT_DEFAULT, default_font);
-}
-
-// Height of each font's capitals (the font is chosen at build time: MENU_FONT in the Makefile).
-static int cap_heights[FNT_SMALL + 1];
-
-static void measure_cap_height (menu_font_type_t id) {
-    int nbytes = 1;
-    rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, id, "H", &nbytes);
-    cap_heights[id] = (int) (-paragraph->bbox.y0 + 0.5f);
-    rdpq_paragraph_free(paragraph);
 }
 
 static void load_font (menu_font_type_t id, const char *path) {
@@ -71,13 +61,6 @@ void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
 
 void fonts_init (char *custom_font_path) {
     load_default_font(custom_font_path);
-    load_font(FNT_TITLE, "rom:/font-title.font64");
-    load_font(FNT_SMALL, "rom:/font-small.font64");
-    for (int id = FNT_DEFAULT; id <= FNT_SMALL; id++) {
-        measure_cap_height(id);
-    }
-}
-
-int fonts_cap_height (menu_font_type_t id) {
-    return cap_heights[id];
+    load_font(FNT_TITLE, "rom:/AnalogueOS-40.font64");
+    load_font(FNT_SMALL, "rom:/AnalogueOS-12.font64");
 }

@@ -89,8 +89,8 @@ void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
 
 int ui_components_button_hint_draw (ui_icon_t icon, int x, int baseline, const char *text) {
     sprite_t *sprite = icon_get(icon);
-    // Centred on the label's capitals.
-    ui_components_icon_draw(icon, x, baseline - (fonts_cap_height(FNT_DEFAULT) / 2) - (sprite->height / 2));
+    // FNT_DEFAULT capitals are 14px tall, so their centre is 7px above the baseline.
+    ui_components_icon_draw(icon, x, baseline - 7 - (sprite->height / 2));
 
     int text_x = x + sprite->width + HINT_ICON_GAP;
     rdpq_textmetrics_t metrics = rdpq_text_printf(

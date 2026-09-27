@@ -428,10 +428,12 @@
 #define GAME_INFO_VALUE_X               (200)
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
+/** @brief Cap height of the title font (FNT_TITLE, 40px); the page dots span it. */
+#define GAME_INFO_TITLE_CAP_HEIGHT      (28)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
-/** @brief Distance between info rows in a group: the small font's capitals + 3px (at least 16). */
-#define GAME_INFO_ROW_PITCH             (MAX(16, fonts_cap_height(FNT_SMALL) + 3))
+/** @brief Distance between info rows in a group. */
+#define GAME_INFO_ROW_PITCH             (16)
 /** @brief Extra space between groups of info rows. */
 #define GAME_INFO_GROUP_GAP             (6)
 /** @brief Info value badges (player count, accessories, region): grey fill with white text,
@@ -441,12 +443,9 @@
 #define GAME_INFO_PLAYER_ON_COLOR       PALETTE_HIGHLIGHT
 #define GAME_INFO_PLAYER_OFF_COLOR      PALETTE_TONE_2
 
-/** @brief About page: text line height and the first line's ascent (from the small font's capitals),
- *         and the bottom of the text area. */
-#define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_cap_height(FNT_SMALL) + 3))
-#define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_cap_height(FNT_SMALL)))
-/** @brief Info value badges: from 2px above the small font's capitals to 3px below the baseline. */
-#define GAME_INFO_BADGE_TOP(y)          ((y) - fonts_cap_height(FNT_SMALL) - 2)
+/** @brief About page: text line height (12px font), the first line's ascent, and the bottom of the text area. */
+#define GAME_INFO_ABOUT_LINE_HEIGHT     (14)
+#define GAME_INFO_ABOUT_ASCENT          (10)
 #define GAME_INFO_ABOUT_BOTTOM          (LIBRARY_BUTTONS_Y - 34)
 
 /** @brief Size of an info page dot. */
@@ -535,8 +534,8 @@
 #define CAROUSEL_PAGING_DELAY_MS        (1000)
 /** @brief While paging, one letter every this long. */
 #define CAROUSEL_PAGING_INTERVAL_MS     (400)
-/** @brief Paging letter: baseline (title font; its capitals top out at the safe area). */
-#define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + fonts_cap_height(FNT_TITLE))
+/** @brief Paging letter: baseline (40px font, capitals top out at the safe area). */
+#define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + 28)
 /** @brief Paging letter: left edge, lined up with the cartridge, page dots and info labels. */
 #define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X)
 #define LETTER_INDICATOR_FADE_IN_MS     (120)

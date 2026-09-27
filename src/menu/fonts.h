@@ -16,9 +16,9 @@
  * in the menu system.
  */
 typedef enum {
-    FNT_DEFAULT = 1, /**< Default font (sizes per font: MENU_FONT in the Makefile) */
-    FNT_TITLE,       /**< Large title font */
-    FNT_SMALL,       /**< Small caption font */
+    FNT_DEFAULT = 1, /**< Default font type (Analogue OS 20px) */
+    FNT_TITLE,       /**< Large title font (Analogue OS 40px) */
+    FNT_SMALL,       /**< Small caption font (Analogue OS 12px, anti-aliased) */
 } menu_font_type_t;
 
 /**
@@ -53,11 +53,6 @@ void fonts_init(char *custom_font_path);
  * @brief Recolour the text styles of every font after switching palettes.
  */
 void fonts_apply_palette(void);
-
-/**
- * @brief Height of a font's capital letters in pixels (measured when the fonts load).
- */
-int fonts_cap_height(menu_font_type_t id);
 
 /**
  * @brief Set the STL_FADE colour of a font: 0 is the background colour, 255 the text colour.
