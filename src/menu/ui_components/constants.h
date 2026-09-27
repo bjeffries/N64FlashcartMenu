@@ -430,8 +430,14 @@
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
-/** @brief Font of the info panel (and the captions under unselected games), drawn with a shadow. */
-#define GAME_INFO_FONT                  FNT_DEFAULT
+/**
+ * @brief The UI's two text styles: 32px titles (TITLE_FONT, also the top and bottom bars) and
+ *        16px body text drawn with a shadow (BODY_FONT, ui_components_body_text_draw()).
+ */
+#define TITLE_FONT                      FNT_TITLE
+#define BODY_FONT                       FNT_DEFAULT
+/** @brief Font of the info panel (and the captions under unselected games). */
+#define GAME_INFO_FONT                  BODY_FONT
 /** @brief Distance between info rows in a group: the info font's ascent + 3px (at least 16). */
 #define GAME_INFO_ROW_PITCH             (MAX(16, fonts_ascent(GAME_INFO_FONT) + 3))
 /** @brief Extra space between groups of info rows. */

@@ -44,6 +44,24 @@ void ui_components_box_draw (int x0, int y0, int x1, int y1, color_t color) {
  * @param y Baseline (or top edge if parms->height is set).
  * @param text UTF-8 text.
  */
+void ui_components_body_text_draw (const rdpq_textparms_t *parms, int x, int y, const char *text) {
+    rdpq_textparms_t shadow = parms ? *parms : (rdpq_textparms_t) { 0 };
+    menu_font_style_t style = shadow.style_id;
+    shadow.style_id = STL_SHADOW;
+    ui_components_text_draw(&shadow, BODY_FONT, x + TEXT_SHADOW_OFFSET, y + TEXT_SHADOW_OFFSET, text);
+    shadow.style_id = style;
+    ui_components_text_draw(&shadow, BODY_FONT, x, y, text);
+}
+
+void ui_components_body_text_printf (const rdpq_textparms_t *parms, int x, int y, const char *fmt, ...) {
+    char text[512];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(text, sizeof(text), fmt, args);
+    va_end(args);
+    ui_components_body_text_draw(parms, x, y, text);
+}
+
 void ui_components_text_draw (const rdpq_textparms_t *parms, menu_font_type_t font, int x, int y, const char *text) {
     int nbytes = strlen(text);
     rdpq_paragraph_t *layout = rdpq_paragraph_build(parms, font, text, &nbytes);

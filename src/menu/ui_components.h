@@ -86,6 +86,16 @@ void ui_components_attach_clear(surface_t *d);
 void ui_components_text_draw(const rdpq_textparms_t *parms, menu_font_type_t font, int x, int y, const char *text);
 
 /**
+ * @brief Draw body text: the 16px body font with its shadow (1px right and down) behind it.
+ *
+ * @param parms Layout and style (colour) of the text; the shadow uses the same layout.
+ */
+void ui_components_body_text_draw(const rdpq_textparms_t *parms, int x, int y, const char *text);
+
+/** @brief printf-style ui_components_body_text_draw(). */
+void ui_components_body_text_printf(const rdpq_textparms_t *parms, int x, int y, const char *fmt, ...);
+
+/**
  * @brief Full loading screen: header message, the game's title and a progress bar (attaches and shows d).
  *
  * @param d Display surface.

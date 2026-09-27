@@ -111,13 +111,8 @@ static const char *format_date (time_t t, char *buffer, size_t size) {
     return buffer;
 }
 
-/** @brief Draw text in the info font with its shadow (1px right and down, STL_SHADOW) behind it. */
 static void draw_shadowed (rdpq_textparms_t parms, int x, int y, const char *text) {
-    menu_font_style_t style = parms.style_id;
-    parms.style_id = STL_SHADOW;
-    ui_components_text_draw(&parms, GAME_INFO_FONT, x + TEXT_SHADOW_OFFSET, y + TEXT_SHADOW_OFFSET, text);
-    parms.style_id = style;
-    ui_components_text_draw(&parms, GAME_INFO_FONT, x, y, text);
+    ui_components_body_text_draw(&parms, x, y, text);
 }
 
 /** @brief Lay out a paragraph twice (shadow and text) and draw both. */

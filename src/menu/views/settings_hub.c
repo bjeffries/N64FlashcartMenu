@@ -53,17 +53,19 @@ static void draw (menu_t *menu, surface_t *display) {
         int y = SETTINGS_HUB_Y + (i * SETTINGS_HUB_ROW_PITCH);
         bool is_selected = (i == selected);
         if (is_selected) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, SELECTION_MARKER_COLOR);
+            // Marker spans the capitals, 3px beyond each end.
+            int cap = fonts_cap_height(TITLE_FONT);
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - cap - 3, CAROUSEL_SELECTED_X + 4, y + 3, SELECTION_MARKER_COLOR);
         }
         rdpq_text_printf(
             &(rdpq_textparms_t) { .style_id = is_selected ? STL_DEFAULT : STL_GRAY },
-            FNT_DEFAULT, CAROUSEL_SELECTED_X + 16, y, "%s", items[i].name
+            TITLE_FONT, CAROUSEL_SELECTED_X + 16, y, "%s", items[i].name
         );
     }
 
-    ui_components_text_draw(
+    ui_components_body_text_draw(
         &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16, .wrap = WRAP_WORD },
-        FNT_SMALL, CAROUSEL_SELECTED_X + 16, SETTINGS_HUB_Y + (ITEM_COUNT * SETTINGS_HUB_ROW_PITCH) + 8,
+        CAROUSEL_SELECTED_X + 16, SETTINGS_HUB_Y + (ITEM_COUNT * SETTINGS_HUB_ROW_PITCH) + 8,
         items[selected].description
     );
 
