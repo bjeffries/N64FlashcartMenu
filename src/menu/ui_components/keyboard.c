@@ -3,8 +3,8 @@
  * @brief On-screen QWERTY keyboard dialog for entering short text
  * @ingroup ui_components
  *
- * D-pad moves over the keys, A types the selected key, B deletes a character, Z cancels and
- * Start (or the DONE key) finishes. SHIFT capitalises the next letter; it is on for the first
+ * D-pad moves over the keys, A types the selected key at the text cursor, B deletes the character
+ * before the cursor, L / R move the cursor, Z cancels and Start (or the DONE key) finishes. SHIFT capitalises the next letter; it is on for the first
  * letter and turns itself off after typing one.
  */
 
@@ -45,6 +45,7 @@ static struct {
     const char *title;
     char text[MAX_TEXT + 1];
     int max_length;
+    int cursor;     // insert position in text
     int row;
     int column;
     bool shift;
@@ -70,16 +71,17 @@ static void type_char (char c) {
         c = keyboard.shift ? toupper((unsigned char) c) : c;
         keyboard.shift = false;
     }
-    keyboard.text[length] = c;
-    keyboard.text[length + 1] = '\0';
+    memmove(&keyboard.text[keyboard.cursor + 1], &keyboard.text[keyboard.cursor], length - keyboard.cursor + 1);
+    keyboard.text[keyboard.cursor++] = c;
     sound_play_effect(SFX_CURSOR);
 }
 
 static void delete_char (void) {
     int length = strlen(keyboard.text);
-    if (length > 0) {
-        keyboard.text[length - 1] = '\0';
-        keyboard.shift = (length == 1);     // capitalise again when back at the start
+    if (keyboard.cursor > 0) {
+        memmove(&keyboard.text[keyboard.cursor - 1], &keyboard.text[keyboard.cursor], length - keyboard.cursor + 1);
+        keyboard.cursor--;
+        keyboard.shift = (keyboard.text[0] == '\0');   // capitalise again when the text is empty
         sound_play_effect(SFX_EXIT);
     }
 }
@@ -96,6 +98,7 @@ void ui_components_keyboard_open (const char *title, const char *initial, int ma
     keyboard.title = title;
     keyboard.max_length = (max_length < MAX_TEXT) ? max_length : MAX_TEXT;
     snprintf(keyboard.text, (size_t) keyboard.max_length + 1, "%s", initial ? initial : "");
+    keyboard.cursor = strlen(keyboard.text);
     keyboard.row = 1;
     keyboard.column = 0;
     keyboard.shift = (keyboard.text[0] == '\0');
@@ -125,7 +128,14 @@ keyboard_result_t ui_components_keyboard_process (menu_t *menu) {
         return KEYBOARD_CANCELLED;
     }
 
-    if (menu->actions.go_up) {
+    if (menu->actions.tab_prev || menu->actions.tab_next) {       // L / R move the text cursor
+        int length = strlen(keyboard.text);
+        int cursor = keyboard.cursor + (menu->actions.tab_prev ? -1 : 1);
+        if (cursor >= 0 && cursor <= length) {
+            keyboard.cursor = cursor;
+            sound_play_effect(SFX_CURSOR);
+        }
+    } else if (menu->actions.go_up) {
         keyboard.row = (keyboard.row + ROWS - 1) % ROWS;
         sound_play_effect(SFX_CURSOR);
     } else if (menu->actions.go_down) {
@@ -201,8 +211,15 @@ void ui_components_keyboard_draw (void) {
 
     // Text field with a cursor.
     ui_components_box_draw(x0, y0 + 20, x0 + keys_width, y0 + 50, KEYBOARD_FIELD_COLOR);
-    rdpq_textmetrics_t metrics = rdpq_text_printf(NULL, FNT_DEFAULT, x0 + 8, y0 + 42, "%s", keyboard.text);
-    int cursor_x = x0 + 8 + (int) (metrics.advance_x) + 1;
+    rdpq_text_printf(NULL, FNT_DEFAULT, x0 + 8, y0 + 42, "%s", keyboard.text);
+    // Measure the text before the cursor to place it.
+    int cursor_x = x0 + 8;
+    if (keyboard.cursor > 0) {
+        int nbytes = keyboard.cursor;
+        rdpq_paragraph_t *before = rdpq_paragraph_build(NULL, FNT_DEFAULT, keyboard.text, &nbytes);
+        cursor_x += (int) (before->advance_x) + 1;
+        rdpq_paragraph_free(before);
+    }
     ui_components_box_draw(cursor_x, y0 + 26, cursor_x + 2, y0 + 45, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
 
     int keys_y = y0 + 62;
@@ -229,5 +246,8 @@ void ui_components_keyboard_draw (void) {
     int hx = GAME_INFO_VALUE_X;
     hx += ui_components_button_hint_draw(ICON_A, hx, LIBRARY_BUTTONS_Y, "Type") + LIBRARY_HINT_GAP;
     hx += ui_components_button_hint_draw(ICON_B, hx, LIBRARY_BUTTONS_Y, "Delete") + LIBRARY_HINT_GAP;
-    ui_components_button_hint_draw(ICON_Z, hx, LIBRARY_BUTTONS_Y, "Cancel");
+    hx += ui_components_button_hint_draw(ICON_Z, hx, LIBRARY_BUTTONS_Y, "Cancel") + LIBRARY_HINT_GAP;
+    int l_width = ui_components_icon_width(ICON_L);
+    ui_components_icon_draw(ICON_L, hx, LIBRARY_BUTTONS_Y - 15);
+    ui_components_button_hint_draw(ICON_R, hx + l_width + 4, LIBRARY_BUTTONS_Y, "Move");
 }
