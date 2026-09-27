@@ -23,16 +23,16 @@ import os
 import sys
 from PIL import Image
 
-from palette import PALETTE     # src/menu/ui_components/palette.h
+from sprite_colors import SPRITE_COLORS    # src/menu/ui_components/sprite_colors.h
 
-BODY = PALETTE['GRAY_4']           # same as folders (CAROUSEL_FOLDER_COLOR)
-WHITE = PALETTE['WHITE']            # selection outline
-GOLD = PALETTE['GOLD']              # outline of a favorite
-LIGHT_RED = PALETTE['RED']          # outline of a hidden game (same as the B button icon)
-HIGHLIGHT = PALETTE['GRAY_4']
-SEAM = PALETTE['GRAY_3']
-OUTLINE = PALETTE['GRAY_3']
-RECESS = PALETTE['GRAY_3']
+BODY = SPRITE_COLORS['CARTRIDGE_BODY']          # same as folders (CAROUSEL_FOLDER_COLOR)
+WHITE = SPRITE_COLORS['OUTLINE_SELECTED']       # selection outline
+GOLD = SPRITE_COLORS['OUTLINE_FAVORITE']        # outline of a favorite
+LIGHT_RED = SPRITE_COLORS['OUTLINE_HIDDEN']     # outline of a hidden game
+HIGHLIGHT = SPRITE_COLORS['CARTRIDGE_BODY']
+SEAM = SPRITE_COLORS['CARTRIDGE_DETAIL']
+OUTLINE = SPRITE_COLORS['CARTRIDGE_DETAIL']
+RECESS = SPRITE_COLORS['CARTRIDGE_DETAIL']
 CLEAR = (0, 0, 0, 0)
 
 # Base (unselected) geometry; the large sprite scales these.

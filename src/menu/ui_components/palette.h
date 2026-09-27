@@ -4,14 +4,11 @@
  * @ingroup ui_components
  *
  * Screens don't use these directly: constants.h (and fonts.c) give each UI role a colour from
- * here (TAB_BAR_COLOR, CAROUSEL_FOLDER_COLOR, the text styles, ...), so changing a value below
+ * here (text, secondary text, dialogs, selection marker, ...), so changing a value below
  * changes it everywhere it is used.
  *
- * The sprite scripts (scripts/make_icons.py, scripts/make_cartridge.py) read this file too
- * (scripts/palette.py), so the button icons and cartridges follow it; rerun them after a change.
- * Keep each definition on one line as `#define PALETTE_NAME RGBA32(r, g, b, a)` for that.
- *
- * Not covered: the boot / loading animation, which is pre-rendered (boot_animation/).
+ * Not covered: the button icons and cartridge art, which keep their own colours whatever the
+ * palette (sprite_colors.h), and the pre-rendered boot / loading animation (boot_animation/).
  */
 
 #ifndef PALETTE_H__
@@ -21,19 +18,13 @@
 
 /* Black and white */
 #define PALETTE_BLACK           RGBA32(0x00, 0x00, 0x00, 0xFF)  /**< Background, text on light badges */
-#define PALETTE_WHITE           RGBA32(0xFF, 0xFF, 0xFF, 0xFF)  /**< Text, selection outline and markers */
+#define PALETTE_WHITE           RGBA32(0xFF, 0xFF, 0xFF, 0xFF)  /**< Text, selection markers, edit underlines */
 
 /* Grays, dark to light: the only four gray tones in the UI */
-#define PALETTE_GRAY_1          RGBA32(0x1E, 0x1E, 0x1E, 0xFF)  /**< Dark: dialog background, read-only rows, info badges */
+#define PALETTE_GRAY_1          RGBA32(0x1E, 0x1E, 0x1E, 0xFF)  /**< Dialog background, read-only rows, info badges */
 #define PALETTE_GRAY_2          RGBA32(0x40, 0x40, 0x40, 0xFF)  /**< Keyboard keys, bars, unlit page dots and player marks */
-#define PALETTE_GRAY_3          RGBA32(0x80, 0x80, 0x80, 0xFF)  /**< Secondary text, active key, missing label, cartridge details */
-#define PALETTE_GRAY_4          RGBA32(0xC8, 0xC8, 0xC8, 0xFF)  /**< Light: cartridge body, folders, tab bar, L / R / Z buttons */
-
-/* Accents */
-#define PALETTE_GREEN           RGBA32(0x8F, 0xD6, 0x94, 0xFF)  /**< A button */
-#define PALETTE_RED             RGBA32(0xF2, 0x9A, 0x9A, 0xFF)  /**< B button, hidden games */
-#define PALETTE_YELLOW          RGBA32(0xF5, 0xD7, 0x6E, 0xFF)  /**< C buttons */
-#define PALETTE_GOLD            RGBA32(0xF2, 0xC2, 0x30, 0xFF)  /**< Favorites */
+#define PALETTE_GRAY_3          RGBA32(0x80, 0x80, 0x80, 0xFF)  /**< Secondary text, active keyboard key */
+#define PALETTE_GRAY_4          RGBA32(0xC8, 0xC8, 0xC8, 0xFF)  /**< Lightest gray (not used by a UI role yet) */
 
 /* Text colours of the upstream file list (file types); not used by the carousel screens */
 #define PALETTE_LEGACY_GREEN    RGBA32(0x70, 0xFF, 0x70, 0xFF)

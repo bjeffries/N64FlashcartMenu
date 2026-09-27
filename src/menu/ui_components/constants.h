@@ -4,13 +4,15 @@
  * @ingroup ui_components
  *
  * This header defines all layout, sizing, and color constants used by UI components.
- * Colors are UI roles; their values come from the palette (palette.h).
+ * Colors are UI roles; their values come from the palette (palette.h), except those that have
+ * to match the button icons and cartridges (sprite_colors.h).
  */
 
 #ifndef COMPONENTS_CONSTANTS_H__
 #define COMPONENTS_CONSTANTS_H__
 
 #include "palette.h"
+#include "sprite_colors.h"
 
 /**
  * @def TAB_HEIGHT
@@ -468,7 +470,7 @@
 /** @brief Thickness of the bar joining L and R; its bottom lines up with the pills'. */
 #define TAB_BAR_HEIGHT                  (3)
 /** @brief Tab bar colour (same gray as the L / R pills, scripts/make_icons.py). */
-#define TAB_BAR_COLOR                   PALETTE_GRAY_4
+#define TAB_BAR_COLOR                   SPRITE_BUTTON_GRAY
 /** @brief Baseline of the first Settings tab row. */
 #define SETTINGS_HUB_Y                  (110)
 /** @brief Distance between Settings tab rows. */
@@ -542,9 +544,9 @@
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)
 
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
-#define CAROUSEL_PLACEHOLDER_COLOR      PALETTE_GRAY_3
+#define CAROUSEL_PLACEHOLDER_COLOR      SPRITE_CARTRIDGE_DETAIL
 /** @brief Folder icon color. */
-#define CAROUSEL_FOLDER_COLOR           PALETTE_GRAY_4
+#define CAROUSEL_FOLDER_COLOR           SPRITE_CARTRIDGE_BODY
 
 /** @brief Text (STL_DEFAULT). */
 #define TEXT_COLOR                      PALETTE_WHITE
@@ -555,7 +557,7 @@
 /** @brief Screen background (and what fades cover the screen with). */
 #define BACKGROUND_COLOR                PALETTE_BLACK
 /** @brief Outline around the selected folder (cartridges use sprites drawn in the same white). */
-#define CAROUSEL_OUTLINE_COLOR          PALETTE_WHITE
+#define CAROUSEL_OUTLINE_COLOR          SPRITE_OUTLINE_SELECTED
 /** @brief Bar marking the selected row in option lists and the Settings tab. */
 #define SELECTION_MARKER_COLOR          PALETTE_WHITE
 /** @brief Underline of the field / digit being edited (Time, Cheat Codes). */

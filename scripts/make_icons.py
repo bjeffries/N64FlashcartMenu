@@ -15,14 +15,13 @@ import os
 import sys
 from PIL import Image, ImageDraw
 
-from palette import PALETTE     # src/menu/ui_components/palette.h
+from sprite_colors import SPRITE_COLORS    # src/menu/ui_components/sprite_colors.h
 
-WHITE = PALETTE['WHITE']
-GREEN = PALETTE['GREEN']                # A
-RED = PALETTE['RED']                    # B
-YELLOW = PALETTE['YELLOW']              # C buttons
-LIGHT_GREY = PALETTE['GRAY_4']         # L, R, Z (and the tab bar: TAB_BAR_COLOR)
-BLACK = PALETTE['BLACK']
+GREEN = SPRITE_COLORS['BUTTON_A']
+RED = SPRITE_COLORS['BUTTON_B']
+YELLOW = SPRITE_COLORS['BUTTON_C']
+LIGHT_GREY = SPRITE_COLORS['BUTTON_GRAY']   # L, R, Z (and the tab bar: TAB_BAR_COLOR)
+BLACK = SPRITE_COLORS['BUTTON_GLYPH']
 CLEAR = (0, 0, 0, 0)
 
 ROUND_SIZE = 18                 # diameter of A / B / C buttons
