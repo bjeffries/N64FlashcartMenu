@@ -16,6 +16,7 @@ static component_boxart_t *boxart;
 static char *rom_filename = NULL;
 static bool config_mode = false;                // showing the Config screen instead of the ROM details
 static bool returning_from_code_editor = false; // the cheat code editor returns to Config
+static const char *config_message = NULL;       // error shown over the Config screen
 
 static int16_t current_metadata_image_index = 0;
 static const file_image_type_t metadata_image_filename_cache[] = {
@@ -111,7 +112,7 @@ static const char *format_rom_description(menu_t *menu) {
 static char *convert_error_message (rom_err_t err) {
     switch (err) {
         case ROM_ERR_LOAD_IO: return "I/O error during loading ROM information and/or options";
-        case ROM_ERR_SAVE_IO: return "I/O error during storing ROM options";
+        case ROM_ERR_SAVE_IO: return "Couldn't save this setting to the SD card";
         case ROM_ERR_NO_FILE: return "Couldn't open ROM file";
         default: return "Unknown ROM info load error";
     }
@@ -253,6 +254,19 @@ static inline const char *format_boolean_type (bool bool_value) {
     return bool_value ? "On" : "Off";
 }
 
+/**
+ * @brief Report a problem with a setting. On the Config screen it is shown there, so the player
+ *        stays in Config; elsewhere it goes to the error screen.
+ */
+static void report_error (menu_t *menu, const char *message) {
+    if (config_mode) {
+        config_message = message;
+        sound_play_effect(SFX_ERROR);
+    } else {
+        menu_show_error(menu, (char *) (message));
+    }
+}
+
 // Forward declarations for default selection helpers (defined after context menu structs)
 static int get_rom_cic_override_current_selection (menu_t *menu);
 static int get_rom_save_override_current_selection (menu_t *menu);
@@ -263,7 +277,7 @@ static void set_cic_type (menu_t *menu, void *arg) {
     rom_cic_type_t cic_type = (rom_cic_type_t) (arg);
     rom_err_t err = rom_config_override_cic_type(menu->load.rom_path, &menu->load.rom_info, cic_type);
     if (err != ROM_OK) {
-        menu_show_error(menu, convert_error_message(err));
+        report_error(menu, convert_error_message(err));
     }
     menu->browser.reload = true;
 }
@@ -272,7 +286,7 @@ static void set_save_type (menu_t *menu, void *arg) {
     rom_save_type_t save_type = (rom_save_type_t) (arg);
     rom_err_t err = rom_config_override_save_type(menu->load.rom_path, &menu->load.rom_info, save_type);
     if (err != ROM_OK) {
-        menu_show_error(menu, convert_error_message(err));
+        report_error(menu, convert_error_message(err));
     }
     menu->browser.reload = true;
 }
@@ -281,7 +295,7 @@ static void set_tv_type (menu_t *menu, void *arg) {
     rom_tv_type_t tv_type = (rom_tv_type_t) (arg);
     rom_err_t err = rom_config_override_tv_type(menu->load.rom_path, &menu->load.rom_info, tv_type);
     if (err != ROM_OK) {
-        menu_show_error(menu, convert_error_message(err));
+        report_error(menu, convert_error_message(err));
     }
     menu->browser.reload = true;
 }
@@ -303,12 +317,15 @@ static void set_cheat_option(menu_t *menu, void *arg) {
     if (!is_memory_expanded()) {
         // If the Expansion pak is not installed, we cannot use cheats, and force it to off (just incase).
         rom_config_setting_set_cheats(menu->load.rom_path, &menu->load.rom_info, false);
-        menu_show_error(menu, "Datel Cheats require an Expansion Pak");
+        report_error(menu, "Cheats need an Expansion Pak");
         menu->browser.reload = true;
     }
     else {
         bool enabled = (bool)arg;
-        rom_config_setting_set_cheats(menu->load.rom_path, &menu->load.rom_info, enabled);
+        rom_err_t err = rom_config_setting_set_cheats(menu->load.rom_path, &menu->load.rom_info, enabled);
+        if (err != ROM_OK) {
+            report_error(menu, convert_error_message(err));
+        }
         menu->browser.reload = true;
     }
 }
@@ -318,7 +335,7 @@ static void open_datel_code_editor (menu_t *menu, void *arg) {
 
     if (!is_memory_expanded()) {
         rom_config_setting_set_cheats(menu->load.rom_path, &menu->load.rom_info, false);
-        menu_show_error(menu, "Datel Cheats require an Expansion Pak");
+        report_error(menu, "Cheat codes need an Expansion Pak");
         menu->browser.reload = true;
         return;
     }
@@ -328,7 +345,10 @@ static void open_datel_code_editor (menu_t *menu, void *arg) {
 
 static void set_clear_rdram_option(menu_t *menu, void *arg) {
     bool enabled = (bool)arg;
-    rom_config_setting_set_clear_rdram(menu->load.rom_path, &menu->load.rom_info, enabled);
+    rom_err_t err = rom_config_setting_set_clear_rdram(menu->load.rom_path, &menu->load.rom_info, enabled);
+    if (err != ROM_OK) {
+        report_error(menu, convert_error_message(err));
+    }
     menu->browser.reload = true;
 }
 
@@ -588,6 +608,14 @@ static option_list_t config_list = {
 };
 
 static void config_process (menu_t *menu) {
+    if (config_message) {
+        if (menu->actions.enter || menu->actions.back) {
+            config_message = NULL;
+            sound_play_effect(SFX_EXIT);
+        }
+        return;
+    }
+
     if (ui_components_option_list_process(menu, &config_list)) {
         return;
     }
@@ -614,6 +642,10 @@ static void config_draw (menu_t *menu, surface_t *d) {
     int x = GAME_INFO_VALUE_X;
     x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, ui_components_option_list_action_name(&config_list)) + LIBRARY_HINT_GAP;
     ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
+
+    if (config_message) {
+        ui_components_messagebox_draw("%s", config_message);
+    }
 
     rdpq_detach_show();
 }
@@ -1008,6 +1040,7 @@ void view_load_rom_init (menu_t *menu) {
     bool back_from_code_editor = returning_from_code_editor;
     returning_from_code_editor = false;
     config_mode = open_configure || back_from_code_editor;
+    config_message = NULL;
     if (open_configure) {
         ui_components_option_list_init(&config_list);
     }
