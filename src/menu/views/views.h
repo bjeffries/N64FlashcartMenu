@@ -48,6 +48,12 @@ void view_browser_init(menu_t *menu);
  */
 void view_browser_display(menu_t *menu, surface_t *display);
 
+/** @brief Draw the Library behind the game loading animation (surface already attached). */
+void view_browser_draw_behind_loading(menu_t *menu);
+
+/** @brief Draw Favorites / History behind the game loading animation (surface already attached). */
+void view_history_favorites_draw_behind_loading(menu_t *menu);
+
 /**
  * @brief Initialize the file info view.
  *

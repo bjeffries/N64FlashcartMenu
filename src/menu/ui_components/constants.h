@@ -514,6 +514,11 @@
 #define CAROUSEL_MAX_ANIMATED_STEPS     (3.0f)
 /** @brief While ←/→ is held, move one tile every this many frames (12 per second at 60fps). */
 #define CAROUSEL_REPEAT_FRAMES          (5)
+/** @brief Game loading animation: centre of the eclipse (centre of the bottom-right quadrant). */
+#define LOADING_ANIMATION_CENTER_X      ((DISPLAY_WIDTH * 3) / 4)
+#define LOADING_ANIMATION_CENTER_Y      ((DISPLAY_HEIGHT * 3) / 4)
+/** @brief Emulators only (no SummerCart64): how long the pretend game load takes. */
+#define SIMULATED_LOAD_MS               (3000)
 /** @brief Holding ←/→ this long switches from tiles to letters (Library, Favorites). */
 #define CAROUSEL_PAGING_DELAY_MS        (1000)
 /** @brief While paging, one letter every this long. */

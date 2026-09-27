@@ -5,6 +5,7 @@
 #include "../sound.h"
 #include "boot/boot.h"
 #include "utils/fs.h"
+#include "utils/utils.h"
 #include "views.h"
 #include "../ui_components/constants.h"
 #include <string.h>
@@ -17,6 +18,9 @@ static char *rom_filename = NULL;
 static bool config_mode = false;                // showing the Config screen instead of the ROM details
 static bool returning_from_code_editor = false; // the cheat code editor returns to Config
 static const char *config_message = NULL;       // error shown over the Config screen
+static bool load_over_carousel = false;         // started with A in Library / Favorites / History:
+                                                // load with the eclipse animation over that screen
+static menu_t *loading_menu = NULL;             // for the progress callbacks
 
 static int16_t current_metadata_image_index = 0;
 static const file_image_type_t metadata_image_filename_cache[] = {
@@ -651,9 +655,57 @@ static void config_draw (menu_t *menu, surface_t *d) {
     rdpq_detach_show();
 }
 
+/** @brief The screen the game was started from, with the loading animation (and any warning) on top. */
+static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, bool animate) {
+    rdpq_attach_clear(d, NULL);
+    if (menu->load.return_mode == MENU_MODE_BROWSER) {
+        view_browser_draw_behind_loading(menu);
+    } else {
+        view_history_favorites_draw_behind_loading(menu);
+    }
+    if (animate) {
+        ui_components_loading_animation_draw(progress);
+    }
+    if (show_expansion_pak_warning) {
+        ui_components_messagebox_draw(
+            "This game needs an Expansion Pak,\n"
+            "which was not found.\n\n"
+            "It may not run correctly without one.\n\n"
+            "A: Play anyway    B: Cancel"
+        );
+    }
+    rdpq_detach_show();
+}
+
 /** @brief Loading screen for this ROM. */
 static void draw_loading (surface_t *d, float progress, const char *message) {
+    if (load_over_carousel && loading_menu) {
+        draw_carousel_loading(loading_menu, d, progress, true);
+        return;
+    }
     ui_components_loading_screen_draw(d, progress, message, rom_filename ? rom_filename : "");
+}
+
+/** @brief Play the corona to the end, then the game starts (or the error shows). */
+static void finish_carousel_loading (void) {
+    ui_components_loading_animation_done();
+    while (!ui_components_loading_animation_finished()) {
+        draw_loading(display_get(), 1.0f, NULL);
+    }
+}
+
+/**
+ * @brief Emulators have no SummerCart64, so loading fails at once. Pretend to load for a few
+ *        seconds first, so the loading animation can be seen and tested.
+ */
+static void simulate_carousel_loading (void) {
+    uint32_t start = get_ticks_ms();
+    float progress = 0.0f;
+    while (progress < 1.0f) {
+        progress = MIN(1.0f, (get_ticks_ms() - start) / (float) SIMULATED_LOAD_MS);
+        draw_loading(display_get(), progress, NULL);
+    }
+    finish_carousel_loading();
 }
 
 static void process (menu_t *menu) {
@@ -720,6 +772,10 @@ static void draw (menu_t *menu, surface_t *d) {
     }
     if (config_mode) {
         config_draw(menu, d);
+        return;
+    }
+    if (load_over_carousel) {
+        draw_carousel_loading(menu, d, 0.0f, false);    // only the Expansion Pak warning can be up
         return;
     }
 
@@ -897,11 +953,18 @@ static void load (menu_t *menu) {
 
     if (err != CART_LOAD_OK) {
         if (err == CART_LOAD_ERR_ROM_LOAD_FAIL && menu->flashcart_err == FLASHCART_ERR_FUNCTION_NOT_SUPPORTED) {
+            if (load_over_carousel) {
+                simulate_carousel_loading();
+            }
             menu_show_error(menu, "No SummerCart64 was found.\nGames can only be played from the cartridge.");
         } else {
             menu_show_error(menu, cart_load_convert_error_message(err));
         }
         return;
+    }
+
+    if (load_over_carousel) {
+        finish_carousel_loading();
     }
 
     bookkeeping_history_add(&menu->bookkeeping, menu->load.rom_path, NULL, BOOKKEEPING_TYPE_ROM);
@@ -949,6 +1012,10 @@ static void load (menu_t *menu) {
 }
 
 static void deinit (void) {
+    if (load_over_carousel) {
+        ui_components_loading_animation_free();
+        load_over_carousel = false;
+    }
     ui_components_boxart_free(boxart);
     boxart = NULL;
     current_metadata_image_index = 0;
@@ -1028,6 +1095,15 @@ void view_load_rom_init (menu_t *menu) {
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     }
 #endif
+
+    // Started with A on a carousel screen: load over that screen with the eclipse animation.
+    // Its frames have to be in memory before loading starts (see loading_animation.c).
+    load_over_carousel = play_now && (menu->load.return_mode == MENU_MODE_BROWSER ||
+        menu->load.return_mode == MENU_MODE_FAVORITE || menu->load.return_mode == MENU_MODE_HISTORY);
+    loading_menu = menu;
+    if (load_over_carousel) {
+        ui_components_loading_animation_prepare();
+    }
 
     if (play_now) {
         if (rom_requires_missing_expansion_pak(menu)) {

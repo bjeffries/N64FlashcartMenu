@@ -544,9 +544,8 @@ static void process (menu_t *menu) {
     }
 }
 
-static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach_clear(d, NULL);
-
+/** @brief Everything but the confirmation dialog; the button hints only if show_hints. */
+static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_tab_header_draw(TAB_LIBRARY);
 
     bool favorite = false;
@@ -565,6 +564,10 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
+
+    if (!show_hints) {
+        return;
+    }
 
     // Hints in the order A, B, C-Left, C-Up, C-Right, C-Down.
     // Games: Play / Back / Favorite / Config / Hide. Folders: Open / Back / Set to Default.
@@ -588,7 +591,12 @@ static void draw (menu_t *menu, surface_t *d) {
         hints[count++] = (button_hint_t) { ICON_C_LEFT, "Set to Default" };
     }
     ui_components_button_hints_draw(hints, count);
+}
 
+static void draw (menu_t *menu, surface_t *d) {
+    rdpq_attach_clear(d, NULL);
+
+    draw_content(menu, true);
 
     if (confirm_hide && menu->browser.entry) {
         char title[128];
@@ -603,6 +611,15 @@ static void draw (menu_t *menu, surface_t *d) {
     }
 
     rdpq_detach_show();
+}
+
+/**
+ * @brief Draw the Library as the background of the game loading animation (attached surface):
+ *        no button hints (they don't work while loading), on the Overview page.
+ */
+void view_browser_draw_behind_loading (menu_t *menu) {
+    info_page = 0;
+    draw_content(menu, false);
 }
 
 void view_browser_init (menu_t *menu) {

@@ -121,9 +121,8 @@ static void process (menu_t *menu) {
     }
 }
 
-static void draw (menu_t *menu, surface_t *display) {
-    rdpq_attach_clear(display, NULL);
-
+/** @brief The whole screen; the button hints only if show_hints. */
+static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_tab_header_draw(tab);
 
     if (entry_count == 0) {
@@ -134,7 +133,6 @@ static void draw (menu_t *menu, surface_t *display) {
                 ? "No favorites yet.\nPress C-Left on a game in the Library\nto add it here."
                 : "Nothing played yet.\nGames you launch will appear here."
         );
-        rdpq_detach_show();
         return;
     }
 
@@ -152,6 +150,10 @@ static void draw (menu_t *menu, surface_t *display) {
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
 
+    if (!show_hints) {
+        return;
+    }
+
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;
     hints[count++] = (button_hint_t) { ICON_A, "Play" };
@@ -160,8 +162,21 @@ static void draw (menu_t *menu, surface_t *display) {
         hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
     }
     ui_components_button_hints_draw(hints, count);
+}
 
+static void draw (menu_t *menu, surface_t *display) {
+    rdpq_attach_clear(display, NULL);
+    draw_content(menu, true);
     rdpq_detach_show();
+}
+
+/**
+ * @brief Draw Favorites / History as the background of the game loading animation (attached
+ *        surface): no button hints, on the Overview page.
+ */
+void view_history_favorites_draw_behind_loading (menu_t *menu) {
+    info_page = 0;
+    draw_content(menu, false);
 }
 
 static void init (menu_t *menu, menu_tab_t new_tab) {

@@ -265,6 +265,17 @@ void ui_components_file_list_free(void);
  */
 void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected, bool selected_favorite);
 
+/** @brief Load the game loading animation's frames into memory (before loading: rom:/ is overwritten). */
+void ui_components_loading_animation_prepare(void);
+/** @brief Free the game loading animation's frames. */
+void ui_components_loading_animation_free(void);
+/** @brief Draw the game loading animation for a progress of 0-1 (bottom-right quadrant). */
+void ui_components_loading_animation_draw(float progress);
+/** @brief Loading finished: play the corona. */
+void ui_components_loading_animation_done(void);
+/** @brief Whether the corona has finished playing after ui_components_loading_animation_done(). */
+bool ui_components_loading_animation_finished(void);
+
 /** @brief Forget any held direction (call when a carousel view opens). */
 void ui_components_carousel_scroll_reset(void);
 /** @brief Handle ←/→ for a circular carousel list; a long hold pages by letter if letter_paging. Returns the new selection. */

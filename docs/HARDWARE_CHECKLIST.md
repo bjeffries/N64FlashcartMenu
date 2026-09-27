@@ -81,7 +81,9 @@ These depend on SD card speed, which the emulator doesn't reproduce.
 
 ## 6. Playing games
 
-- [ ] **6.1 A plays a game**: loading screen with progress, then the game boots.
+- [ ] **6.1 A plays a game**: the Library stays up (without its button bar) and the eclipse
+      animation in the bottom-right tracks loading: the moon crosses the sun as the game loads,
+      the corona appears, then the game boots. Try a big game (e.g. 64MB) to see it progress.
 - [ ] **6.2 Saves work**: save in-game, power off, power on, load the save. Try one each of
       EEPROM, SRAM and FlashRAM games if you have them (e.g. Super Mario 64, Zelda: Ocarina of
       Time, Paper Mario).

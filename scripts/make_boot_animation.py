@@ -5,7 +5,7 @@ Reads boot_animation/eclipse_intro/intro_NNNN.png (640x480, see boot_animation/R
 and writes
 
   assets/boot/NN.png                 one image per distinct frame, cropped to its content and
-                                     stored with an exact palette (built as CI8 sprites)
+                                     stored with an exact palette, black transparent (CI8 sprites)
   src/menu/boot_animation_frames.h   per frame: which image to draw, and where
 
 Blank (all-black) frames get no image; identical frames share one.
@@ -36,6 +36,9 @@ def paletted(image):
     pixels = bytes(index[tuple(rgb[i:i + 3])] for i in range(0, len(rgb), 3))
     out = Image.frombytes('P', image.size, pixels)
     out.putpalette([v for c in palette for v in c])
+    # Black is transparent, so the frames can also be drawn over the Library (loading animation).
+    if palette[0] == (0, 0, 0):
+        out.info['transparency'] = 0
     return out
 
 
@@ -67,7 +70,8 @@ def main():
         if key not in images:
             number = len(images)
             images[key] = number
-            paletted(crop).save(os.path.join(OUT_IMAGES, f'{number:02d}.png'))
+            image = paletted(crop)
+            image.save(os.path.join(OUT_IMAGES, f'{number:02d}.png'), transparency=image.info.get('transparency'))
             total_bytes += crop.width * crop.height
         table.append((images[key], x0, y0))
 
