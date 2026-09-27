@@ -96,11 +96,13 @@ ifeq ($(MENU_FONT),11pxbus)
 # 11pxbus (sub010; freeware, free for commercial use per fontspace.com) is drawn on an
 # 11-unit pixel grid, so only multiples of 11 are crisp; at 11px its strokes are 1px, which
 # flickers on an interlaced CRT, so text is 22px. Its letter gap is one font pixel; the negative
-# spacing brings it down to 1px (22px: 2px -> 1px, 33px: 3px -> 1px).
+# spacing brings it down to 1px (22px: 2px -> 1px, 33px: 3px -> 1px). Small text (info panel,
+# captions) is 16px, off the grid, so it is anti-aliased (crisp 16px drops strokes) with a
+# slightly tighter gap.
 FONT_TTF = $(ASSETS_DIR)/fonts/11pxbus.ttf
 FONT_DEFAULT = 22 --monochrome --char-spacing -1
 FONT_TITLE = 33 --monochrome --char-spacing -2
-FONT_SMALL = 22 --monochrome --char-spacing -1
+FONT_SMALL = 16 --char-spacing -0.5
 else ifeq ($(MENU_FONT),analogue)
 # Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
 # 12px (captions, info rows) is off-grid, so it is anti-aliased instead of monochrome, with 1px

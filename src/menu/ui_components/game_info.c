@@ -135,7 +135,7 @@ static int draw_badge (int x, int y, const char *text) {
         rdpq_paragraph_free(layout);
         return -1;
     }
-    ui_components_box_draw(x, y - 10, x + width, y + 3, GAME_INFO_BADGE_COLOR);
+    ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
     rdpq_paragraph_render(layout, x + BADGE_PADDING, y);
     rdpq_paragraph_free(layout);
     return width;
@@ -152,7 +152,7 @@ static void draw_player_count (int x, int y, uint32_t players) {
         return;
     }
     int width = (BADGE_PADDING * 2) + (MAX_PLAYERS * 7) - 2;
-    ui_components_box_draw(x, y - 10, x + width, y + 3, GAME_INFO_BADGE_COLOR);
+    ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
     for (uint32_t i = 0; i < MAX_PLAYERS; i++) {
         draw_player_icon(x + BADGE_PADDING + (i * 7), y - 8, (i < players) ? GAME_INFO_PLAYER_ON_COLOR : GAME_INFO_PLAYER_OFF_COLOR);
     }
