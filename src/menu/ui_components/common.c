@@ -47,6 +47,32 @@ void ui_components_text_draw (const rdpq_textparms_t *parms, menu_font_type_t fo
 }
 
 /**
+ * @brief Full loading screen: a header message, the game's title and a progress bar with percentage.
+ *
+ * @param d Display surface (attached and shown by this function).
+ * @param progress 0.0 to 1.0.
+ * @param message Header text, e.g. "Loading".
+ * @param file_name File name of the game or disk; shown as a cleaned-up title.
+ */
+void ui_components_loading_screen_draw (surface_t *d, float progress, const char *message, const char *file_name) {
+    rdpq_attach_clear(d, NULL);
+
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
+
+    char title[128];
+    ui_components_carousel_title(file_name, false, title, sizeof(title));
+    ui_components_text_draw(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        FNT_TITLE, CAROUSEL_SELECTED_X, LOADING_TITLE_Y, title
+    );
+
+    ui_components_progressbar_draw(CAROUSEL_SELECTED_X, LOADING_BAR_Y, VISIBLE_AREA_X1, LOADING_BAR_Y + 6, progress);
+    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, CAROUSEL_SELECTED_X, LOADING_BAR_Y + 24, "%d%%", (int) (progress * 100.0f));
+
+    rdpq_detach_show();
+}
+
+/**
  * @brief Draw a border with the specified color.
  * 
  * @param x0 The x-coordinate of the top-left corner.

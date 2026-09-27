@@ -623,23 +623,9 @@ static void config_draw (menu_t *menu, surface_t *d) {
     rdpq_detach_show();
 }
 
-/** @brief Loading screen: the game's title and a progress bar. */
+/** @brief Loading screen for this ROM. */
 static void draw_loading (surface_t *d, float progress, const char *message) {
-    rdpq_attach_clear(d, NULL);
-
-    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
-
-    char title[128];
-    ui_components_carousel_title(rom_filename ? rom_filename : "", false, title, sizeof(title));
-    ui_components_text_draw(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
-        FNT_TITLE, CAROUSEL_SELECTED_X, LOADING_TITLE_Y, title
-    );
-
-    ui_components_progressbar_draw(CAROUSEL_SELECTED_X, LOADING_BAR_Y, VISIBLE_AREA_X1, LOADING_BAR_Y + 6, progress);
-    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, CAROUSEL_SELECTED_X, LOADING_BAR_Y + 24, "%d%%", (int) (progress * 100.0f));
-
-    rdpq_detach_show();
+    ui_components_loading_screen_draw(d, progress, message, rom_filename ? rom_filename : "");
 }
 
 static void process (menu_t *menu) {

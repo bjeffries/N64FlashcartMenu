@@ -2,7 +2,7 @@
 """Generate the Library's controller button icons as pixel art.
 
 Writes white icons with black glyphs (RGBA, transparent background) into
-assets/images/: round A, B, C-right and C-up buttons, and L / R shoulder pills.
+assets/images/: round A, B, Z and C-button icons, and L / R shoulder pills.
 Letters are hand-drawn 7x9 pixel glyphs with 2px strokes, in the style of the
 Analogue OS font (the font itself doesn't render cleanly this small).
 
@@ -25,6 +25,7 @@ GLYPHS = {
     'B': ['######.', '##...##', '##...##', '##...##', '######.', '##...##', '##...##', '##...##', '######.'],
     'L': ['##.....', '##.....', '##.....', '##.....', '##.....', '##.....', '##.....', '##.....', '######.'],
     'R': ['######.', '##...##', '##...##', '##...##', '######.', '##.##..', '##..##.', '##...##', '##...##'],
+    'Z': ['#######', '.....##', '....##.', '...##..', '..##...', '.##....', '##.....', '##.....', '#######'],
 }
 
 
@@ -82,6 +83,7 @@ def main():
         'button_c_right': triangle(circle(ROUND_SIZE), 'right'),
         'button_c_up': triangle(circle(ROUND_SIZE), 'up'),
         'button_c_left': triangle(circle(ROUND_SIZE), 'left'),
+        'button_z': letter(circle(ROUND_SIZE), 'Z'),
         'button_l': letter(pill(PILL_W, PILL_H), 'L'),
         'button_r': letter(pill(PILL_W, PILL_H), 'R'),
     }

@@ -16,6 +16,7 @@ static const char *icon_paths[ICON_COUNT] = {
     [ICON_C_RIGHT] = "rom:/button_c_right.sprite",
     [ICON_C_UP] = "rom:/button_c_up.sprite",
     [ICON_C_LEFT] = "rom:/button_c_left.sprite",
+    [ICON_Z] = "rom:/button_z.sprite",
     [ICON_L] = "rom:/button_l.sprite",
     [ICON_R] = "rom:/button_r.sprite",
 };

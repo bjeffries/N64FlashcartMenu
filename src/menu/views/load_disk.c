@@ -3,6 +3,7 @@
 #include "boot/boot.h"
 #include "../sound.h"
 #include "views.h"
+#include "../ui_components/constants.h"
 #include "../bookkeeping.h"
 #include <string.h>
 
@@ -124,96 +125,80 @@ static void scan_for_swap_disks(menu_t *menu) {
     path_free(dir_path);
 }
 
-static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach(d, NULL);
+static const char *disk_region_value (menu_t *menu) {
+    return format_disk_region(menu->load.disk_slots.primary.disk_info.region);
+}
 
-    ui_components_background_draw();
+static const char *disk_id_value (menu_t *menu) {
+    static char buffer[8];
+    snprintf(buffer, sizeof(buffer), "%.4s", menu->load.disk_slots.primary.disk_info.id);
+    return buffer;
+}
 
-    if (menu->load_pending.disk_file) {
-        ui_components_loader_draw(0.0f, NULL);
-    } else {
-        ui_components_layout_draw();
+static const char *disk_version_value (menu_t *menu) {
+    static char buffer[8];
+    snprintf(buffer, sizeof(buffer), "%hhu", menu->load.disk_slots.primary.disk_info.version);
+    return buffer;
+}
 
-        ui_components_main_text_draw(
-            STL_DEFAULT,
-            ALIGN_CENTER, VALIGN_TOP,
-            "64DD disk information\n"
-            "%s",
-            disk_filename
-        );
+static const char *disk_type_value (menu_t *menu) {
+    static char buffer[8];
+    snprintf(buffer, sizeof(buffer), "%d", menu->load.disk_slots.primary.disk_info.disk_type);
+    return buffer;
+}
 
-        ui_components_main_text_draw(
-            STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n\n\n\t%.120s\n",
-            "No description available."
-        );
-
-        ui_components_main_text_draw(
-            STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n\n\n\n\n\n\n\n"
-            "%s%s\n",
-            menu->load.rom_path ? "Using Game PAK:\t" : "",
-            menu->load.rom_path ? path_last_get(menu->load.rom_path) : ""
-        );
-
-        ui_components_main_text_draw(
-            STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n\n\n\n\n\n\n\n\n"
-            "Primary Disk:\n"
-            "\tRegion:\t\t%s\n"
-            "\tUnique ID:\t%.4s\n"
-            "\tVersion:\t\t%hhu\n"
-            "\tDisk type:\t%d\n"
-            "\tSwap disks:\t%d found\n",
-
-            format_disk_region(menu->load.disk_slots.primary.disk_info.region),
-            menu->load.disk_slots.primary.disk_info.id,
-            menu->load.disk_slots.primary.disk_info.version,
-            menu->load.disk_slots.primary.disk_info.disk_type,
-            swap_disk_count
-        );
-
-        // Display swap disk info if available
-        if (swap_disk_count > 0) {
-            ui_components_main_text_draw(
-                STL_DEFAULT,
-                ALIGN_LEFT, VALIGN_TOP,
-                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "\t\t1: %s\n"
-                "\t\t2: %s\n"
-                "\t\t3: %s\n",
-
-                swap_disk_count > 0 ? path_last_get(menu->load.disk_slots.swap_slot[0].disk_path) : "Empty",
-                swap_disk_count > 1 ? path_last_get(menu->load.disk_slots.swap_slot[1].disk_path) : "Empty",
-                swap_disk_count > 2 ? path_last_get(menu->load.disk_slots.swap_slot[2].disk_path) : "Empty"
-            );
-        }
-        
-
-        ui_components_actions_bar_text_draw(
-            STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "A: Load and run 64DD disk\n"
-            "B: Exit\n"
-        );
-
-        if (menu->load.rom_path) {
-            ui_components_actions_bar_text_draw(
-                STL_DEFAULT,
-                ALIGN_RIGHT, VALIGN_TOP,
-                "L|Z: Load with ROM\n"
-                "\n"
-            );
-        }
-
-        if (boxart != NULL) {
-            ui_components_boxart_draw(boxart);
-        }
-
+static const char *swap_disks_value (menu_t *menu) {
+    static char buffer[16];
+    if (swap_disk_count == 0) {
+        return "None found";
     }
+    snprintf(buffer, sizeof(buffer), "%d found", swap_disk_count);
+    return buffer;
+}
+
+static const char *game_pak_value (menu_t *menu) {
+    return menu->load.rom_path ? path_last_get(menu->load.rom_path) : "None";
+}
+
+static option_t disk_options[] = {
+    { .label = "Region", .type = OPTION_INFO, .value = disk_region_value },
+    { .label = "Disk ID", .type = OPTION_INFO, .value = disk_id_value },
+    { .label = "Version", .type = OPTION_INFO, .value = disk_version_value },
+    { .label = "Disk Type", .type = OPTION_INFO, .value = disk_type_value },
+    { .label = "Swap Disks", .type = OPTION_INFO, .value = swap_disks_value },
+    { .label = "Game Pak", .type = OPTION_INFO, .value = game_pak_value },
+};
+
+static option_list_t disk_list = {
+    .options = disk_options,
+    .count = sizeof(disk_options) / sizeof(disk_options[0]),
+};
+
+static void draw (menu_t *menu, surface_t *d) {
+    if (menu->load_pending.disk_file) {
+        ui_components_loading_screen_draw(d, 0.0f, "Loading", disk_filename);
+        return;
+    }
+
+    rdpq_attach_clear(d, NULL);
+
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "64DD Disk");
+
+    char title[128];
+    ui_components_carousel_title(disk_filename, false, title, sizeof(title));
+    ui_components_text_draw(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
+    );
+
+    ui_components_option_list_draw(menu, &disk_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * 9));
+
+    int x = GAME_INFO_VALUE_X;
+    x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Play") + LIBRARY_HINT_GAP;
+    if (menu->load.rom_path) {
+        x += ui_components_button_hint_draw(ICON_Z, x, LIBRARY_BUTTONS_Y, "Play with Game Pak") + LIBRARY_HINT_GAP;
+    }
+    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
 
     rdpq_detach_show();
 }
@@ -222,13 +207,7 @@ static void draw_progress (float progress) {
     surface_t *d = (progress >= 1.0f) ? display_get() : display_try_get();
 
     if (d) {
-        rdpq_attach(d, NULL);
-
-        ui_components_background_draw();
-
-        ui_components_loader_draw(progress, "Loading 64DD disk...");
-
-        rdpq_detach_show();
+        ui_components_loading_screen_draw(d, progress, "Loading", disk_filename);
     }
 }
 
@@ -358,7 +337,8 @@ void view_load_disk_init (menu_t *menu) {
     // Scan for swap disks in the same directory
     scan_for_swap_disks(menu);
 
-    boxart = ui_components_boxart_init(menu->storage_prefix, menu->load.disk_slots.primary.disk_info.id, NULL, IMAGE_BOXART_FRONT);
+    boxart = NULL;
+    ui_components_option_list_init(&disk_list);
 }
 
 void view_load_disk_display (menu_t *menu, surface_t *display) {

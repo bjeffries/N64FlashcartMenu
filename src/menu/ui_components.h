@@ -81,6 +81,16 @@ void ui_components_box_draw(int x0, int y0, int x1, int y1, color_t color);
 void ui_components_text_draw(const rdpq_textparms_t *parms, menu_font_type_t font, int x, int y, const char *text);
 
 /**
+ * @brief Full loading screen: header message, the game's title and a progress bar (attaches and shows d).
+ *
+ * @param d Display surface.
+ * @param progress 0.0 to 1.0.
+ * @param message Header text, e.g. "Loading".
+ * @param file_name File name of the game or disk; shown as a cleaned-up title.
+ */
+void ui_components_loading_screen_draw(surface_t *d, float progress, const char *message, const char *file_name);
+
+/**
  * @brief Draw a border component.
  * 
  * @param x0 Starting x-coordinate.
@@ -262,6 +272,7 @@ typedef enum {
     ICON_C_RIGHT,
     ICON_C_UP,
     ICON_C_LEFT,
+    ICON_Z,
     ICON_L,
     ICON_R,
     ICON_COUNT,

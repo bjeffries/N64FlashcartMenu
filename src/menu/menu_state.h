@@ -91,6 +91,7 @@ typedef struct {
     boot_params_t *boot_params;
 
     char *error_message;
+    menu_mode_t error_return_mode;  // screen to go back to from the error screen
     flashcart_err_t flashcart_err;
 
     time_t current_time;
