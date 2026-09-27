@@ -33,6 +33,7 @@ static struct {
 // About page scrolling, in lines of text.
 #define PAGE_ABOUT              (2)
 static int last_page_drawn = -1;
+static int value_right = VISIBLE_AREA_X1;   // values stop here (short of the screenshot on the Overview page)
 static int about_scroll = 0;
 static int about_max_scroll = 0;
 
@@ -134,7 +135,8 @@ static void draw_text (int x, int y, menu_font_style_t style, const char *text) 
     for (char *c = upper; *c; c++) {
         *c = toupper((unsigned char) (*c));
     }
-    draw_shadowed((rdpq_textparms_t) { .style_id = style, .width = VISIBLE_AREA_X1 - x, .wrap = WRAP_ELLIPSES }, x, y, upper);
+    int right = (x >= GAME_INFO_VALUE_X) ? value_right : VISIBLE_AREA_X1;
+    draw_shadowed((rdpq_textparms_t) { .style_id = style, .width = right - x, .wrap = WRAP_ELLIPSES }, x, y, upper);
 }
 
 /** @brief Grey badge with white text for the RUMBLE PAK / USA style tags. Returns its width. */
@@ -143,7 +145,7 @@ static int draw_badge (int x, int y, const char *text) {
     rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, GAME_INFO_FONT, text, &nbytes);
     int width = (int) (layout->advance_x) + (BADGE_PADDING * 2);
     rdpq_paragraph_free(layout);
-    if (x + width > VISIBLE_AREA_X1) {
+    if (x + width > value_right) {
         return -1;
     }
     ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
@@ -173,11 +175,11 @@ static void draw_accessories (int x, int y, rom_info_t *info) {
     const char *badges[6];
     int count = 0;
 
-    if (info->features.rumble_pak) badges[count++] = "RUMBLE PAK";
-    if (info->features.controller_pak) badges[count++] = "CONTROLLER PAK";
-    if (info->features.transfer_pak) badges[count++] = "TRANSFER PAK";
-    if (info->features.expansion_pak == EXPANSION_PAK_REQUIRED) badges[count++] = "EXPANSION PAK";
-    else if (info->features.expansion_pak == EXPANSION_PAK_RECOMMENDED) badges[count++] = "EXPANSION PAK+";
+    if (info->features.rumble_pak) badges[count++] = "RMB PAK";
+    if (info->features.controller_pak) badges[count++] = "CTL PAK";
+    if (info->features.transfer_pak) badges[count++] = "TRN PAK";
+    if (info->features.expansion_pak == EXPANSION_PAK_REQUIRED) badges[count++] = "EXP PAK";
+    else if (info->features.expansion_pak == EXPANSION_PAK_RECOMMENDED) badges[count++] = "EXP PAK+";
     if (info->features.voice_recognition_unit) badges[count++] = "VRU";
 
     if (count == 0) {
@@ -257,6 +259,14 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     int x = GAME_INFO_VALUE_X;
     int y = GAME_INFO_Y;
     char date[32];
+
+    // Right half: the game's screenshot (a placeholder for now); values stop short of it.
+    if (entry && entry->type == ENTRY_TYPE_ROM) {
+        value_right = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_GAP;
+        ui_components_box_draw(GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y,
+            GAME_INFO_SCREENSHOT_X + GAME_INFO_SCREENSHOT_WIDTH, GAME_INFO_SCREENSHOT_Y + GAME_INFO_SCREENSHOT_HEIGHT,
+            GAME_INFO_SCREENSHOT_PLACEHOLDER_COLOR);
+    }
 
     draw_row(y, "Player Count");
     draw_player_count(x, y, info ? info->meta.num_players : 0);
@@ -437,6 +447,7 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
         about_scroll = 0;
     }
     last_page_drawn = page;
+    value_right = VISIBLE_AREA_X1;     // the Overview page narrows it for the screenshot
 
     if (page == 1 && info) {
         draw_details_page(entry, info);

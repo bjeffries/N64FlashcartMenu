@@ -424,8 +424,19 @@
 #define CAROUSEL_TITLE_Y                (CAROUSEL_CAPTION_Y + 40)
 /** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
 #define GAME_INFO_LABEL_X               (CAROUSEL_SELECTED_X)
-/** @brief Left edge of the info panel's values. */
-#define GAME_INFO_VALUE_X               (212)
+/** @brief Left edge of the info panel's values: the label column is 112px wide. */
+#define GAME_INFO_VALUE_X               (GAME_INFO_LABEL_X + 112)
+/**
+ * @brief Overview page: game screenshot (4:3) in the right half of the info area, right-aligned,
+ *        its top level with the first row's text. Values stop short of it.
+ */
+#define GAME_INFO_SCREENSHOT_WIDTH      (224)
+#define GAME_INFO_SCREENSHOT_HEIGHT     (168)
+#define GAME_INFO_SCREENSHOT_X          (VISIBLE_AREA_X1 - GAME_INFO_SCREENSHOT_WIDTH)
+#define GAME_INFO_SCREENSHOT_Y          (GAME_INFO_Y - fonts_ascent(GAME_INFO_FONT))
+#define GAME_INFO_SCREENSHOT_GAP        (12)
+/** @brief Screenshot placeholder, until screenshots are loaded. */
+#define GAME_INFO_SCREENSHOT_PLACEHOLDER_COLOR  PALETTE_TONE_1
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
