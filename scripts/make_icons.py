@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Generate the Library's controller button icons as pixel art.
 
-Writes white icons with black glyphs (RGBA, transparent background) into
-assets/images/: round A, B, Z and C-button icons, and L / R shoulder pills.
+Writes icons with black glyphs (RGBA, transparent background) into assets/images/:
+round A, B, Z and C-button icons, and L / R shoulder pills. Each button type has a
+soft fill colour that keeps good contrast with the black glyph.
 Letters are hand-drawn 7x9 pixel glyphs with 2px strokes, in the style of the
 Analogue OS font (the font itself doesn't render cleanly this small).
 
@@ -14,6 +15,10 @@ import sys
 from PIL import Image, ImageDraw
 
 WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
+GREEN = (0x8F, 0xD6, 0x94, 0xFF)        # A
+RED = (0xF2, 0x9A, 0x9A, 0xFF)          # B
+YELLOW = (0xF5, 0xD7, 0x6E, 0xFF)       # C buttons
+LIGHT_GREY = (0xC8, 0xC8, 0xC8, 0xFF)   # L, R, Z
 BLACK = (0x00, 0x00, 0x00, 0xFF)
 CLEAR = (0, 0, 0, 0)
 
@@ -29,20 +34,20 @@ GLYPHS = {
 }
 
 
-def circle(size):
+def circle(size, color):
     img = Image.new('RGBA', (size, size), CLEAR)
     px = img.load()
     r = size / 2
     for y in range(size):
         for x in range(size):
             if (x + 0.5 - r) ** 2 + (y + 0.5 - r) ** 2 <= r * r:
-                px[x, y] = WHITE
+                px[x, y] = color
     return img
 
 
-def pill(w, h):
+def pill(w, h, color):
     img = Image.new('RGBA', (w, h), CLEAR)
-    ImageDraw.Draw(img).rounded_rectangle((0, 0, w - 1, h - 1), radius=4, fill=WHITE)
+    ImageDraw.Draw(img).rounded_rectangle((0, 0, w - 1, h - 1), radius=4, fill=color)
     return img
 
 
@@ -78,14 +83,14 @@ def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else 'assets/images'
 
     icons = {
-        'button_a': letter(circle(ROUND_SIZE), 'A'),
-        'button_b': letter(circle(ROUND_SIZE), 'B'),
-        'button_c_right': triangle(circle(ROUND_SIZE), 'right'),
-        'button_c_up': triangle(circle(ROUND_SIZE), 'up'),
-        'button_c_left': triangle(circle(ROUND_SIZE), 'left'),
-        'button_z': letter(circle(ROUND_SIZE), 'Z'),
-        'button_l': letter(pill(PILL_W, PILL_H), 'L'),
-        'button_r': letter(pill(PILL_W, PILL_H), 'R'),
+        'button_a': letter(circle(ROUND_SIZE, GREEN), 'A'),
+        'button_b': letter(circle(ROUND_SIZE, RED), 'B'),
+        'button_c_right': triangle(circle(ROUND_SIZE, YELLOW), 'right'),
+        'button_c_up': triangle(circle(ROUND_SIZE, YELLOW), 'up'),
+        'button_c_left': triangle(circle(ROUND_SIZE, YELLOW), 'left'),
+        'button_z': letter(circle(ROUND_SIZE, LIGHT_GREY), 'Z'),
+        'button_l': letter(pill(PILL_W, PILL_H, LIGHT_GREY), 'L'),
+        'button_r': letter(pill(PILL_W, PILL_H, LIGHT_GREY), 'R'),
     }
     for name, img in icons.items():
         path = os.path.join(out_dir, name + '.png')
