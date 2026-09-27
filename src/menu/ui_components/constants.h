@@ -517,7 +517,7 @@
 /** @brief Holding ←/→ this long switches from tiles to letters (Library, Favorites). */
 #define CAROUSEL_PAGING_DELAY_MS        (1000)
 /** @brief While paging, one letter every this long. */
-#define CAROUSEL_PAGING_INTERVAL_MS     (300)
+#define CAROUSEL_PAGING_INTERVAL_MS     (400)
 /** @brief Paging letter: baseline (40px font, capitals top out at the safe area). */
 #define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + 28)
 /** @brief Paging letter: left edge, lined up with the cartridge, page dots and info labels. */
