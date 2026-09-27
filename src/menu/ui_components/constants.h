@@ -560,6 +560,9 @@
 /** @brief Position counter (a vertical fraction): space above and below its bar, and the bar's thickness. */
 #define POSITION_FRACTION_GAP           (3)
 #define POSITION_FRACTION_BAR           (2)
+/** @brief Position counter: how far the bar reaches past the wider number, and its minimum width. */
+#define POSITION_FRACTION_BAR_OVERHANG  (2)
+#define POSITION_FRACTION_BAR_MIN       (14)
 /** @brief Paging letter stays this long after the last page, then fades out. */
 #define LETTER_INDICATOR_HOLD_MS        (400)
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)

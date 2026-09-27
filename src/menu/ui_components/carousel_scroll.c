@@ -237,8 +237,10 @@ void ui_components_position_indicator_draw (int index, int total) {
         rdpq_paragraph_free(layout);
         width = MAX(width, ink_x1[i] - ink_x0[i]);
     }
+    // The bar reaches past the wider number on both sides (and is never shorter than a minimum).
+    int bar_width = MAX(POSITION_FRACTION_BAR_MIN, width + (2 * POSITION_FRACTION_BAR_OVERHANG));
     int right = DISPLAY_WIDTH - LETTER_INDICATOR_X;
-    int centre = right - (width / 2);
+    int centre = right - (bar_width / 2);
 
     // Top of the numerator level with the top of the letter indicator's capitals.
     int cap = fonts_cap_height(BODY_FONT);
@@ -251,5 +253,5 @@ void ui_components_position_indicator_draw (int index, int total) {
         ui_components_body_text_draw_shadowed(&(rdpq_textparms_t) { .style_id = STL_FADE }, x, baselines[i], lines[i], STL_FADE_SHADOW);
     }
     int bar_y = baselines[0] + POSITION_FRACTION_GAP;
-    ui_components_box_draw(right - width, bar_y, right, bar_y + POSITION_FRACTION_BAR, palette_mix(BACKGROUND_COLOR, TEXT_COLOR, level));
+    ui_components_box_draw(right - bar_width, bar_y, right, bar_y + POSITION_FRACTION_BAR, palette_mix(BACKGROUND_COLOR, TEXT_COLOR, level));
 }
