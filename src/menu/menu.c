@@ -169,6 +169,7 @@ static void menu_deinit (menu_t *menu) {
     hdmi_send_game_id(menu->boot_params);
 
     path_free(menu->load.rom_path);
+    path_free(menu->cpak_restore_path);
     for (int i = 0; i < menu->browser.entries; i++) {
         free(menu->browser.list[i].name);
     }

@@ -77,6 +77,7 @@ typedef struct {
     boot_params_t *boot_params;
 
     char *error_message;
+    path_t *cpak_restore_path;      // backup chosen in the Controller Pak screen, for the restore screens
     menu_mode_t error_return_mode;  // screen to go back to from the error screen
     flashcart_err_t flashcart_err;
 

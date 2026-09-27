@@ -1,1049 +1,586 @@
+/**
+ * @file cpakfs_manager.c
+ * @brief Controller Pak screen (Settings tab): back up, restore, format, and manage notes
+ * @ingroup view
+ *
+ * An option list: the controller to use, the pak's status, whole-pak actions, then one row per
+ * note (A opens Back Up / Delete). "Restore a Backup" lists the backups on the SD card and hands
+ * the chosen file to the restore screens (cpak_dump_info.c / cpak_note_dump_info.c).
+ */
+
 #include <stdbool.h>
 #include <stdio.h>
+#include <strings.h>
 #include <libdragon.h>
+#include <errno.h>
+#include <dir.h>
 #include "views.h"
 #include "../sound.h"
 #include "../fonts.h"
-#include <errno.h>
-#include <dir.h>
+#include "../ui_components/constants.h"
 #include "utils/fs.h"
 #include "utils/cpakfs_utils.h"
 
-#define MAX_STRING_LENGTH 62
+#define MAX_STRING_LENGTH   (62)
+#define MEMPAK_BANK_SIZE    (32768)
+#define MAX_BACKUPS         (48)
 
-#define MEMPAK_BANK_SIZE 32768
-
-#define CPAK_EXTENSION ".pak"   
+#define CPAK_EXTENSION      ".pak"
 #define CPAK_NOTE_EXTENSION ".paknote"
 
+static char *CPAK_PATH = "sd:/cpak_saves";
+static char *CPAK_NOTES_PATH = "sd:/cpak_saves/notes";
+
+typedef enum {
+    OP_NONE,
+    OP_BACKUP_PAK,
+    OP_BACKUP_NOTE,
+    OP_DELETE_NOTE,
+    OP_FORMAT,
+} operation_t;
+
 static bool use_rtc;
-static char string_datetime_cpak[26];
-static char failure_message_note[255];
+static int controller_selected;
 
-static int16_t controller_selected;
-static int16_t index_selected;
+// Pak state for the selected controller, refreshed every frame.
+static bool mounted[4];
+static bool has_pak;
+static bool corrupted;
+static cpakfs_stats_t stats;
 
-static bool mounted[4] = { false, false, false, false };
-static bool has_pak[4] = { false, false, false, false };
-static bool corrupted[4] = { false, false, false, false };
-static cpakfs_stats_t stats_per_port[4];
+// Notes on the selected pak.
+static int note_count;
+static bool notes_loaded;
+static char note_names[MAX_NUM_NOTES][MAX_STRING_LENGTH];
+static cpakfs_path_strings_t note_parts[MAX_NUM_NOTES];
+static char note_labels[MAX_NUM_NOTES][24];
+static char note_values[MAX_NUM_NOTES][24];
+static int note_selected;
 
-static bool has_mem;
-static bool corrupted_pak;
-static bool unmounted;
-static bool ctr_p_data_loop; // to avoid repopulating the list multiple times
-static cpakfs_stats_t cpakfs_stats;
-static dir_t dir_entry;
+static operation_t confirm_op = OP_NONE;    // destructive operation waiting for A / B
+static operation_t pending_op = OP_NONE;    // operation to run after drawing a "working" frame
+static char message[256];                   // result shown in a message box
 
-static bool process_complete_full_dump;
-static bool process_complete_note_dump;
-static bool process_complete_format;
-static bool process_complete_delete;
-static bool error_message_displayed;
+// "Restore a Backup" list.
+static bool restoring = false;
+static int backup_count;
+static char backup_names[MAX_BACKUPS][MAX_STRING_LENGTH];
+static bool backup_is_note[MAX_BACKUPS];
+static option_t backup_options[MAX_BACKUPS];
+static option_list_t backup_list = { .options = backup_options };
 
-static char controller_pak_name_notes[MAX_NUM_NOTES][MAX_STRING_LENGTH];
-static char controller_pak_name_notes_bank_size[MAX_NUM_NOTES][6]; // "(XXX)" = 5 chars + \0
 
-static cpakfs_path_strings_t cpakfs_path_strings[MAX_NUM_NOTES];
+/* ---- Pak access ---- */
 
-static bool show_complete_dump_confirm_message;
-static bool show_single_note_dump_confirm_message;
-static bool show_single_note_delete_confirm_message;
-static bool show_format_controller_pak_confirm_message;
-static bool show_complete_write_confirm_message;
-static bool show_single_note_write_info_message;
-
-static bool start_complete_dump;
-static bool start_single_note_dump;
-static bool start_single_note_delete;
-static bool start_format_controller_pak;
-
-static char * CPAK_PATH = "sd:/cpak_saves";
-static char * CPAK_NOTES_PATH = "sd:/cpak_saves/notes";
-
-static void reset_vars(){
-    has_mem = false;
-    corrupted_pak = false;
-    ctr_p_data_loop = false;
-    show_complete_dump_confirm_message = false;
-    show_single_note_dump_confirm_message = false;
-    show_single_note_delete_confirm_message = false;
-    show_format_controller_pak_confirm_message = false;
-    show_complete_write_confirm_message = false;
-    show_single_note_write_info_message = false;
-    start_complete_dump = false;
-    start_single_note_dump = false;
-    start_single_note_delete = false;
-    start_format_controller_pak = false;
-    process_complete_full_dump = false;
-    process_complete_note_dump = false;
-    process_complete_format = false;
-    process_complete_delete = false;
-    error_message_displayed = false;
-}
-
-static void get_rtc_time(char* formatted_time) {
-    time_t t = time(NULL);
-
-    struct tm tm = *localtime(&t);
-
-    sprintf(formatted_time, "%04d-%02d-%02d_%02d%02d%02d",
-            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-            tm.tm_hour, tm.tm_min, tm.tm_sec);
-}
-
-static void free_controller_pak_name_notes() {
-    for (int i = 0; i < MAX_NUM_NOTES; ++i) {
-        snprintf(controller_pak_name_notes[i], sizeof(controller_pak_name_notes[i]), " ");
-        snprintf(controller_pak_name_notes_bank_size[i], sizeof(controller_pak_name_notes_bank_size[i]), " ");
-        snprintf(cpakfs_path_strings[i].gamecode, sizeof(cpakfs_path_strings[i].gamecode), " ");
-        snprintf(cpakfs_path_strings[i].pubcode, sizeof(cpakfs_path_strings[i].pubcode), " ");
-        snprintf(cpakfs_path_strings[i].filename, sizeof(cpakfs_path_strings[i].filename), " ");
-        snprintf(cpakfs_path_strings[i].ext, sizeof(cpakfs_path_strings[i].ext), " ");
+static void unmount_all (void) {
+    unmount_all_cpakfs();
+    for (int i = 0; i < 4; i++) {
+        mounted[i] = false;
     }
 }
 
-static void check_accessories(int controller) {
-    bool was_present = has_pak[controller];
+static void load_notes (void) {
+    dir_t entry;
+    note_count = 0;
+    if (dir_findfirst(CPAK_MOUNT_ARRAY[controller_selected], &entry) >= 0) {
+        do {
+            snprintf(note_names[note_count], MAX_STRING_LENGTH, "%s", entry.d_name);
+            parse_cpakfs_fullname(entry.d_name, &note_parts[note_count]);
 
-    joypad_accessory_type_t acc = joypad_get_accessory_type(controller);
-    bool present = (acc == JOYPAD_ACCESSORY_TYPE_CONTROLLER_PAK);
-    has_pak[controller] = present;
+            char full[256];
+            snprintf(full, sizeof(full), "%s%s", CPAK_MOUNT_ARRAY[controller_selected], entry.d_name);
+            int blocks = get_block_size_from_fs_path(full);
+
+            snprintf(note_labels[note_count], sizeof(note_labels[0]), "%s",
+                note_parts[note_count].filename[0] ? note_parts[note_count].filename : entry.d_name);
+            snprintf(note_values[note_count], sizeof(note_values[0]), "%.4s  %d blocks",
+                note_parts[note_count].gamecode, (blocks < 0) ? 0 : blocks);
+            note_count++;
+        } while (note_count < MAX_NUM_NOTES && dir_findnext(CPAK_MOUNT_ARRAY[controller_selected], &entry) == 0);
+    }
+    notes_loaded = true;
+}
+
+/** @brief Check the selected controller's pak (inserted, removed, readable) and mount it. */
+static void refresh_pak (void) {
+    bool present = (joypad_get_accessory_type(controller_selected) == JOYPAD_ACCESSORY_TYPE_CONTROLLER_PAK);
 
     if (!present) {
-        if (mounted[controller]) {
-            cpakfs_unmount(controller);
-            mounted[controller] = false;
+        if (mounted[controller_selected]) {
+            cpakfs_unmount(controller_selected);
+            mounted[controller_selected] = false;
         }
-        corrupted[controller] = false;
-        memset(&stats_per_port[controller], 0, sizeof(stats_per_port[controller]));
-
-        if (was_present) {
-            free_controller_pak_name_notes();
-            ctr_p_data_loop = false;
+        if (has_pak) {
+            notes_loaded = false;
         }
-
-        has_mem       = false;
-        corrupted_pak = false;
-        memset(&cpakfs_stats, 0, sizeof(cpakfs_stats));
+        has_pak = false;
+        corrupted = false;
+        note_count = 0;
+        memset(&stats, 0, sizeof(stats));
         return;
     }
 
-    if (!mounted[controller]) {
-        corrupted[controller] = (mount_cpakfs(controller) < 0);
-        if (!corrupted[controller]) {
-            cpakfs_get_stats(controller, &stats_per_port[controller]);
-            mounted[controller] = true;
-        } else {
-            mounted[controller] = false;
+    if (!has_pak) {
+        notes_loaded = false;
+    }
+    has_pak = true;
+
+    if (!mounted[controller_selected]) {
+        corrupted = (mount_cpakfs(controller_selected) < 0);
+        mounted[controller_selected] = !corrupted;
+    }
+    if (!corrupted) {
+        cpakfs_get_stats(controller_selected, &stats);
+        if (!notes_loaded) {
+            load_notes();
         }
     } else {
-        if (!corrupted[controller]) {
-            cpakfs_get_stats(controller, &stats_per_port[controller]);
+        note_count = 0;
+    }
+}
+
+/** @brief Forget the mounted state so the pak is re-read (after it was changed). */
+static void pak_changed (void) {
+    cpakfs_unmount(controller_selected);
+    mounted[controller_selected] = false;
+    has_pak = false;
+    notes_loaded = false;
+}
+
+static void timestamp (char *buffer, size_t size) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(buffer, size, "%04d-%02d-%02d_%02d%02d%02d",
+        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+}
+
+static void backup_pak (void) {
+    if (stats.pages.used <= 0) {
+        snprintf(message, sizeof(message), "This Controller Pak is empty.\nThere is nothing to back up.");
+        return;
+    }
+
+    int banks = cpak_probe_banks(controller_selected);
+    if (banks < 1) {
+        banks = 1;
+    }
+
+    char when[32];
+    timestamp(when, sizeof(when));
+    char filename[200];
+    snprintf(filename, sizeof(filename), "%s/CPAK_%s%s", CPAK_PATH, when, CPAK_EXTENSION);
+
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        snprintf(message, sizeof(message), "Couldn't create the backup file on the SD card.");
+        return;
+    }
+
+    uint8_t *bank = malloc(MEMPAK_BANK_SIZE);
+    if (!bank) {
+        fclose(fp);
+        snprintf(message, sizeof(message), "Not enough memory to back up the pak.");
+        return;
+    }
+
+    bool ok = true;
+    for (int b = 0; b < banks && ok; b++) {
+        int read = cpak_read((joypad_port_t) (controller_selected), (uint8_t) (b), 0, bank, MEMPAK_BANK_SIZE);
+        if (read != MEMPAK_BANK_SIZE) {
+            snprintf(message, sizeof(message), "Couldn't read the Controller Pak (bank %d).", b);
+            ok = false;
+        } else if (fwrite(bank, 1, MEMPAK_BANK_SIZE, fp) != MEMPAK_BANK_SIZE) {
+            snprintf(message, sizeof(message), "Couldn't write the backup to the SD card.");
+            ok = false;
         }
     }
 
-    has_mem       = has_pak[controller];
-    corrupted_pak = corrupted[controller];
-    cpakfs_stats  = stats_per_port[controller];
-
-    if (!was_present && present) {
-        free_controller_pak_name_notes();
-        ctr_p_data_loop = false;
+    free(bank);
+    fclose(fp);
+    if (ok) {
+        snprintf(message, sizeof(message), "Backup saved to\ncpak_saves/CPAK_%s.pak", when);
     }
 }
 
-static void format_controller_pak () {
-    snprintf(failure_message_note, sizeof(failure_message_note), " ");
-    int res = cpakfs_format(controller_selected, false);
-    if (res < 0) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "Unable to format Controller Pak on controller %d!\nError code: %d", controller_selected + 1, res);
-        error_message_displayed = true;
+static void backup_note (int index) {
+    char source[256];
+    snprintf(source, sizeof(source), "%s%s", CPAK_MOUNT_ARRAY[controller_selected], note_names[index]);
+
+    FILE *in = fopen(source, "rb");
+    if (!in) {
+        snprintf(message, sizeof(message), "Couldn't read that note.");
+        return;
     }
-    reset_vars();
-    cpakfs_unmount(controller_selected);
-    mounted[controller_selected] = false;
-    has_pak[controller_selected] = false;
-    corrupted[controller_selected] = false; 
-    process_complete_format = true;
+
+    char when[32];
+    timestamp(when, sizeof(when));
+    char safe_name[MAX_STRING_LENGTH];
+    cpakfs_sanitize_fat_filename(safe_name, note_names[index], sizeof(safe_name));
+    char destination[256];
+    snprintf(destination, sizeof(destination), "%s/%s_%s%s", CPAK_NOTES_PATH, safe_name, when, CPAK_NOTE_EXTENSION);
+
+    FILE *out = fopen(destination, "wb");
+    if (!out) {
+        fclose(in);
+        snprintf(message, sizeof(message), "Couldn't create the backup file on the SD card.");
+        return;
+    }
+
+    char buffer[4096];
+    size_t bytes;
+    bool ok = true;
+    while ((bytes = fread(buffer, 1, sizeof(buffer), in)) > 0) {
+        if (fwrite(buffer, 1, bytes, out) != bytes) {
+            ok = false;
+            break;
+        }
+    }
+    fclose(in);
+    fclose(out);
+
+    if (ok) {
+        snprintf(message, sizeof(message), "\"%s\" saved to\ncpak_saves/notes", note_labels[index]);
+    } else {
+        snprintf(message, sizeof(message), "Couldn't write the backup to the SD card.");
+    }
 }
 
-static void active_single_note_delete_message(menu_t *menu, void *arg) {
-    show_single_note_delete_confirm_message = true;
+static void delete_note (int index) {
+    char path[256];
+    snprintf(path, sizeof(path), "%s%s", CPAK_MOUNT_ARRAY[controller_selected], note_names[index]);
+
+    if (remove(path) != 0 && file_exists(path)) {
+        snprintf(message, sizeof(message), "Couldn't delete \"%s\".", note_labels[index]);
+        return;
+    }
+    snprintf(message, sizeof(message), "\"%s\" deleted.", note_labels[index]);
+    pak_changed();
 }
 
-static void active_format_controller_pak_message(menu_t *menu, void *arg) {
-    show_format_controller_pak_confirm_message = true;
+static void format_pak (void) {
+    int result = cpakfs_format(controller_selected, false);
+    if (result < 0) {
+        snprintf(message, sizeof(message), "Couldn't format the Controller Pak (error %d).", result);
+    } else {
+        snprintf(message, sizeof(message), "Controller Pak formatted.");
+    }
+    pak_changed();
 }
 
-static void active_restore_controller_pak_message(menu_t *menu, void *arg) {
-    show_complete_write_confirm_message = true;
+static void run_operation (operation_t op) {
+    switch (op) {
+        case OP_BACKUP_PAK: backup_pak(); break;
+        case OP_BACKUP_NOTE: backup_note(note_selected); break;
+        case OP_DELETE_NOTE: delete_note(note_selected); break;
+        case OP_FORMAT: format_pak(); break;
+        default: break;
+    }
+    sound_play_effect(SFX_SETTING);
 }
 
-static void active_restore_controller_pak_note_message(menu_t *menu, void *arg) {
-    show_single_note_write_info_message = true;
+
+/* ---- Restore a Backup list ---- */
+
+static bool has_extension (const char *name, const char *a, const char *b) {
+    const char *dot = strrchr(name, '.');
+    return dot && (strcasecmp(dot, a) == 0 || strcasecmp(dot, b) == 0);
 }
 
-static component_context_menu_t options_context_menu = {
+static void scan_folder (const char *folder, bool notes) {
+    dir_t entry;
+    if (dir_findfirst(folder, &entry) < 0) {
+        return;
+    }
+    do {
+        if (backup_count >= MAX_BACKUPS) {
+            break;
+        }
+        bool match = notes ? has_extension(entry.d_name, CPAK_NOTE_EXTENSION, ".mpkn") : has_extension(entry.d_name, CPAK_EXTENSION, ".mpk");
+        if (entry.d_type != DT_DIR && match) {
+            snprintf(backup_names[backup_count], MAX_STRING_LENGTH, "%s", entry.d_name);
+            backup_is_note[backup_count] = notes;
+            backup_count++;
+        }
+    } while (dir_findnext(folder, &entry) == 0);
+}
+
+static const char *whole_pak_value (menu_t *menu) { return "Whole pak"; }
+static const char *single_note_value (menu_t *menu) { return "Note"; }
+
+static void open_backup (menu_t *menu) {
+    int index = backup_list.selected;
+    path_free(menu->cpak_restore_path);
+    menu->cpak_restore_path = path_create(backup_is_note[index] ? CPAK_NOTES_PATH : CPAK_PATH);
+    path_push(menu->cpak_restore_path, backup_names[index]);
+    menu->next_mode = backup_is_note[index] ? MENU_MODE_CONTROLLER_PAK_DUMP_NOTE_INFO : MENU_MODE_CONTROLLER_PAK_DUMP_INFO;
+}
+
+static void open_restore_list (void) {
+    backup_count = 0;
+    scan_folder(CPAK_PATH, false);
+    scan_folder(CPAK_NOTES_PATH, true);
+    for (int i = 0; i < backup_count; i++) {
+        backup_options[i] = (option_t) {
+            .label = backup_names[i],
+            .type = OPTION_ACTION,
+            .action = open_backup,
+            .value = backup_is_note[i] ? single_note_value : whole_pak_value,
+        };
+    }
+    backup_list.count = backup_count;
+    ui_components_option_list_init(&backup_list);
+    restoring = true;
+}
+
+
+/* ---- Main option list ---- */
+
+static void set_controller (menu_t *menu, void *arg) {
+    int controller = (int) (uintptr_t) (arg);
+    if (controller != controller_selected) {
+        unmount_all();
+        controller_selected = controller;
+        has_pak = false;
+        notes_loaded = false;
+    }
+}
+
+static int get_controller_selection (menu_t *menu) {
+    return controller_selected;
+}
+
+static component_context_menu_t controller_picker = {
+    .get_default_selection = get_controller_selection,
     .list = {
-        { .text = "Format Controller Pak", .action = active_format_controller_pak_message },
-        { .text = "Delete single note", .action = active_single_note_delete_message },
-        { .text = "Restore a dump to the Controller Pak", .action = active_restore_controller_pak_message },
-        { .text = "Restore a note to the Controller Pak", .action = active_restore_controller_pak_note_message },
+        { .text = "Controller 1", .action = set_controller, .arg = (void *) (0) },
+        { .text = "Controller 2", .action = set_controller, .arg = (void *) (1) },
+        { .text = "Controller 3", .action = set_controller, .arg = (void *) (2) },
+        { .text = "Controller 4", .action = set_controller, .arg = (void *) (3) },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
 
-static void write_note_name_info_list(int16_t controller, int index, char* entry_name) {
-    char filename_cpak[256];
-    snprintf(filename_cpak, sizeof(filename_cpak), "%s%s", CPAK_MOUNT_ARRAY[controller], entry_name);
-    int size = get_block_size_from_fs_path(filename_cpak);
-
-    if (size < 0) {
-        snprintf(controller_pak_name_notes_bank_size[index], sizeof(controller_pak_name_notes_bank_size[index]), " ");
-    } else {
-        snprintf(controller_pak_name_notes_bank_size[index], sizeof(controller_pak_name_notes_bank_size[index]), "%-3.3d", size);
-    }
-    snprintf(controller_pak_name_notes[index], MAX_STRING_LENGTH, "%s", entry_name);
-    parse_cpakfs_fullname(entry_name, &cpakfs_path_strings[index]);
+static void note_backup_action (menu_t *menu, void *arg) {
+    pending_op = OP_BACKUP_NOTE;
 }
 
-static void populate_list_cpakfs() {  
-    if (has_mem && !ctr_p_data_loop) {
-        
-        free_controller_pak_name_notes();
+static void note_delete_action (menu_t *menu, void *arg) {
+    confirm_op = OP_DELETE_NOTE;
+}
 
-        if (dir_findfirst(CPAK_MOUNT_ARRAY[controller_selected], &dir_entry) >= 0) {
-            
-            write_note_name_info_list(controller_selected, 0, dir_entry.d_name);
+static component_context_menu_t note_menu = {
+    .list = {
+        { .text = "Back Up Note", .action = note_backup_action },
+        { .text = "Delete Note", .action = note_delete_action },
+        COMPONENT_CONTEXT_MENU_LIST_END,
+    }
+};
 
-            int i = 1;     
-            while(dir_findnext(CPAK_MOUNT_ARRAY[controller_selected], &dir_entry) == 0) {
-                
-                write_note_name_info_list(controller_selected, i, dir_entry.d_name);
-            
-                i++;
-                if (i >= MAX_NUM_NOTES) break;
+static const char *status_value (menu_t *menu) {
+    if (!has_pak) return "No Controller Pak";
+    if (corrupted) return "Needs formatting";
+    return "Controller Pak";
+}
 
-                ctr_p_data_loop = true;
-            }
+static const char *free_space_value (menu_t *menu) {
+    static char buffer[48];
+    if (!has_pak || corrupted) {
+        return "-";
+    }
+    snprintf(buffer, sizeof(buffer), "%d of %d blocks, %d of %d notes",
+        stats.pages.total - stats.pages.used, stats.pages.total,
+        stats.notes.total - stats.notes.used, stats.notes.total);
+    return buffer;
+}
+
+static const char *needs_pak_value (menu_t *menu) {
+    return !has_pak ? "No Controller Pak" : (corrupted ? "Needs formatting" : NULL);
+}
+
+static const char *needs_clock_value (menu_t *menu) {
+    return use_rtc ? needs_pak_value(menu) : "Needs the clock";
+}
+
+static void backup_pak_action (menu_t *menu) { pending_op = OP_BACKUP_PAK; }
+static void restore_action (menu_t *menu) { open_restore_list(); }
+static void format_action (menu_t *menu) { confirm_op = OP_FORMAT; }
+
+static void note_action (menu_t *menu);
+
+#define ROW_CONTROLLER  (0)
+#define FIRST_NOTE_ROW  (6)
+
+static option_t options[FIRST_NOTE_ROW + MAX_NUM_NOTES];
+static option_list_t list = { .options = options };
+
+/** @brief Rebuild the rows for the current pak (which rows can be used depends on it). */
+static void build_options (void) {
+    bool usable = has_pak && !corrupted;
+    bool can_backup = usable && use_rtc;
+
+    options[0] = (option_t) { .label = "Controller", .type = OPTION_CHOICE, .picker = &controller_picker,
+        .description = "Which controller's pak to use." };
+    options[1] = (option_t) { .label = "Status", .type = OPTION_INFO, .value = status_value };
+    options[2] = (option_t) { .label = "Free Space", .type = OPTION_INFO, .value = free_space_value };
+    options[3] = (option_t) { .label = "Back Up Whole Pak", .type = OPTION_ACTION,
+        .action = can_backup ? backup_pak_action : NULL, .value = can_backup ? NULL : needs_clock_value,
+        .description = "Save everything on the pak to cpak_saves on the SD card." };
+    options[4] = (option_t) { .label = "Restore a Backup", .type = OPTION_ACTION, .action = restore_action,
+        .description = "Write a saved pak or note back to a Controller Pak." };
+    options[5] = (option_t) { .label = "Format Pak", .type = OPTION_ACTION,
+        .action = has_pak ? format_action : NULL, .value = has_pak ? NULL : needs_pak_value,
+        .description = "Erase everything on the pak." };
+
+    int count = FIRST_NOTE_ROW;
+    if (usable) {
+        for (int i = 0; i < note_count; i++) {
+            // The value column (game code and size) is drawn by draw_note_values(): value
+            // callbacks don't know which row they belong to.
+            options[count++] = (option_t) { .label = note_labels[i], .type = OPTION_ACTION, .action = note_action,
+                .description = "Back up or delete this note." };
         }
     }
+    list.count = count;
 }
 
-static void dump_complete_cpak(int port) {
-    snprintf(failure_message_note, sizeof(failure_message_note), " ");
-
-    
-    int banks = cpak_probe_banks(port);
-    if (banks < 1) {
-        // Fallback to 1 bank if probing not available; or show error.
-        banks = 1;
-    }
-
-    get_rtc_time(string_datetime_cpak);
-    char complete_filename[200];
-    snprintf(complete_filename, sizeof(complete_filename), "%s/CPAK_%s%s", CPAK_PATH, string_datetime_cpak, CPAK_EXTENSION);
-
-    FILE *fp = fopen(complete_filename, "wb");
-    if (!fp) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "Failed to open file for writing: %s\n", complete_filename);
-        error_message_displayed = true;
-        return;
-    }
-
-    uint8_t *bankbuf = scratch_malloc(MEMPAK_BANK_SIZE);
-    bool used_scratch = true;
-    if (!bankbuf) {
-        used_scratch = false;
-        bankbuf = malloc(MEMPAK_BANK_SIZE);
-    }
-    if (!bankbuf) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "Memory allocation failed!");
-        error_message_displayed = true;
-        fclose(fp);
-        return;
-    }
-
-    for (int b = 0; b < banks; ++b) {
-        int rd = cpak_read((joypad_port_t)port, (uint8_t)b, 0, bankbuf, MEMPAK_BANK_SIZE);
-        if (rd < 0 || rd != MEMPAK_BANK_SIZE) {
-            snprintf(failure_message_note, sizeof(failure_message_note), "Failed to read Controller Pak bank %d (err=%d)", b, (rd < 0) ? errno : -1);
-            error_message_displayed = true;
-            if (used_scratch) {
-                scratch_free(bankbuf);
-            } else {
-                free(bankbuf);
-            }
-            fclose(fp);
-            return;
-        }
-
-        size_t wr = fwrite(bankbuf, 1, MEMPAK_BANK_SIZE, fp);
-        if (wr != MEMPAK_BANK_SIZE) {
-            snprintf(failure_message_note, sizeof(failure_message_note), "Failed to write data to file: %s", complete_filename);
-            error_message_displayed = true;
-            if (used_scratch) {
-                scratch_free(bankbuf);
-            } else {
-                free(bankbuf);
-            }
-            fclose(fp);
-            return;
-        }
-    }
-
-    if (used_scratch) {
-        scratch_free(bankbuf);
-    } else {
-        free(bankbuf);
-    }
-    fclose(fp);
-    process_complete_full_dump = true;
+static void note_action (menu_t *menu) {
+    note_selected = list.selected - FIRST_NOTE_ROW;
+    ui_components_context_menu_init(&note_menu);
+    ui_components_context_menu_show(&note_menu);
 }
 
-static void dump_single_note(int _port, int16_t selected_index) {
-    snprintf(failure_message_note, sizeof(failure_message_note), " ");
-    FILE *fSource, *fDump;
-    char filename_note[256];
 
-    get_rtc_time(string_datetime_cpak);
-
-    snprintf(filename_note, sizeof(filename_note), "%s%s", CPAK_MOUNT_ARRAY[controller_selected], controller_pak_name_notes[selected_index]);
-
-    fSource = fopen(filename_note, "rb");
-    if (fSource == NULL) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "No note found in controller %d at slot %d!", controller_selected + 1, selected_index + 1);
-        error_message_displayed = true;
-        return;
-    }
-
-    char sanitized_note_name[MAX_STRING_LENGTH];
-    cpakfs_sanitize_fat_filename(sanitized_note_name, controller_pak_name_notes[selected_index], sizeof(sanitized_note_name));
-    snprintf(filename_note, sizeof(filename_note), "%s/%s_%s%s", CPAK_NOTES_PATH, sanitized_note_name, string_datetime_cpak, CPAK_NOTE_EXTENSION);
-
-    fDump = fopen(filename_note, "wb");
-    if (fDump == NULL) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "Unable to create dump file: %s", filename_note);
-        fclose(fSource);
-        error_message_displayed = true;
-        return;
-    }
-
-    surface_t *d = display_try_get();
-    rdpq_attach(d, NULL);
-    
-    ui_components_messagebox_draw(
-        "Which note would you like to dump?\n\n"
-        "Note selected: N.%-2.2d\n\n"
-        "A: Select    B: No\n"
-        "▼▲: Select note number",
-        index_selected + 1
-    );
-    ui_components_loader_draw(0, "Saving Controller Pak note...");
-    rdpq_detach_show();
-
-    char buffer[4096];
-    size_t bytesRead;
-
-    while ((bytesRead = fread(buffer, 1, sizeof(buffer), fSource)) > 0) {
-        size_t bytesWritten = fwrite(buffer, 1, bytesRead, fDump);
-        if (bytesWritten < bytesRead) {
-            fclose(fSource);
-            fclose(fDump);
-            snprintf(failure_message_note, sizeof(failure_message_note), "Write error while copying to destination!");
-            error_message_displayed = true;
-            return;
-        }
-    }
-
-    fclose(fSource);
-    fclose(fDump);
-    process_complete_note_dump = true;
-
-}
-
-static void delete_single_note(int _port, unsigned short selected_index) {
-    snprintf(failure_message_note, sizeof(failure_message_note), " ");
-    char filename_note[256];
-
-    snprintf(filename_note, sizeof(filename_note), "%s%s", CPAK_MOUNT_ARRAY[controller_selected], controller_pak_name_notes[selected_index]);
-
-    if (!file_exists(filename_note)) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "No note found in controller %d at slot %d!", controller_selected + 1, selected_index + 1);
-        error_message_displayed = true;
-        return;
-    }
-
-    remove(filename_note);
-
-    if (file_exists(filename_note)) {
-        snprintf(failure_message_note, sizeof(failure_message_note), "Failed to delete file: %s", filename_note);
-        error_message_displayed = true;
-        return;
-    }  
-
-    reset_vars();
-    cpakfs_unmount(controller_selected);
-    mounted[controller_selected] = false;
-    has_pak[controller_selected] = false;
-    corrupted[controller_selected] = false; 
-    unmounted = true;
-    process_complete_delete = true;
-}
-
-static bool is_one_of_process_complete() {
-    return process_complete_full_dump 
-    || process_complete_note_dump 
-    || process_complete_format 
-    || process_complete_delete
-    || error_message_displayed;
-}
-
+/* ---- Input ---- */
 
 static void process (menu_t *menu) {
+    if (message[0] != '\0') {
+        if (menu->actions.enter || menu->actions.back) {
+            message[0] = '\0';
+            sound_play_effect(SFX_EXIT);
+        }
+        return;
+    }
 
-    if (is_one_of_process_complete()) {
-     
-        if(process_complete_full_dump && menu->actions.enter) {
-            sound_play_effect(SFX_ENTER);
-            process_complete_full_dump = false;
+    if (confirm_op != OP_NONE) {
+        if (menu->actions.enter) {
+            pending_op = confirm_op;
+            confirm_op = OP_NONE;
+        } else if (menu->actions.back) {
+            confirm_op = OP_NONE;
+            sound_play_effect(SFX_EXIT);
+        }
+        return;
+    }
+
+    if (ui_components_context_menu_process(menu, &note_menu)) {
+        return;
+    }
+
+    if (restoring) {
+        if (ui_components_option_list_process(menu, &backup_list)) {
             return;
         }
-
-        if(process_complete_note_dump && menu->actions.enter) {
-            sound_play_effect(SFX_ENTER);
-            process_complete_note_dump = false;
-            return;
+        if (menu->actions.back) {
+            restoring = false;
+            sound_play_effect(SFX_EXIT);
         }
+        return;
+    }
 
-        if(process_complete_format && menu->actions.enter) {
-            sound_play_effect(SFX_ENTER);
-            process_complete_format = false;
-            return;
+    refresh_pak();
+    build_options();
+    if (list.selected >= list.count) {
+        list.selected = list.count - 1;
+    }
+
+    if (ui_components_option_list_process(menu, &list)) {
+        return;
+    }
+
+    if (menu->actions.back) {
+        unmount_all();
+        sound_play_effect(SFX_EXIT);
+        menu->next_mode = MENU_MODE_SETTINGS_HUB;
+    }
+}
+
+
+/* ---- Drawing ---- */
+
+static void draw_note_values (void) {
+    // Note rows' values (game code and size), drawn in the value column next to each row.
+    int visible = OPTION_LIST_VISIBLE_ROWS;
+    for (int row = 0; row < visible && list.first_visible + row < list.count; row++) {
+        int i = list.first_visible + row;
+        if (i < FIRST_NOTE_ROW) {
+            continue;
         }
-
-        if(process_complete_delete && menu->actions.enter) {
-            sound_play_effect(SFX_ENTER);
-            process_complete_delete = false;
-            return;
-        }
-
-        if(error_message_displayed && menu->actions.enter) {
-            sound_play_effect(SFX_ENTER);
-            error_message_displayed = false;
-            return;
-        }
-        
-    } else {
-
-        if (ui_components_context_menu_process(menu, &options_context_menu)) {
-            return;
-        }
-
-        if (!show_complete_dump_confirm_message && 
-            !show_complete_write_confirm_message && 
-            !show_single_note_write_info_message &&
-            !show_single_note_dump_confirm_message &&
-            !show_single_note_delete_confirm_message &&
-            !show_format_controller_pak_confirm_message) {
-            if(menu->actions.go_left) {
-                sound_play_effect(SFX_SETTING);
-                controller_selected = ((controller_selected - 1) + 4) % 4;
-                reset_vars();
-            } else if (menu->actions.go_right) {
-                sound_play_effect(SFX_SETTING);
-                controller_selected = ((controller_selected + 1) + 4) % 4;
-                reset_vars();
-            } else if (menu->actions.back) {
-                unmount_all_cpakfs();
-                reset_vars();
-                for(int i = 0; i < 4; i++){
-                    mounted[i] = false;
-                    has_pak[i] = false;
-                    corrupted[i] = false;
-                    memset(&stats_per_port[i], 0, sizeof(stats_per_port[i]));
-                }
-                sound_play_effect(SFX_EXIT);
-                menu->next_mode = MENU_MODE_SETTINGS_HUB;
-            } else if (menu->actions.options && use_rtc && has_mem) {
-                sound_play_effect(SFX_SETTING);
-                ui_components_context_menu_show(&options_context_menu);
-            }
-        }
-
-        check_accessories(controller_selected);
-
-        populate_list_cpakfs();
-
-        if (has_mem && !corrupted_pak) {
-
-            // Pressing A : dump the Controller Pak
-            if (menu->actions.enter && 
-                use_rtc && 
-                !show_complete_dump_confirm_message && 
-                !show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_single_note_delete_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                sound_play_effect(SFX_ENTER);
-                show_complete_dump_confirm_message = true;
-                return;
-            } 
-
-            // Pressing L or Z : dump a single note
-            else if (menu->actions.lz_context && 
-                use_rtc && 
-                !show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_complete_dump_confirm_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_single_note_delete_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                sound_play_effect(SFX_ENTER);
-                show_single_note_dump_confirm_message = true;
-                return;
-            }
-
-            if (show_complete_dump_confirm_message && 
-                !show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_single_note_delete_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                if (menu->actions.enter) {
-                    sound_play_effect(SFX_ENTER);
-                    show_complete_dump_confirm_message = false;
-                    start_complete_dump = true;
-                } else if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    show_complete_dump_confirm_message = false;
-                }
-                return;
-            } else if (show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_complete_dump_confirm_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_single_note_delete_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    show_complete_write_confirm_message = false;                    
-                }
-                return;
-            } else if (show_single_note_write_info_message &&
-                !show_complete_write_confirm_message &&
-                !show_complete_dump_confirm_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_single_note_delete_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    show_single_note_write_info_message = false;                    
-                }
-                return;
-            } else if (show_single_note_dump_confirm_message && 
-                !show_complete_dump_confirm_message &&
-                !show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_single_note_delete_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                if (menu->actions.enter) {
-                    sound_play_effect(SFX_ENTER);
-                    show_single_note_dump_confirm_message = false;
-                    start_single_note_dump = true;
-                } else if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    show_single_note_dump_confirm_message = false;                    
-                } else if (menu->actions.go_up) {
-                    sound_play_effect(SFX_CURSOR);
-                    index_selected = dec_index_note(index_selected);
-                } else if (menu->actions.go_down) {
-                    sound_play_effect(SFX_CURSOR);
-                    index_selected = inc_index_note(index_selected);
-                }
-                return;
-            }  else if (show_single_note_delete_confirm_message && 
-                !show_complete_dump_confirm_message &&
-                !show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_format_controller_pak_confirm_message) {
-                if (menu->actions.enter) {
-                    show_single_note_delete_confirm_message = false;
-                    sound_play_effect(SFX_ENTER);
-                    start_single_note_delete = true;
-                } else if (menu->actions.back) {
-                    show_single_note_delete_confirm_message = false;
-                    sound_play_effect(SFX_EXIT);
-                } else if (menu->actions.go_left) {
-                    sound_play_effect(SFX_CURSOR);
-                    index_selected = dec_index_note(index_selected);
-                } else if (menu->actions.go_right) {
-                    sound_play_effect(SFX_CURSOR);
-                    index_selected = inc_index_note(index_selected);
-                }
-                return;
-            } else if (show_format_controller_pak_confirm_message && 
-                !show_complete_dump_confirm_message &&
-                !show_complete_write_confirm_message &&
-                !show_single_note_write_info_message &&
-                !show_single_note_dump_confirm_message &&
-                !show_single_note_delete_confirm_message) {
-                if (menu->actions.enter) {
-                    sound_play_effect(SFX_ENTER);
-                    show_format_controller_pak_confirm_message = false;
-                    start_format_controller_pak = true;
-                } else if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    show_format_controller_pak_confirm_message = false;                    
-                } 
-                return;
-            }
-        } else if (has_mem && corrupted_pak) {
-
-            if (!show_format_controller_pak_confirm_message) {
-                if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    menu->next_mode = MENU_MODE_SETTINGS_HUB;
-                } else if (menu->actions.enter) {
-                    sound_play_effect(SFX_ENTER);
-                    show_format_controller_pak_confirm_message = true;
-                }
-            } else {
-                if (menu->actions.enter) {
-                    sound_play_effect(SFX_ENTER);
-                    show_format_controller_pak_confirm_message = false;
-                    start_format_controller_pak = true;
-                } else if (menu->actions.back) {
-                    sound_play_effect(SFX_EXIT);
-                    show_format_controller_pak_confirm_message = false;
-                } 
-            }
-        }
+        int y = SETTINGS_LIST_Y + (row * OPTION_LIST_ROW_PITCH);
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = (i == list.selected) ? STL_DEFAULT : STL_GRAY },
+            FNT_DEFAULT, OPTION_LIST_VALUE_X, y, "%s", note_values[i - FIRST_NOTE_ROW]);
     }
 }
 
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach(d, NULL);
+    rdpq_attach_clear(d, NULL);
 
-    ui_components_background_draw();
-
-    ui_components_layout_draw();
-
-    char has_mem_text[64];
-    char free_space_cpak_text[64];
-    menu_font_type_t style;
-
-    style = STL_DEFAULT;
-
-    if (has_mem) {
-            snprintf(has_mem_text, sizeof(has_mem_text), "Controller Pak detected");
-        style = STL_GREEN;
-
-        if (has_mem && !corrupted_pak) {
-            style = STL_GREEN;
-            snprintf(free_space_cpak_text, sizeof(free_space_cpak_text), "%d/%d free blocks available", cpakfs_stats.pages.total - cpakfs_stats.pages.used, cpakfs_stats.pages.total);
-        } else if (has_mem && corrupted_pak) {
-            snprintf(has_mem_text, sizeof(has_mem_text), "Controller Pak detected (Corrupted)");
-            style = STL_ORANGE;
-            snprintf(free_space_cpak_text, sizeof(free_space_cpak_text), " ");
+    if (restoring) {
+        ui_components_option_screen_draw(menu, "Restore a Backup", &backup_list);
+        if (backup_count == 0) {
+            ui_components_text_draw(
+                &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
+                FNT_DEFAULT, CAROUSEL_SELECTED_X, SETTINGS_LIST_Y,
+                "No backups yet. Back up a pak or a note first; backups are kept in cpak_saves on the SD card."
+            );
         }
     } else {
-        snprintf(has_mem_text, sizeof(has_mem_text), "No Controller Pak detected");
-        style = STL_ORANGE;
-        snprintf(free_space_cpak_text, sizeof(free_space_cpak_text), " ");
+        ui_components_option_screen_draw(menu, "Controller Pak", &list);
+        draw_note_values();
+        ui_components_context_menu_draw(&note_menu);
     }
 
-    ui_components_main_text_draw(STL_DEFAULT,
-        ALIGN_CENTER, VALIGN_TOP,
-        "CONTROLLER PAK MANAGEMENT\n"
-    );
-
-    ui_components_main_text_draw(STL_DEFAULT,
-        ALIGN_LEFT, VALIGN_TOP,
-        "\n"
-        "Controller: < %d >\n",
-            controller_selected + 1
-    );
-
-    ui_components_main_text_draw(style,
-        ALIGN_LEFT, VALIGN_TOP,
-        "\n"
-        "                   %s\n",
-        has_mem_text
-    );
-
-    if (has_mem) {
-        ui_components_main_text_draw(STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "                   %s\n",
-            free_space_cpak_text
-        );
-
-        ui_components_main_text_draw(STL_DEFAULT,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "\n"
-            "            Name           Code    Ext.    Blocks used\n"
-        );
-
-        ui_components_main_text_draw(style,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "\n"
-            "\n"
-            "N.01: %s\n"
-            "N.02: %s\n"
-            "N.03: %s\n"
-            "N.04: %s\n"
-            "N.05: %s\n"
-            "N.06: %s\n"
-            "N.07: %s\n"
-            "N.08: %s\n"
-            "N.09: %s\n"
-            "N.10: %s\n"
-            "N.11: %s\n"
-            "N.12: %s\n"
-            "N.13: %s\n"
-            "N.14: %s\n"
-            "N.15: %s\n"
-            "N.16: %s\n",
-            cpakfs_path_strings[0].filename,
-            cpakfs_path_strings[1].filename,
-            cpakfs_path_strings[2].filename,
-            cpakfs_path_strings[3].filename,
-            cpakfs_path_strings[4].filename,
-            cpakfs_path_strings[5].filename,
-            cpakfs_path_strings[6].filename,
-            cpakfs_path_strings[7].filename,
-            cpakfs_path_strings[8].filename,
-            cpakfs_path_strings[9].filename,
-            cpakfs_path_strings[10].filename,
-            cpakfs_path_strings[11].filename,
-            cpakfs_path_strings[12].filename,
-            cpakfs_path_strings[13].filename,
-            cpakfs_path_strings[14].filename,
-            cpakfs_path_strings[15].filename
-        );
-
-        ui_components_main_text_draw(style,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "\n"
-            "\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n"
-            "                           %s\n",
-            cpakfs_path_strings[0].gamecode,
-            cpakfs_path_strings[1].gamecode,
-            cpakfs_path_strings[2].gamecode,
-            cpakfs_path_strings[3].gamecode,
-            cpakfs_path_strings[4].gamecode,
-            cpakfs_path_strings[5].gamecode,
-            cpakfs_path_strings[6].gamecode,
-            cpakfs_path_strings[7].gamecode,
-            cpakfs_path_strings[8].gamecode,
-            cpakfs_path_strings[9].gamecode,
-            cpakfs_path_strings[10].gamecode,
-            cpakfs_path_strings[11].gamecode,
-            cpakfs_path_strings[12].gamecode,
-            cpakfs_path_strings[13].gamecode,
-            cpakfs_path_strings[14].gamecode,
-            cpakfs_path_strings[15].gamecode
-        );
-
-        ui_components_main_text_draw(style,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "\n"
-            "\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n"
-            "                                    %s\n", 
-            cpakfs_path_strings[0].ext,
-            cpakfs_path_strings[1].ext,
-            cpakfs_path_strings[2].ext,
-            cpakfs_path_strings[3].ext,
-            cpakfs_path_strings[4].ext,
-            cpakfs_path_strings[5].ext,
-            cpakfs_path_strings[6].ext,
-            cpakfs_path_strings[7].ext,
-            cpakfs_path_strings[8].ext,
-            cpakfs_path_strings[9].ext,
-            cpakfs_path_strings[10].ext,
-            cpakfs_path_strings[11].ext,
-            cpakfs_path_strings[12].ext,
-            cpakfs_path_strings[13].ext,
-            cpakfs_path_strings[14].ext,
-            cpakfs_path_strings[15].ext
-        );
-
-        ui_components_main_text_draw(style,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "\n"
-            "\n"
-            "\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n"
-            "                                              %s\n", 
-            controller_pak_name_notes_bank_size[0],
-            controller_pak_name_notes_bank_size[1],
-            controller_pak_name_notes_bank_size[2],
-            controller_pak_name_notes_bank_size[3],
-            controller_pak_name_notes_bank_size[4],
-            controller_pak_name_notes_bank_size[5],
-            controller_pak_name_notes_bank_size[6],
-            controller_pak_name_notes_bank_size[7],
-            controller_pak_name_notes_bank_size[8],
-            controller_pak_name_notes_bank_size[9],
-            controller_pak_name_notes_bank_size[10],
-            controller_pak_name_notes_bank_size[11],
-            controller_pak_name_notes_bank_size[12],
-            controller_pak_name_notes_bank_size[13],
-            controller_pak_name_notes_bank_size[14],
-            controller_pak_name_notes_bank_size[15]
-        );
+    if (message[0] != '\0') {
+        ui_components_messagebox_draw("%s", message);
+    } else if (confirm_op == OP_FORMAT) {
+        ui_components_messagebox_draw("Format the Controller Pak?\nEverything on it will be erased.\n\nA: Format    B: Cancel");
+    } else if (confirm_op == OP_DELETE_NOTE) {
+        ui_components_messagebox_draw("Delete \"%s\"?\n\nA: Delete    B: Cancel", note_labels[note_selected]);
+    } else if (pending_op != OP_NONE) {
+        ui_components_messagebox_draw("Working...");
     }
 
-    ui_components_context_menu_draw(&options_context_menu);
-
-    style = (has_mem && !corrupted_pak) ? STL_DEFAULT : STL_GRAY;
-
-    if (!use_rtc) {
-        ui_components_main_text_draw(STL_ORANGE,
-            ALIGN_LEFT, VALIGN_TOP,
-            "No RTC\n"
-        );
-        style = STL_GRAY;
-    }
-
-    if (!corrupted_pak) {
-
-        ui_components_actions_bar_text_draw(style,
-            ALIGN_LEFT, VALIGN_TOP,
-            "A: Backup whole Pak\n"
-            "B: Back\n"
-        );
-        ui_components_actions_bar_text_draw(style,
-            ALIGN_RIGHT, VALIGN_TOP,
-            "L|Z: Backup a Note\n"
-            "R: Options\n"
-        );
-    } else {
-        ui_components_actions_bar_text_draw(style,
-            ALIGN_LEFT, VALIGN_TOP,
-            "A: Format Controller Pak\n"
-            "\n"
-        );
-    }
-
-    ui_components_actions_bar_text_draw(style,
-        ALIGN_CENTER, VALIGN_TOP,
-        "\n"
-        "◀ Change Controller ▶\n"
-    );
-
-    if (error_message_displayed) {
-        ui_components_messagebox_draw(
-            "Error: %s\n\n"
-            "Press A to continue.",
-            failure_message_note
-        );   
-    }
-
-    if (process_complete_format) {
-        ui_components_messagebox_draw(
-            "Controller Pak formatted.\n\n"
-            "Press A to continue."
-        );   
-    }
-
-    if (process_complete_full_dump) {
-        ui_components_messagebox_draw(
-            "Pak saved to:\n"
-            "%s\n\n"
-            "Press A to continue.",
-            CPAK_PATH
-        );   
-    }
-
-    if (process_complete_note_dump) {
-        ui_components_messagebox_draw(
-            "Note saved to:\n"
-            "%s/notes\n\n"
-            "Press A to continue.",
-            CPAK_PATH
-        );   
-    }
-
-    if (process_complete_delete) {
-        ui_components_messagebox_draw(
-            "Note %d deleted from Controller Pak.\n\n"
-            "Press A to continue.",
-            index_selected + 1
-        );   
-    }
-
-    if (show_complete_dump_confirm_message && 
-        !start_complete_dump) {
-        ui_components_messagebox_draw(
-            "Do you want to backup the Controller Pak?\n\n"
-            "A: Yes        B: No"
-        );   
-    } else if (show_complete_write_confirm_message) {
-        ui_components_messagebox_draw(
-            "To write a complete backup, browse to a file"
-            " with the extension \".mpk\" or \".pak\" in the menu filebrowser.\n\n"
-            "B: Back"
-        );   
-    } else if (show_single_note_write_info_message) {
-        ui_components_messagebox_draw(
-            "To write a single note, browse to a file"
-            " with the extension \".mpkn\" or \".paknote\" in the menu filebrowser.\n\n"
-            "B: Back"
-        );   
-    }
-
-    if (show_single_note_dump_confirm_message &&
-        !start_single_note_dump) {
-        ui_components_messagebox_draw(
-            "Which note would you like to backup?\n\n"
-            "Note selected: N.%-2.2d\n\n"
-            "A: Select    B: No\n"
-            "▼▲: Select note number",
-            index_selected + 1
-        );
-    }
-
-    if (show_single_note_delete_confirm_message &&
-        !start_single_note_delete) {
-        ui_components_messagebox_draw(
-            "Which note would you like to delete?\n\n"
-            "Note selected: N.%-2.2d\n\n"
-            "A: Select    B: No\n"
-            "▼▲: Select note number",
-            index_selected + 1
-        );
-    }
-
-    if (show_format_controller_pak_confirm_message && 
-        !start_format_controller_pak) {
-        ui_components_messagebox_draw(
-            "Do you want to format the Controller pak?\n\n"
-            "A: Yes        B: No"
-        );   
-    }
-
-    if (start_complete_dump) {
-
-        if (cpakfs_stats.pages.used <= 0) {
-            rdpq_detach_show();
-            snprintf(failure_message_note, sizeof(failure_message_note), "No data found on Controller Pak on controller %d!", controller_selected + 1);
-            error_message_displayed = true;
-            start_complete_dump = false;
-            return;
-
-        } else {
-            ui_components_loader_draw(0, "Saving Controller Pak...");
-            rdpq_detach_show();
-            dump_complete_cpak(controller_selected);
-            start_complete_dump = false;
-            return;
-        }
-    }
-
-    if (start_single_note_dump) {
-        rdpq_detach_show();
-        dump_single_note(controller_selected, index_selected);
-        start_single_note_dump = false;
-        return;
-    }
-
-    if (start_single_note_delete) {
-        rdpq_detach_show();
-        delete_single_note(controller_selected, index_selected);
-        start_single_note_delete = false;
-        return;
-    }
-
-    if (start_format_controller_pak) {
-        rdpq_detach_show();
-        format_controller_pak();
-        start_format_controller_pak = false;
-        return;
-    }
-    
     rdpq_detach_show();
+
+    // Slow operations run after a frame that says they're in progress.
+    if (pending_op != OP_NONE) {
+        operation_t op = pending_op;
+        pending_op = OP_NONE;
+        run_operation(op);
+    }
 }
 
+
 void view_controller_pakfs_init (menu_t *menu) {
-    ctr_p_data_loop = false;
+    unmount_all();
     controller_selected = 0;
-    reset_vars();
-    unmount_all_cpakfs();
-    unmounted = true;
+    has_pak = false;
+    corrupted = false;
+    notes_loaded = false;
+    note_count = 0;
+    confirm_op = OP_NONE;
+    pending_op = OP_NONE;
+    message[0] = '\0';
+    restoring = false;
 
-    for(int i = 0; i < 4; i++){
-        mounted[i] = false;
-        has_pak[i] = false;
-        corrupted[i] = false;
-        memset(&stats_per_port[i], 0, sizeof(stats_per_port[i]));
-    }
-
-    use_rtc = menu->current_time >= 0 ? true : false;
+    use_rtc = (menu->current_time >= 0);
 
     directory_create(CPAK_PATH);
     directory_create(CPAK_NOTES_PATH);
 
-    ui_components_context_menu_init(&options_context_menu);
+    refresh_pak();
+    build_options();
+    ui_components_option_list_init(&list);
+    ui_components_context_menu_init(&note_menu);
 }
 
 void view_controller_pakfs_display (menu_t *menu, surface_t *display) {
