@@ -120,11 +120,11 @@ static void draw_text (int x, int y, menu_font_style_t style, const char *text) 
     );
 }
 
-/** @brief White badge with black text, like the mockup's RUMBLE PAK / USA tags. Returns its width. */
+/** @brief Grey badge with white text for the RUMBLE PAK / USA style tags. Returns its width. */
 static int draw_badge (int x, int y, const char *text) {
     int nbytes = strlen(text);
     rdpq_paragraph_t *layout = rdpq_paragraph_build(
-        &(rdpq_textparms_t) { .style_id = STL_BLACK },
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },
         FNT_SMALL, text, &nbytes
     );
     int width = (int) (layout->advance_x) + (BADGE_PADDING * 2);
@@ -151,7 +151,7 @@ static void draw_player_count (int x, int y, uint32_t players) {
     int width = (BADGE_PADDING * 2) + (MAX_PLAYERS * 7) - 2;
     ui_components_box_draw(x, y - 10, x + width, y + 3, GAME_INFO_BADGE_COLOR);
     for (uint32_t i = 0; i < MAX_PLAYERS; i++) {
-        draw_player_icon(x + BADGE_PADDING + (i * 7), y - 8, (i < players) ? RGBA32(0, 0, 0, 0xFF) : GAME_INFO_PLAYER_OFF_COLOR);
+        draw_player_icon(x + BADGE_PADDING + (i * 7), y - 8, (i < players) ? GAME_INFO_PLAYER_ON_COLOR : GAME_INFO_PLAYER_OFF_COLOR);
     }
 }
 

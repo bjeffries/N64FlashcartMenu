@@ -427,10 +427,12 @@
 #define GAME_INFO_ROW_PITCH             (16)
 /** @brief Extra space between groups of info rows. */
 #define GAME_INFO_GROUP_GAP             (6)
-/** @brief Info value badge background (white box with black text). */
-#define GAME_INFO_BADGE_COLOR           RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
-/** @brief Player icon for a player slot the game doesn't support. */
-#define GAME_INFO_PLAYER_OFF_COLOR      RGBA32(0xB0, 0xB0, 0xB0, 0xFF)
+/** @brief Info value badges (player count, accessories, region): grey fill with white text,
+ *         the same grey as information rows in the settings screens. */
+#define GAME_INFO_BADGE_COLOR           OPTION_LIST_INFO_BAND_COLOR
+/** @brief Player icons: supported players, and unused player slots. */
+#define GAME_INFO_PLAYER_ON_COLOR       RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define GAME_INFO_PLAYER_OFF_COLOR      RGBA32(0x55, 0x55, 0x55, 0xFF)
 
 /** @brief About page: text line height (12px font), the first line's ascent, and the bottom of the text area. */
 #define GAME_INFO_ABOUT_LINE_HEIGHT     (14)
