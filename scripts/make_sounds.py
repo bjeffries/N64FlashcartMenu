@@ -25,11 +25,11 @@ VOLUME = 0.30           # overall level; the menu also plays effects at half vol
 
 # (frequency Hz, start ms, length ms, decay ms, level)
 NOTES = {
-    'cursorsound': [(1320, 0, 28, 7, 0.55)],
+    'cursorsound': [(523, 0, 40, 12, 0.6)],                         # C5: root of the boot cue's final chord
     'enter': [(784, 0, 70, 22, 0.8), (1175, 45, 110, 34, 0.8)],     # G5 -> D6
     'back': [(1175, 0, 70, 22, 0.7), (784, 45, 110, 34, 0.7)],      # D6 -> G5
-    'settings': [(988, 0, 90, 26, 0.7)],                            # B5
-    'error': [(294, 0, 90, 30, 1.0), (220, 70, 150, 45, 1.0)],      # D4 -> A3
+    'settings': [(659, 0, 90, 26, 0.7)],                            # E5: third of the boot cue's final chord
+    'error': [(294, 0, 90, 30, 1.0), (196, 70, 150, 45, 1.0)],      # D4 -> G3
 }
 
 ATTACK_MS = 4
