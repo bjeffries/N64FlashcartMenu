@@ -9,7 +9,8 @@ Timeline
   10–54: constant-speed approach along a shallow circular arc.
   55–57: corona fades in at totality.
   58–72: black moon shifts 8 px right, clipping the corona into a C.
-  73–81: remaining ECLIPSE letters fade in, Oxanium Medium at 93 px.
+  73–81: remaining ECLIPSE letters fade in (Oxanium Light, 93 px), with CART
+         centred below (Oxanium Medium, 28 px, 14 px letter spacing).
   82–90: hold the complete title.
 
 At totality, the corona becomes the title outline and the solar disc stays

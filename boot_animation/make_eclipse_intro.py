@@ -39,6 +39,9 @@ TITLE_TEXT, TITLE_FONT_SIZE, TITLE_FONT_WEIGHT = 'ECLIPSE', 93, 300
 TITLE_SPACING, TITLE_C_SLOT_WIDTH = 6, 64
 TITLE_OPTICAL_OFFSET_X = -2  # Centre visible ink, accounting for font sidebearings.
 TITLE_COLOUR = (255, 255, 255)
+SUBTITLE_TEXT, SUBTITLE_FONT_SIZE = 'CART', 28  # Fades in with the title, centred below it.
+SUBTITLE_FONT_WEIGHT = 500  # Heavier than the title so its bars stay >= 2 px (480i flicker).
+SUBTITLE_SPACING, SUBTITLE_GAP = 14, 18  # Letter spacing; gap below the title's ink, px.
 SAFE_BOUNDS = (32, 24, 608, 456)
 EMPTY_FROM_Y = 330
 CONTACT_STEP, CONTACT_COLUMNS = 5, 3
@@ -71,9 +74,32 @@ def title_mask():
     for glyph in glyphs:
         mask.paste(glyph, (x, round(SUN_CENTRE[1] * SUPERSAMPLE) - glyph.height // 2))
         x += glyph.width + TITLE_SPACING * SUPERSAMPLE
+    subtitle_top = mask.getbbox()[3] + SUBTITLE_GAP * SUPERSAMPLE
+    subtitle_width = paste_word(mask, SUBTITLE_TEXT, SUBTITLE_FONT_SIZE, SUBTITLE_SPACING, subtitle_top)
     return mask, {'font': 'Oxanium Light', 'font_size_px': TITLE_FONT_SIZE,
                   'title_width_px': width / SUPERSAMPLE, 'title_left_px': left / SUPERSAMPLE,
-                  'spacing_px': TITLE_SPACING, 'eclipse_centre': list(SUN_CENTRE)}
+                  'spacing_px': TITLE_SPACING, 'eclipse_centre': list(SUN_CENTRE),
+                  'subtitle': SUBTITLE_TEXT, 'subtitle_font_size_px': SUBTITLE_FONT_SIZE,
+                  'subtitle_width_px': subtitle_width / SUPERSAMPLE, 'subtitle_top_px': subtitle_top / SUPERSAMPLE}
+
+
+def paste_word(mask, text, size, spacing, top):
+    """Paste a letter-spaced word centred horizontally with its cap tops at `top`."""
+    font = ImageFont.truetype(str(FONT_PATH), size * SUPERSAMPLE)
+    font.set_variation_by_axes([SUBTITLE_FONT_WEIGHT])
+    cap_top = font.getbbox('H')[1]
+    glyphs = []
+    for letter in text:
+        bounds = font.getbbox(letter)
+        glyph = Image.new('L', (bounds[2] - bounds[0], bounds[3] - cap_top))
+        ImageDraw.Draw(glyph).text((-bounds[0], -cap_top), letter, font=font, fill=255)
+        glyphs.append(glyph.point(lambda value: 255 if value >= 128 else 0))
+    width = sum(g.width for g in glyphs) + (len(glyphs) - 1) * spacing * SUPERSAMPLE
+    x = round((WIDTH * SUPERSAMPLE - width) / 2)
+    for glyph in glyphs:
+        mask.paste(glyph, (x, top))
+        x += glyph.width + spacing * SUPERSAMPLE
+    return width
 
 
 def srgb_to_linear(value):
