@@ -423,9 +423,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     ui_components_text_draw(
         &(rdpq_textparms_t) {
             .style_id = entry->hidden ? STL_GRAY : STL_DEFAULT,     // hidden games, when shown, are grayed out
-            .width = VISIBLE_AREA_X1 - GAME_INFO_LABEL_X,
-            .wrap = WRAP_ELLIPSES,
-        },
+        },  // no width: long titles run off the edge of the screen
         FNT_TITLE,
         GAME_INFO_LABEL_X,
         CAROUSEL_TITLE_Y,

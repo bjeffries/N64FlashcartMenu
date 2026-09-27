@@ -62,7 +62,7 @@ void ui_components_loading_screen_draw (surface_t *d, float progress, const char
     char title[128];
     ui_components_carousel_title(file_name, false, title, sizeof(title));
     ui_components_text_draw(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },    // long titles run off the edge of the screen
         FNT_TITLE, CAROUSEL_SELECTED_X, LOADING_TITLE_Y, title
     );
 

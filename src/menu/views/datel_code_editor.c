@@ -245,7 +245,7 @@ static void draw (menu_t *menu, surface_t *display) {
     char title[128];
     ui_components_carousel_title(path_last_get(menu->load.rom_path), false, title, sizeof(title));
     ui_components_text_draw(
-        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },    // long titles run off the edge of the screen
         FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
     );
 
