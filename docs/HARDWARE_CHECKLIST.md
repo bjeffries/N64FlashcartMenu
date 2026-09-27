@@ -99,11 +99,11 @@ Power the console off and on after each change to confirm it was saved.
 
 - [ ] **7.1 Menu Settings** toggles keep their values. With **Boot Animation** off, power-on goes straight to
       the Library.
-- [ ] **7.2 Config (C-Right)**: change a game's Save Type, then reopen Config: the value is kept,
+- [ ] **7.2 Config (C-Up)**: change a game's Save Type, then reopen Config: the value is kept,
       and a `.ini` file appears next to the ROM.
 - [ ] **7.3 Favorites (C-Left)** keep their order (alphabetical) after a restart.
-- [ ] **7.4 Hide (C-Up)**: the game stays hidden after a restart; `menu/hidden.txt` lists it.
-      **Show Hidden Games** brings it back greyed out, and C-Up unhides it.
+- [ ] **7.4 Hide (C-Down)**: the game stays hidden after a restart; `menu/hidden.txt` lists it.
+      **Show Hidden Games** brings it back greyed out, and C-Down unhides it.
 - [ ] **7.5 Start Folder**: in the Library select a folder and press C-Left (Set to Default),
       restart: the Library opens in that folder. Menu Settings > Start Folder shows it, and A there
       resets it to the top level.

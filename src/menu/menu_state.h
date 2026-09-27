@@ -96,9 +96,12 @@ typedef struct {
         bool settings;
         bool lz_context;
 
-        bool configure;     // C-right: per-game options (Library)
-        bool remove;        // C-up: hide the game from the Library
-        bool favorite;      // C-left: add to / remove from Favorites
+        // C-buttons, pressed this frame. Each screen decides what they do; hints are always shown
+        // in the order A, B, C-Left, C-Up, C-Right, C-Down.
+        bool c_left;        // Library: Favorite (games) / Set to Default (folders)
+        bool c_up;          // Library: Config
+        bool c_right;
+        bool c_down;        // Library: Hide / Unhide
         bool tab_prev;      // L: previous top-level screen
         bool tab_next;      // R: next top-level screen
     } actions;

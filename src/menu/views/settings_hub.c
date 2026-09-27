@@ -67,7 +67,7 @@ static void draw (menu_t *menu, surface_t *display) {
         items[selected].description
     );
 
-    ui_components_button_hint_draw(ICON_A, GAME_INFO_VALUE_X, LIBRARY_BUTTONS_Y, "Open");
+    ui_components_button_hint_draw(ICON_A, BUTTON_HINTS_X, LIBRARY_BUTTONS_Y, "Open");
 
     rdpq_detach_show();
 }

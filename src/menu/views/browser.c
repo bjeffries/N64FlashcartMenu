@@ -504,12 +504,12 @@ static void process (menu_t *menu) {
             );
         }
         sound_play_effect(SFX_EXIT);
-    } else if (menu->actions.configure && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_ROM) {
+    } else if (menu->actions.c_up && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_ROM) {     // Config
         menu->load.return_mode = MENU_MODE_BROWSER;
         menu->load.open_configure = true;
         menu->next_mode = MENU_MODE_LOAD_ROM;
         sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.favorite && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
+    } else if (menu->actions.c_left && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {  // Favorite
         path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
         int slot = bookkeeping_favorite_find(&menu->bookkeeping, path);
         if (slot >= 0) {
@@ -519,13 +519,13 @@ static void process (menu_t *menu) {
         }
         path_free(path);
         sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.favorite && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
+    } else if (menu->actions.c_left && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
         // C-Left on a folder: open the Library there from now on (reset in Menu Settings).
         if (!selected_folder_is_default(menu)) {
             set_selected_folder_default(menu);
             sound_play_effect(SFX_SETTING);
         }
-    } else if (menu->actions.remove && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
+    } else if (menu->actions.c_down && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {  // Hide / Unhide
         if (menu->browser.entry->hidden) {
             set_selected_hidden(menu, false);       // unhiding is harmless: no confirmation
         } else {
@@ -566,24 +566,25 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
 
-    // Games show Play / Config / Favorite / Hide; folders show Open / Set to Default / Back.
-    int x = GAME_INFO_VALUE_X;
+    // Hints in the order A, B, C-Left, C-Up, C-Right, C-Down.
+    // Games: Play / Back / Favorite / Config / Hide. Folders: Open / Back / Set to Default.
+    int x = BUTTON_HINTS_X;
     entry_t *entry = menu->browser.entry;
     bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
     if (entry) {
         x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_game ? "Play" : "Open Folder") + LIBRARY_HINT_GAP;
-        if (entry->type == ENTRY_TYPE_ROM) {
-            x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
-        }
-        if (is_game) {
-            x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
-            ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
-        } else if (entry->type == ENTRY_TYPE_DIR && !selected_folder_is_default(menu)) {
-            x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Set to Default") + LIBRARY_HINT_GAP;
-        }
     }
-    if (!is_game && !path_is_root(menu->browser.directory)) {
-        ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
+    if (!path_is_root(menu->browser.directory)) {
+        x += ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back") + LIBRARY_HINT_GAP;
+    }
+    if (is_game) {
+        x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
+        if (entry->type == ENTRY_TYPE_ROM) {
+            x += ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
+        }
+        ui_components_button_hint_draw(ICON_C_DOWN, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
+    } else if (entry && !selected_folder_is_default(menu)) {
+        ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Set to Default");
     }
 
 

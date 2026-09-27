@@ -23,9 +23,10 @@ static void actions_clear (menu_t *menu) {
     menu->actions.settings = false;
     menu->actions.lz_context = false;
 
-    menu->actions.configure = false;
-    menu->actions.remove = false;
-    menu->actions.favorite = false;
+    menu->actions.c_left = false;
+    menu->actions.c_up = false;
+    menu->actions.c_right = false;
+    menu->actions.c_down = false;
     menu->actions.tab_prev = false;
     menu->actions.tab_next = false;
 }
@@ -118,9 +119,10 @@ static void actions_update_buttons (menu_t *menu) {
     }
 
     // Library controls, reported alongside the older actions above so existing screens keep working.
-    menu->actions.configure = pressed.c_right;
-    menu->actions.remove = pressed.c_up;
-    menu->actions.favorite = pressed.c_left;
+    menu->actions.c_left = pressed.c_left;
+    menu->actions.c_up = pressed.c_up;
+    menu->actions.c_right = pressed.c_right;
+    menu->actions.c_down = pressed.c_down;
     menu->actions.tab_prev = pressed.l;
     menu->actions.tab_next = pressed.r;
 }

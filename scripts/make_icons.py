@@ -105,7 +105,7 @@ def tab_end_l():
 
 
 def triangle(img, direction):
-    """Solid pixel triangle pointing right, left or up, centred in the icon."""
+    """Solid pixel triangle pointing right, left, up or down, centred in the icon."""
     px = img.load()
     cx, cy = img.width // 2, img.height // 2
     for i in range(5):              # 5 rows/columns from the base to the tip
@@ -114,8 +114,10 @@ def triangle(img, direction):
                 px[cx - 2 + i, cy + j] = BLACK
             elif direction == 'left':
                 px[cx + 1 - i, cy + j] = BLACK
-            else:
+            elif direction == 'up':
                 px[cx + j, cy + 2 - i] = BLACK
+            else:
+                px[cx + j, cy - 2 + i] = BLACK
     return img
 
 
@@ -127,6 +129,7 @@ def main():
         'button_b': letter(circle(ROUND_SIZE, RED), 'B'),
         'button_c_right': triangle(circle(ROUND_SIZE, YELLOW), 'right'),
         'button_c_up': triangle(circle(ROUND_SIZE, YELLOW), 'up'),
+        'button_c_down': triangle(circle(ROUND_SIZE, YELLOW), 'down'),
         'button_c_left': triangle(circle(ROUND_SIZE, YELLOW), 'left'),
         'button_z': letter(circle(ROUND_SIZE, LIGHT_GREY), 'Z'),
         'tab_l': letter(tab_end_l(), 'L', TAB_LETTER_INSET, PILL_W),

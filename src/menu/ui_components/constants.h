@@ -419,12 +419,14 @@
 #define CAROUSEL_TITLE_Y                (CAROUSEL_TILE_Y + CAROUSEL_SELECTED_TILE_SIZE + 44)
 /** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
 #define GAME_INFO_LABEL_X               (CAROUSEL_SELECTED_X)
-/** @brief Left edge of the info panel's values, and of the button hints. */
+/** @brief Left edge of the info panel's values. */
 #define GAME_INFO_VALUE_X               (200)
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Cap height of the title font (FNT_TITLE, 40px); the page dots span it. */
 #define GAME_INFO_TITLE_CAP_HEIGHT      (28)
+/** @brief Left edge of the button hint row on every screen (A, B, C-Left, C-Up, C-Right, C-Down). */
+#define BUTTON_HINTS_X                  (GAME_INFO_LABEL_X)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
 /** @brief Distance between info rows in a group. */

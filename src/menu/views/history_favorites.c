@@ -93,10 +93,10 @@ static void process (menu_t *menu) {
     if (menu->actions.enter) {
         sound_play_effect(SFX_ENTER);
         open_selected(menu, false);
-    } else if (menu->actions.configure && entries[selected].type == ENTRY_TYPE_ROM) {
+    } else if (menu->actions.c_up && entries[selected].type == ENTRY_TYPE_ROM) {    // Config
         sound_play_effect(SFX_SETTING);
         open_selected(menu, true);
-    } else if (menu->actions.favorite) {
+    } else if (menu->actions.c_left) {    // Favorite / Unfavorite
         path_t *path = path_create(entries[selected].name);
         int slot = bookkeeping_favorite_find(&menu->bookkeeping, path);
         if (slot >= 0) {
@@ -152,12 +152,12 @@ static void draw (menu_t *menu, surface_t *display) {
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
 
-    int x = GAME_INFO_VALUE_X;
+    int x = BUTTON_HINTS_X;
     x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Play") + LIBRARY_HINT_GAP;
+    x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
     if (entries[selected].type == ENTRY_TYPE_ROM) {
-        x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
+        ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Config");
     }
-    ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite");
 
     rdpq_detach_show();
 }

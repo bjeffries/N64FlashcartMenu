@@ -123,7 +123,7 @@ static option_t options[] = {
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,
-      .description = "List games you hid with C-Up in the Library, grayed out, so you can unhide them." },
+      .description = "List games you hid with C-Down in the Library, grayed out, so you can unhide them." },
     { .label = "Use Saves Folder", .type = OPTION_TOGGLE, .get = get_use_saves_folder, .set = set_use_saves_folder,
       .description = "Keep save files in a \"saves\" folder next to each game instead of beside it." },
     { .label = "Show Saves Folder", .type = OPTION_TOGGLE, .get = get_show_saves_folder, .set = set_show_saves_folder,

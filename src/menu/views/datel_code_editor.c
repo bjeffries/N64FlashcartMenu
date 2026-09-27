@@ -149,13 +149,13 @@ static void process (menu_t *menu) {
             changed = true;
             sound_play_effect(SFX_SETTING);
         }
-    } else if (menu->actions.configure) {
+    } else if (menu->actions.c_right) {
         start_editing();
         sound_play_effect(SFX_ENTER);
-    } else if (menu->actions.favorite && !is_empty(code)) {     // C-Left
+    } else if (menu->actions.c_left && !is_empty(code)) {
         ui_components_keyboard_open("Description", code->description, DESCRIPTION_MAX);
         sound_play_effect(SFX_ENTER);
-    } else if (menu->actions.remove && !is_empty(code)) {
+    } else if (menu->actions.c_up && !is_empty(code)) {
         confirm_clear = true;
         sound_play_effect(SFX_SETTING);
     } else if (menu->actions.back) {
@@ -251,7 +251,7 @@ static void draw (menu_t *menu, surface_t *display) {
 
     draw_list();
 
-    int x = GAME_INFO_VALUE_X;
+    int x = BUTTON_HINTS_X;
     if (ui_components_keyboard_is_open()) {
         ui_components_keyboard_draw();      // draws its own button hints
     } else if (editing) {
@@ -268,16 +268,14 @@ static void draw (menu_t *menu, surface_t *display) {
             FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
             "Codes are applied when Cheats is On in Config. Changes are saved when you go back."
         );
-        // Five hints don't fit from the value column, and this screen has no page dots on the left.
         bool empty = is_empty(&cheat_codes[selected]);
-        x = empty ? GAME_INFO_VALUE_X : CAROUSEL_SELECTED_X;
         x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, empty ? "Add" : "Toggle") + LIBRARY_HINT_GAP;
+        x += ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back") + LIBRARY_HINT_GAP;
         if (!empty) {
-            x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Edit") + LIBRARY_HINT_GAP;
             x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Name") + LIBRARY_HINT_GAP;
             x += ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Clear") + LIBRARY_HINT_GAP;
+            ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Edit");
         }
-        ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
     }
 
     if (confirm_clear) {

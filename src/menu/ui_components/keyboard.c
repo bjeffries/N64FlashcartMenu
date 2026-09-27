@@ -226,7 +226,7 @@ void ui_components_keyboard_draw (void) {
         draw_key(x, y, width, special_keys[i].name, i == selected_key, i == KEY_SHIFT && keyboard.shift);
     }
 
-    int hx = GAME_INFO_VALUE_X;
+    int hx = BUTTON_HINTS_X;
     hx += ui_components_button_hint_draw(ICON_A, hx, LIBRARY_BUTTONS_Y, "Type") + LIBRARY_HINT_GAP;
     hx += ui_components_button_hint_draw(ICON_B, hx, LIBRARY_BUTTONS_Y, "Delete") + LIBRARY_HINT_GAP;
     ui_components_button_hint_draw(ICON_Z, hx, LIBRARY_BUTTONS_Y, "Cancel");

@@ -15,7 +15,7 @@ static void draw (menu_t *menu, surface_t *d) {
 
     ui_components_messagebox_draw(menu->error_message ? menu->error_message : "Something went wrong");
 
-    ui_components_button_hint_draw(ICON_B, GAME_INFO_VALUE_X, LIBRARY_BUTTONS_Y, "Back");
+    ui_components_button_hint_draw(ICON_B, BUTTON_HINTS_X, LIBRARY_BUTTONS_Y, "Back");
 
     rdpq_detach_show();
 }

@@ -152,7 +152,7 @@ static void draw (menu_t *menu, surface_t *d) {
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Time");
 
-    int x = GAME_INFO_VALUE_X;
+    int x = BUTTON_HINTS_X;
     if (menu->current_time < 0) {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },

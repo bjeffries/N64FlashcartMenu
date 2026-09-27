@@ -221,7 +221,7 @@ void ui_components_option_screen_draw (menu_t *menu, const char *title, option_l
 
     ui_components_option_list_draw(menu, list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * (OPTION_LIST_VISIBLE_ROWS - 1)));
 
-    int x = GAME_INFO_VALUE_X;
+    int x = BUTTON_HINTS_X;
     const char *action = ui_components_option_list_action_name(list);
     if (action) {
         x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, action) + LIBRARY_HINT_GAP;

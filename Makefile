@@ -112,6 +112,7 @@ IMAGES = \
 	button_b.png \
 	button_c_right.png \
 	button_c_up.png \
+	button_c_down.png \
 	button_c_left.png \
 	button_z.png \
 	tab_l.png \
