@@ -446,6 +446,18 @@
 /** @brief Distance between Settings tab rows. */
 #define SETTINGS_HUB_ROW_PITCH          (36)
 
+/** @brief Config screen: baseline of the game title and of the first option row. */
+#define CONFIG_TITLE_Y                  (100)
+#define CONFIG_LIST_Y                   (150)
+/** @brief Loading screen: baseline of the game title, and top of the progress bar. */
+#define LOADING_TITLE_Y                 (220)
+#define LOADING_BAR_Y                   (250)
+
+/** @brief Distance between option list rows. */
+#define OPTION_LIST_ROW_PITCH           (32)
+/** @brief Left edge of option values. */
+#define OPTION_LIST_VALUE_X             (360)
+
 /** @brief Space between button hints. */
 #define LIBRARY_HINT_GAP                (14)
 

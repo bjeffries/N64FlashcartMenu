@@ -375,6 +375,55 @@ typedef struct component_context_menu {
 
 #define COMPONENT_CONTEXT_MENU_LIST_END { .text = NULL } /**< End marker for the context menu list */
 
+/** @brief Kind of row in an option list. */
+typedef enum {
+    OPTION_TOGGLE,  /**< On / Off, flipped in place with A */
+    OPTION_CHOICE,  /**< One of several values, picked from a pop-up with A */
+    OPTION_ACTION,  /**< Opens another screen or runs something with A */
+} option_type_t;
+
+/** @brief One row of an option list. */
+typedef struct {
+    const char *label;                          /**< Row name */
+    const char *description;                    /**< One-line help shown below the list (optional) */
+    option_type_t type;                         /**< Kind of row */
+    bool (*get)(menu_t *menu);                  /**< OPTION_TOGGLE: current value */
+    void (*set)(menu_t *menu, bool value);      /**< OPTION_TOGGLE: change the value */
+    component_context_menu_t *picker;           /**< OPTION_CHOICE: pop-up whose current row is the value */
+    void (*action)(menu_t *menu);               /**< OPTION_ACTION: what A does */
+    const char *(*value)(menu_t *menu);         /**< Optional value text (overrides the picker's row text) */
+} option_t;
+
+/** @brief A scrollable list of options. */
+typedef struct {
+    option_t *options;      /**< Rows */
+    int count;              /**< Number of rows */
+    int selected;           /**< Selected row */
+    int first_visible;      /**< First row on screen */
+} option_list_t;
+
+/**
+ * @brief Reset the selection and prepare the pickers; call from the view's init.
+ */
+void ui_components_option_list_init(option_list_t *list);
+
+/**
+ * @brief Handle up/down/A for the list and its open picker.
+ *
+ * @return true if the input was used.
+ */
+bool ui_components_option_list_process(menu_t *menu, option_list_t *list);
+
+/**
+ * @brief What A does on the selected row ("Toggle", "Change" or "Open"), for the button hints.
+ */
+const char *ui_components_option_list_action_name(option_list_t *list);
+
+/**
+ * @brief Draw rows from y_top to y_bottom (baselines), the selected row's description, and the open picker.
+ */
+void ui_components_option_list_draw(menu_t *menu, option_list_t *list, int y_top, int y_bottom);
+
 /**
  * @brief Initialize the context menu component.
  * 

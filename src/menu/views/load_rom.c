@@ -6,6 +6,7 @@
 #include "boot/boot.h"
 #include "utils/fs.h"
 #include "views.h"
+#include "../ui_components/constants.h"
 #include <string.h>
 
 static bool show_extra_info_message = false;
@@ -13,6 +14,8 @@ static bool show_advanced_info_message = false;
 static bool show_expansion_pak_warning = false;
 static component_boxart_t *boxart;
 static char *rom_filename = NULL;
+static bool config_mode = false;                // showing the Config screen instead of the ROM details
+static bool returning_from_code_editor = false; // the cheat code editor returns to Config
 
 static int16_t current_metadata_image_index = 0;
 static const file_image_type_t metadata_image_filename_cache[] = {
@@ -514,7 +517,137 @@ static bool rom_requires_missing_expansion_pak (menu_t *menu) {
     return (menu->load.rom_info.features.expansion_pak == EXPANSION_PAK_REQUIRED) && !is_memory_expanded();
 }
 
+/* Config screen (C-right in the Library): the per-game options as an option list. */
+
+static bool config_get_cheats (menu_t *menu) {
+    return menu->load.rom_info.settings.cheats_enabled;
+}
+
+static void config_set_cheats (menu_t *menu, bool value) {
+    set_cheat_option(menu, (void *) (value));
+}
+
+static bool config_get_clear_rdram (menu_t *menu) {
+    return menu->load.rom_info.settings.clear_rdram_enabled;
+}
+
+static void config_set_clear_rdram (menu_t *menu, bool value) {
+    set_clear_rdram_option(menu, (void *) (value));
+}
+
+static void config_open_code_editor (menu_t *menu) {
+    returning_from_code_editor = is_memory_expanded();
+    open_datel_code_editor(menu, NULL);
+}
+
+static const char *config_code_editor_value (menu_t *menu) {
+    return is_memory_expanded() ? NULL : "Needs Expansion Pak";
+}
+
+// Choice values: the override if one is set, otherwise what "Automatic" resolves to.
+static const char *config_save_value (menu_t *menu) {
+    static char buffer[48];
+    if (menu->load.rom_info.boot_override.save) {
+        return set_save_type_context_menu.list[get_rom_save_override_current_selection(menu)].text;
+    }
+    snprintf(buffer, sizeof(buffer), "Auto: %s", format_rom_save_type(rom_info_get_save_type(&menu->load.rom_info), false));
+    return buffer;
+}
+
+static const char *config_cic_value (menu_t *menu) {
+    static char buffer[48];
+    if (menu->load.rom_info.boot_override.cic) {
+        return set_cic_type_context_menu.list[get_rom_cic_override_current_selection(menu)].text;
+    }
+    snprintf(buffer, sizeof(buffer), "Auto: %s", format_cic_type(rom_info_get_cic_type(&menu->load.rom_info)));
+    return buffer;
+}
+
+static const char *config_video_value (menu_t *menu) {
+    static char buffer[48];
+    if (menu->load.rom_info.boot_override.tv) {
+        return set_tv_type_context_menu.list[get_rom_tv_override_current_selection(menu)].text;
+    }
+    snprintf(buffer, sizeof(buffer), "Auto: %s", format_rom_tv_type(rom_info_get_tv_type(&menu->load.rom_info)));
+    return buffer;
+}
+
+static option_t config_options[] = {
+    { .label = "Save Type", .type = OPTION_CHOICE, .picker = &set_save_type_context_menu, .value = config_save_value,
+      .description = "Only change this if the game doesn't save correctly." },
+    { .label = "CIC", .type = OPTION_CHOICE, .picker = &set_cic_type_context_menu, .value = config_cic_value,
+      .description = "Boot chip to emulate. Automatic works for almost every game." },
+    { .label = "Video", .type = OPTION_CHOICE, .picker = &set_tv_type_context_menu, .value = config_video_value,
+      .description = "Force PAL, NTSC or MPAL output." },
+    { .label = "Cheats", .type = OPTION_TOGGLE, .get = config_get_cheats, .set = config_set_cheats,
+      .description = "Apply the enabled cheat codes when the game starts. Needs an Expansion Pak." },
+    { .label = "Cheat Codes", .type = OPTION_ACTION, .action = config_open_code_editor, .value = config_code_editor_value,
+      .description = "Add, edit and enable GameShark / Action Replay codes." },
+    { .label = "Clear RDRAM", .type = OPTION_TOGGLE, .get = config_get_clear_rdram, .set = config_set_clear_rdram,
+      .description = "Zero memory before boot. Fixes a few games that crash or glitch on start." },
+};
+
+static option_list_t config_list = {
+    .options = config_options,
+    .count = sizeof(config_options) / sizeof(config_options[0]),
+};
+
+static void config_process (menu_t *menu) {
+    if (ui_components_option_list_process(menu, &config_list)) {
+        return;
+    }
+    if (menu->actions.back) {
+        sound_play_effect(SFX_EXIT);
+        menu->next_mode = menu->load.return_mode;
+    }
+}
+
+static void config_draw (menu_t *menu, surface_t *d) {
+    rdpq_attach_clear(d, NULL);
+
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Config");
+
+    char title[128];
+    ui_components_carousel_title(rom_filename, false, title, sizeof(title));
+    ui_components_text_draw(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
+    );
+
+    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * 6));
+
+    int x = GAME_INFO_VALUE_X;
+    x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, ui_components_option_list_action_name(&config_list)) + LIBRARY_HINT_GAP;
+    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
+
+    rdpq_detach_show();
+}
+
+/** @brief Loading screen: the game's title and a progress bar. */
+static void draw_loading (surface_t *d, float progress, const char *message) {
+    rdpq_attach_clear(d, NULL);
+
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
+
+    char title[128];
+    ui_components_carousel_title(rom_filename ? rom_filename : "", false, title, sizeof(title));
+    ui_components_text_draw(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        FNT_TITLE, CAROUSEL_SELECTED_X, LOADING_TITLE_Y, title
+    );
+
+    ui_components_progressbar_draw(CAROUSEL_SELECTED_X, LOADING_BAR_Y, VISIBLE_AREA_X1, LOADING_BAR_Y + 6, progress);
+    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, CAROUSEL_SELECTED_X, LOADING_BAR_Y + 24, "%d%%", (int) (progress * 100.0f));
+
+    rdpq_detach_show();
+}
+
 static void process (menu_t *menu) {
+    if (config_mode) {
+        config_process(menu);
+        return;
+    }
+
     if (ui_components_context_menu_process(menu, &options_context_menu)) {
         return;
     }
@@ -567,6 +700,15 @@ static void process (menu_t *menu) {
 }
 
 static void draw (menu_t *menu, surface_t *d) {
+    if (menu->load_pending.rom_file) {
+        draw_loading(d, 0.0f, "Loading");
+        return;
+    }
+    if (config_mode) {
+        config_draw(menu, d);
+        return;
+    }
+
     rdpq_attach(d, NULL);
 
     ui_components_background_draw();
@@ -714,13 +856,7 @@ static void draw_progress (float progress) {
     surface_t *d = (progress >= 1.0f) ? display_get() : display_try_get();
 
     if (d) {
-        rdpq_attach(d, NULL);
-
-        ui_components_background_draw();
-
-        ui_components_loader_draw(progress, "Loading ROM...");
-
-        rdpq_detach_show();
+        draw_loading(d, progress, "Loading");
     }
 }
 
@@ -728,13 +864,7 @@ static void draw_creating_save (float progress) {
     surface_t *d = display_get();
 
     if (d) {
-        rdpq_attach(d, NULL);
-
-        ui_components_background_draw();
-
-        ui_components_loader_draw(progress, "Creating initial save file...");
-
-        rdpq_detach_show();
+        draw_loading(d, progress, "Creating save file");
     }
 }
 
@@ -887,8 +1017,14 @@ void view_load_rom_init (menu_t *menu) {
         } else {
             menu->load_pending.rom_file = true;
         }
-    } else if (open_configure) {
-        ui_components_context_menu_show(&options_context_menu);
+    }
+
+    // The cheat code editor returns here; stay on the Config screen with the same row selected.
+    bool back_from_code_editor = returning_from_code_editor;
+    returning_from_code_editor = false;
+    config_mode = open_configure || back_from_code_editor;
+    if (open_configure) {
+        ui_components_option_list_init(&config_list);
     }
 }
 
