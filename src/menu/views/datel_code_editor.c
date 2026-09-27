@@ -93,6 +93,12 @@ static void process_editing (menu_t *menu) {
 }
 
 static void process (menu_t *menu) {
+    // C-buttons also report a direction (go_fast); here they are action buttons, not movement.
+    if (menu->actions.go_fast) {
+        menu->actions.go_up = menu->actions.go_down = false;
+        menu->actions.go_left = menu->actions.go_right = false;
+    }
+
     if (editing) {
         process_editing(menu);
         return;
@@ -143,7 +149,20 @@ static int draw_code (cheat_file_code_t *code, int x, int y, bool row_selected, 
     return x + (CODE_DIGITS * DIGIT_WIDTH) + VALUE_GAP;
 }
 
+static void draw_column_headers (void) {
+    int y = CONFIG_LIST_Y - OPTION_LIST_ROW_PITCH;
+    int x = CAROUSEL_SELECTED_X + 44;
+    rdpq_textparms_t parms = { .style_id = STL_GRAY };
+    rdpq_text_printf(&parms, FNT_SMALL, CAROUSEL_SELECTED_X + 16, y, "#");
+    rdpq_text_printf(&parms, FNT_SMALL, x, y, "ADDRESS");
+    rdpq_text_printf(&parms, FNT_SMALL, x + (ADDRESS_DIGITS * DIGIT_WIDTH) + VALUE_GAP, y, "VALUE");
+    rdpq_text_printf(&parms, FNT_SMALL, x + (CODE_DIGITS * DIGIT_WIDTH) + VALUE_GAP, y, "DESCRIPTION");
+    rdpq_text_printf(&parms, FNT_SMALL, CHEAT_STATE_X, y, "ENABLED");
+}
+
 static void draw_list (void) {
+    draw_column_headers();
+
     if (selected < first_visible) {
         first_visible = selected;
     } else if (selected >= first_visible + VISIBLE_ROWS) {
@@ -181,10 +200,8 @@ static void draw_list (void) {
             FNT_DEFAULT, CHEAT_STATE_X, y, "%s", code->enabled ? "On" : "Off");
     }
 
-    // Scroll hints.
-    if (first_visible > 0) {
-        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, CONFIG_LIST_Y - 22, "...");
-    }
+    // Scroll hint below the list (the column headers sit where a top hint would go; the row
+    // numbers show the position).
     if (first_visible + VISIBLE_ROWS < MAX_CHEAT_CODES) {
         rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) - 10, "...");
     }
