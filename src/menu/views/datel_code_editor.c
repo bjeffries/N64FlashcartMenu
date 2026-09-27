@@ -180,7 +180,7 @@ static int draw_code (cheat_file_code_t *code, int x, int y, bool row_selected, 
 }
 
 static void draw_column_headers (void) {
-    int y = CONFIG_LIST_Y - OPTION_LIST_ROW_PITCH;
+    int y = CONFIG_LIST_Y - CHEAT_ROW_PITCH;
     int x = CAROUSEL_SELECTED_X + 44;
     rdpq_textparms_t parms = { .style_id = STL_GRAY };
     rdpq_text_printf(&parms, FNT_SMALL, CAROUSEL_SELECTED_X + 16, y, "#");
@@ -202,7 +202,7 @@ static void draw_list (void) {
     for (int row = 0; row < VISIBLE_ROWS && first_visible + row < MAX_CHEAT_CODES; row++) {
         int i = first_visible + row;
         cheat_file_code_t *code = &cheat_codes[i];
-        int y = CONFIG_LIST_Y + (row * OPTION_LIST_ROW_PITCH);
+        int y = CONFIG_LIST_Y + (row * CHEAT_ROW_PITCH);
         bool is_selected = (i == selected);
         bool editing_row = editing && is_selected;
 
@@ -233,7 +233,7 @@ static void draw_list (void) {
     // Scroll hint below the list (the column headers sit where a top hint would go; the row
     // numbers show the position).
     if (first_visible + VISIBLE_ROWS < MAX_CHEAT_CODES) {
-        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) - 10, "...");
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, CONFIG_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH) - 10, "...");
     }
 }
 
@@ -256,14 +256,14 @@ static void draw (menu_t *menu, surface_t *display) {
     } else if (editing) {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
-            FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
+            FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH) + 8,
             "Left / Right: choose a digit. Up / Down: change it."
         );
         ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Done" }, { ICON_B, "Cancel" } }, 2);
     } else {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
-            FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
+            FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * CHEAT_ROW_PITCH) + 8,
             "Codes are applied when Cheats is On in Config. Changes are saved when you go back."
         );
         bool empty = is_empty(&cheat_codes[selected]);

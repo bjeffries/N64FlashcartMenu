@@ -517,7 +517,7 @@ static void draw_note_values (void) {
         }
         int y = SETTINGS_LIST_Y + (row * OPTION_LIST_ROW_PITCH);
         rdpq_text_printf(&(rdpq_textparms_t) { .style_id = (i == list.selected) ? STL_DEFAULT : STL_GRAY },
-            FNT_DEFAULT, OPTION_LIST_VALUE_X, y, "%s", note_values[i - FIRST_NOTE_ROW]);
+            TITLE_FONT, OPTION_LIST_VALUE_X, y, "%s", note_values[i - FIRST_NOTE_ROW]);
     }
 }
 
@@ -527,9 +527,9 @@ static void draw (menu_t *menu, surface_t *d) {
     if (restoring) {
         ui_components_option_screen_draw(menu, "Restore a Backup", &backup_list);
         if (backup_count == 0) {
-            ui_components_text_draw(
+            ui_components_body_text_draw(
                 &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
-                FNT_DEFAULT, CAROUSEL_SELECTED_X, SETTINGS_LIST_Y,
+                CAROUSEL_SELECTED_X, SETTINGS_LIST_Y,
                 "No backups yet. Back up a pak or a note first; backups are kept in cpak_saves on the SD card."
             );
         }

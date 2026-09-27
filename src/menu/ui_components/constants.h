@@ -507,10 +507,14 @@
 /** @brief Cheat Codes screen: left edge of the On / Off column. */
 #define CHEAT_STATE_X                   (VISIBLE_AREA_X1 - 52)
 
-/** @brief Distance between option list rows: a 22px row band plus a 2px black gap. */
-#define OPTION_LIST_ROW_PITCH           (24)
-/** @brief Rows an option list shows before it scrolls. */
-#define OPTION_LIST_VISIBLE_ROWS        (13)
+/** @brief Distance between option list rows (title-style 32px text), as on the Settings tab. */
+#define OPTION_LIST_ROW_PITCH           (36)
+/** @brief Rows an option list shows before it scrolls, leaving room for the description below. */
+#define OPTION_LIST_VISIBLE_ROWS        (8)
+/** @brief Rows the Config screen's option list shows (the game title sits above it). */
+#define CONFIG_LIST_VISIBLE_ROWS        (6)
+/** @brief Distance between Cheat Codes rows. */
+#define CHEAT_ROW_PITCH                 (24)
 /** @brief Background band behind read-only information rows. */
 #define OPTION_LIST_INFO_BAND_COLOR     PALETTE_TONE_1
 /** @brief Left edge of option values (the label column is about 23 characters wide). */

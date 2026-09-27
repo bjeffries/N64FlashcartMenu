@@ -642,7 +642,7 @@ static void config_draw (menu_t *menu, surface_t *d) {
         FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
     );
 
-    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * 9));
+    ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * (CONFIG_LIST_VISIBLE_ROWS - 1)));
 
     ui_components_button_hints_draw((button_hint_t[]) {
         { ICON_A, ui_components_option_list_action_name(&config_list) },

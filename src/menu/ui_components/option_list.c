@@ -152,6 +152,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         }
     }
 
+    int cap = fonts_cap_height(TITLE_FONT);
     int rows_drawn = 0;
     for (int row = 0; row < visible && list->first_visible + row < list->count; row++, rows_drawn++) {
         int i = list->first_visible + row;
@@ -160,14 +161,15 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         bool is_selected = (i == list->selected);
         bool selectable = is_selectable(option);
 
+        // Rows are title-style text; the band and marker span its capitals plus a margin.
         if (!selectable) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 17, VISIBLE_AREA_X1, y + 5, OPTION_LIST_INFO_BAND_COLOR);
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - cap - 6, VISIBLE_AREA_X1, y + 6, OPTION_LIST_INFO_BAND_COLOR);
         } else if (is_selected) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, SELECTION_MARKER_COLOR);
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - cap - 3, CAROUSEL_SELECTED_X + 4, y + 3, SELECTION_MARKER_COLOR);
         }
         rdpq_text_printf(
             &(rdpq_textparms_t) { .style_id = is_selected ? STL_DEFAULT : STL_GRAY },
-            FNT_DEFAULT, CAROUSEL_SELECTED_X + 16, y, "%s", option->label
+            TITLE_FONT, CAROUSEL_SELECTED_X + 16, y, "%s", option->label
         );
 
         const char *value = NULL;
@@ -185,23 +187,24 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         if (value) {
             ui_components_text_draw(
                 &(rdpq_textparms_t) { .style_id = value_style, .width = VISIBLE_AREA_X1 - OPTION_LIST_VALUE_X - 8, .wrap = WRAP_ELLIPSES },
-                FNT_DEFAULT, OPTION_LIST_VALUE_X, y, value
+                TITLE_FONT, OPTION_LIST_VALUE_X, y, value
             );
         }
     }
 
     // Scroll hints when rows are off screen.
+    rdpq_textparms_t hint = { .style_id = STL_GRAY };
     if (list->first_visible > 0) {
-        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, y_top - 22, "...");
+        ui_components_body_text_draw(&hint, VISIBLE_AREA_X1 - 16, y_top - cap - 8, "...");
     }
     if (list->first_visible + visible < list->count) {
-        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, y_top + (visible * pitch) - 10, "...");
+        ui_components_body_text_draw(&hint, VISIBLE_AREA_X1 - 16, y_top + ((visible - 1) * pitch) + 14, "...");
     }
 
     if (list->selected >= 0 && list->options[list->selected].description) {
-        ui_components_text_draw(
+        ui_components_body_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16, .wrap = WRAP_WORD },
-            FNT_SMALL, CAROUSEL_SELECTED_X + 16, y_top + (rows_drawn * pitch) + 8,
+            CAROUSEL_SELECTED_X + 16, y_top + (rows_drawn * pitch),
             list->options[list->selected].description
         );
     }
