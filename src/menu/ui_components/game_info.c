@@ -135,7 +135,7 @@ static int draw_badge (int x, int y, const char *text) {
         rdpq_paragraph_free(layout);
         return -1;
     }
-    ui_components_box_draw(x, y - 10, x + width, y + 3, GAME_INFO_BADGE_COLOR);
+    ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
     rdpq_paragraph_render(layout, x + BADGE_PADDING, y);
     rdpq_paragraph_free(layout);
     return width;
@@ -152,7 +152,7 @@ static void draw_player_count (int x, int y, uint32_t players) {
         return;
     }
     int width = (BADGE_PADDING * 2) + (MAX_PLAYERS * 7) - 2;
-    ui_components_box_draw(x, y - 10, x + width, y + 3, GAME_INFO_BADGE_COLOR);
+    ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
     for (uint32_t i = 0; i < MAX_PLAYERS; i++) {
         draw_player_icon(x + BADGE_PADDING + (i * 7), y - 8, (i < players) ? GAME_INFO_PLAYER_ON_COLOR : GAME_INFO_PLAYER_OFF_COLOR);
     }
@@ -446,7 +446,7 @@ void ui_components_game_info_dots_draw (int page, int count) {
         return;
     }
     int column_height = GAME_INFO_DOT_SIZE + ((count - 1) * GAME_INFO_DOT_PITCH);
-    int top = CAROUSEL_TITLE_Y - (GAME_INFO_TITLE_CAP_HEIGHT / 2) - (column_height / 2);
+    int top = CAROUSEL_TITLE_Y - (fonts_cap_height(FNT_TITLE) / 2) - (column_height / 2);
     for (int i = 0; i < count; i++) {
         int x = GAME_INFO_LABEL_X;
         int y = top + (i * GAME_INFO_DOT_PITCH);
