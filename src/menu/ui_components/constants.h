@@ -457,7 +457,7 @@
 /** @brief Height of the L / R pills (scripts/make_icons.py). */
 #define TAB_BAR_PILL_HEIGHT             (16)
 /** @brief Thickness of the bar joining L and R; its bottom lines up with the pills'. */
-#define TAB_BAR_HEIGHT                  (4)
+#define TAB_BAR_HEIGHT                  (3)
 /** @brief Tab bar colour (same grey as the pills). */
 #define TAB_BAR_COLOR                   RGBA32(0xC8, 0xC8, 0xC8, 0xFF)
 /** @brief Baseline of the first Settings tab row. */

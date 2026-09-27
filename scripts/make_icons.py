@@ -3,7 +3,7 @@
 
 Writes icons with black glyphs (RGBA, transparent background) into assets/images/:
 round A, B, Z and C-button icons, and the tab bar's L / R ends (a pill that curves down into
-the 4px bar the menu draws between them). Each button type has a soft fill colour that keeps
+the 3px bar the menu draws between them). Each button type has a soft fill colour that keeps
 good contrast with the black glyph.
 Letters are hand-drawn 7x9 pixel glyphs with 2px strokes, in the style of the
 Analogue OS font (the font itself doesn't render cleanly this small).
@@ -26,7 +26,7 @@ CLEAR = (0, 0, 0, 0)
 ROUND_SIZE = 18                 # diameter of A / B / C buttons
 PILL_W, PILL_H = 20, 16         # L / R shoulder buttons
 TAB_END_W = 28                  # pill plus the curve down into the bar
-TAB_BAR_H = 4                   # bar thickness; its bottom lines up with the pill's
+TAB_BAR_H = 3                   # bar thickness; its bottom lines up with the pill's
 PILL_RADIUS = 4
 SUPERSAMPLE = 8
 
