@@ -25,6 +25,7 @@ static const char *rom_meta_extensions[] = { "meta", "metadata", NULL };
 static bool directory_entry_limit_exceeded = false;
 static int info_page = 0;
 static int hold_frames = 0;
+static bool confirm_hide = false;
 
 static const char *hidden_root_paths[] = {
     "/menu.bin",
@@ -442,7 +443,32 @@ static component_context_menu_t entry_context_menu = {
     }
 };
 
+/** @brief Hide or unhide the selected game, then refresh the list if it just disappeared from it. */
+static void set_selected_hidden (menu_t *menu, bool hide) {
+    path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
+    hidden_set(path, hide);
+    path_free(path);
+    if (menu->settings.show_hidden_games) {
+        menu->browser.entry->hidden = hide;
+    } else if (reload_directory(menu)) {
+        menu->browser.valid = false;
+        menu_show_error(menu, "Couldn't refresh directory contents");
+    }
+    sound_play_effect(SFX_SETTING);
+}
+
 static void process (menu_t *menu) {
+    if (confirm_hide) {
+        if (menu->actions.enter) {
+            confirm_hide = false;
+            set_selected_hidden(menu, true);
+        } else if (menu->actions.back) {
+            confirm_hide = false;
+            sound_play_effect(SFX_EXIT);
+        }
+        return;
+    }
+
     if (ui_components_context_menu_process(menu, &entry_context_menu)) {
         return;
     }
@@ -533,17 +559,12 @@ static void process (menu_t *menu) {
         path_free(path);
         sound_play_effect(SFX_SETTING);
     } else if (menu->actions.remove && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
-        path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
-        bool hide = !menu->browser.entry->hidden;
-        hidden_set(path, hide);
-        path_free(path);
-        if (menu->settings.show_hidden_games) {
-            menu->browser.entry->hidden = hide;
-        } else if (reload_directory(menu)) {
-            menu->browser.valid = false;
-            menu_show_error(menu, "Couldn't refresh directory contents");
+        if (menu->browser.entry->hidden) {
+            set_selected_hidden(menu, false);       // unhiding is harmless: no confirmation
+        } else {
+            confirm_hide = true;
+            sound_play_effect(SFX_SETTING);
         }
-        sound_play_effect(SFX_SETTING);
     } else if ((menu->actions.go_up || menu->actions.go_down) && !menu->actions.go_fast) {
         int pages = ui_components_game_info_page_count(menu->browser.entry);
         // On the About page, up / down scroll the description first and change page at its ends.
@@ -601,10 +622,24 @@ static void draw (menu_t *menu, surface_t *d) {
 
     ui_components_context_menu_draw(&entry_context_menu);
 
+    if (confirm_hide && menu->browser.entry) {
+        char title[128];
+        ui_components_carousel_entry_title(menu->browser.entry, menu->browser.selected, title, sizeof(title));
+        ui_components_messagebox_draw(
+            "Hide %s?\n\n"
+            "It stays on your SD card. To bring it back, turn on\n"
+            "Show Hidden Games in Menu Settings.\n\n"
+            "A: Hide    B: Cancel",
+            title
+        );
+    }
+
     rdpq_detach_show();
 }
 
 void view_browser_init (menu_t *menu) {
+    confirm_hide = false;
+
     // Favorites and History share the carousel, so its cached labels may belong to another list.
     ui_components_carousel_invalidate();
 

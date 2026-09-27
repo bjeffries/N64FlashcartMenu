@@ -374,6 +374,16 @@ void ui_components_game_info_invalidate(void);
 void ui_components_carousel_title(const char *name, bool directory, char *out, size_t out_size);
 
 /**
+ * @brief Title the carousel shows for an entry: its metadata title if loaded, else from the file name.
+ *
+ * @param entry The entry.
+ * @param position Its position in the list passed to ui_components_carousel_draw().
+ * @param out Output buffer.
+ * @param out_size Size of the output buffer.
+ */
+void ui_components_carousel_entry_title(entry_t *entry, int32_t position, char *out, size_t out_size);
+
+/**
  * @brief Context menu structure.
  */
 typedef struct component_context_menu {

@@ -248,7 +248,7 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
 }
 
 /** @brief Display title for the entry at a list position: its metadata title if known, else from the file name. */
-static void entry_title (entry_t *entry, int32_t position, char *out, size_t out_size) {
+void ui_components_carousel_entry_title (entry_t *entry, int32_t position, char *out, size_t out_size) {
     for (int i = 0; i < LABEL_CACHE_SIZE; i++) {
         if (label_cache[i].position == position && label_cache[i].has_title) {
             snprintf(out, out_size, "%s", label_cache[i].title);
@@ -260,7 +260,7 @@ static void entry_title (entry_t *entry, int32_t position, char *out, size_t out
 
 static void draw_tile_caption (entry_t *entry, int32_t position, float centre_x) {
     char title[128];
-    entry_title(entry, position, title, sizeof(title));
+    ui_components_carousel_entry_title(entry, position, title, sizeof(title));
     for (char *c = title; *c; c++) {
         *c = toupper((unsigned char) (*c));
     }
@@ -418,7 +418,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     }
 
     char title[128];
-    entry_title(entry, selected, title, sizeof(title));
+    ui_components_carousel_entry_title(entry, selected, title, sizeof(title));
 
     ui_components_text_draw(
         &(rdpq_textparms_t) {
