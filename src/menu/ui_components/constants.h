@@ -514,9 +514,13 @@
 #define CAROUSEL_MAX_ANIMATED_STEPS     (3.0f)
 /** @brief While ←/→ is held, move one tile every this many frames (12 per second at 60fps). */
 #define CAROUSEL_REPEAT_FRAMES          (5)
-/** @brief Game loading animation: centre of the eclipse (centre of the bottom-right quadrant). */
-#define LOADING_ANIMATION_CENTER_X      ((DISPLAY_WIDTH * 3) / 4)
-#define LOADING_ANIMATION_CENTER_Y      ((DISPLAY_HEIGHT * 3) / 4)
+/**
+ * @brief Game loading animation: centre of the eclipse. The info panel is blacked out while a game
+ *        loads; the eclipse is centred in it: across the screen, and between the top of the first
+ *        info row and the top of the "Loading" text (which sits on the button hints' baseline).
+ */
+#define LOADING_ANIMATION_CENTER_X      (DISPLAY_CENTER_X)
+#define LOADING_ANIMATION_CENTER_Y      (((GAME_INFO_Y - 14) + (LIBRARY_BUTTONS_Y - 14)) / 2)
 /** @brief Game loading: from this progress on, the screen behind the eclipse fades to black. */
 #define LOADING_FADE_START              (0.8f)
 /** @brief Emulators only (no SummerCart64): how long the pretend game load takes. */

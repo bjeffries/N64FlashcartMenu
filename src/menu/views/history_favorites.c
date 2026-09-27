@@ -121,7 +121,10 @@ static void process (menu_t *menu) {
     }
 }
 
-/** @brief The whole screen; the button hints only if show_hints. */
+/**
+ * @brief The whole screen; show_hints is false while a game loads,
+ *        and then only the tabs, carousel and title are drawn.
+ */
 static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_tab_header_draw(tab);
 
@@ -146,13 +149,13 @@ static void draw_content (menu_t *menu, bool show_hints) {
     if (info_page >= pages) {
         info_page = 0;
     }
-    ui_components_game_info_draw(NULL, &entries[selected], &menu->bookkeeping, info_page);
-    ui_components_game_info_dots_draw(info_page, pages);
-    ui_components_letter_indicator_draw();
-
+    // While a game loads, the info panel (and its page dots) is left black for the animation.
     if (!show_hints) {
         return;
     }
+    ui_components_game_info_draw(NULL, &entries[selected], &menu->bookkeeping, info_page);
+    ui_components_game_info_dots_draw(info_page, pages);
+    ui_components_letter_indicator_draw();
 
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;
@@ -172,10 +175,9 @@ static void draw (menu_t *menu, surface_t *display) {
 
 /**
  * @brief Draw Favorites / History as the background of the game loading animation (attached
- *        surface): no button hints, on the Overview page.
+ *        surface): tabs, carousel and title, with the info panel and button hints left black.
  */
 void view_history_favorites_draw_behind_loading (menu_t *menu) {
-    info_page = 0;
     draw_content(menu, false);
 }
 

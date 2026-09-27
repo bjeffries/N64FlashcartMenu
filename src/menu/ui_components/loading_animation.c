@@ -6,7 +6,7 @@
  * Uses the boot animation's frames (without the title): the sun and moon fade in, the moon's
  * approach follows the loading progress, and the corona appears once loading is done, holds, then
  * fades out so the game starts from black rather than cutting away from the ring. The eclipse
- * is centred on the bottom-right quadrant of the screen, over the Library.
+ * is centred in the Library's info panel, which is left black while a game loads.
  *
  * On the SummerCart64 the game is loaded over the cartridge space the menu's own files (rom:/)
  * live in, so every frame is loaded into memory by ui_components_loading_animation_prepare()

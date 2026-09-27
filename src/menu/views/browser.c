@@ -544,7 +544,10 @@ static void process (menu_t *menu) {
     }
 }
 
-/** @brief Everything but the confirmation dialog; the button hints only if show_hints. */
+/**
+ * @brief Everything but the confirmation dialog; show_hints is false while a game loads,
+ *        and then only the tabs, carousel and title are drawn.
+ */
 static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_tab_header_draw(TAB_LIBRARY);
 
@@ -561,13 +564,13 @@ static void draw_content (menu_t *menu, bool show_hints) {
     if (info_page >= pages) {
         info_page = 0;
     }
-    ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
-    ui_components_game_info_dots_draw(info_page, pages);
-    ui_components_letter_indicator_draw();
-
+    // While a game loads, the info panel (and its page dots) is left black for the animation.
     if (!show_hints) {
         return;
     }
+    ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
+    ui_components_game_info_dots_draw(info_page, pages);
+    ui_components_letter_indicator_draw();
 
     // Hints in the order A, B, C-Left, C-Up, C-Right, C-Down.
     // Games: Play / Back / Favorite / Config / Hide. Folders: Open / Back / Set to Default.
@@ -615,10 +618,9 @@ static void draw (menu_t *menu, surface_t *d) {
 
 /**
  * @brief Draw the Library as the background of the game loading animation (attached surface):
- *        no button hints (they don't work while loading), on the Overview page.
+ *        tabs, carousel and title, with the info panel and button hints left black.
  */
 void view_browser_draw_behind_loading (menu_t *menu) {
-    info_page = 0;
     draw_content(menu, false);
 }
 
