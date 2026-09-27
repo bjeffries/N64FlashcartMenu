@@ -118,8 +118,6 @@ SOUNDS_WAV = \
 SOUNDS_XM ?=
 
 IMAGES = \
-	eclipse_disc.png \
-	eclipse_ring.png \
 	cartridge.png \
 	cartridge_large.png \
 	cartridge_large_outline.png \
@@ -169,8 +167,6 @@ $(MINIZ_OBJS): N64_CFLAGS+=-Wno-unused-function -fcompare-debug-second
 $(SPNG_OBJS): N64_CFLAGS+=-DSPNG_USE_MINIZ -fcompare-debug-second
 $(FILESYSTEM_DIR)/%.wav64: AUDIOCONV_FLAGS=--wav-compress 1
 $(FILESYSTEM_DIR)/%.sprite: MKSPRITE_FLAGS=--format RGBA16 --compress 1
-# Game-loading eclipse masks: white with 8-bit alpha (tinted and blended at run time).
-$(FILESYSTEM_DIR)/eclipse_disc.sprite $(FILESYSTEM_DIR)/eclipse_ring.sprite: MKSPRITE_FLAGS=--format IA16 --compress 1
 
 $(@info $(shell mkdir -p ./$(FILESYSTEM_DIR) &> /dev/null))
 
