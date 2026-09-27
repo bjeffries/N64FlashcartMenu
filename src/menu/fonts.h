@@ -7,6 +7,8 @@
 #ifndef FONTS_H__
 #define FONTS_H__
 
+#include <stdint.h>
+
 /**
  * @brief Font type enumeration.
  * 
@@ -34,6 +36,7 @@ typedef enum {
     STL_RED,         /**< Red font style */
     STL_GRAY,        /**< Gray font style */
     STL_BLACK,       /**< Black font style (text on light badges) */
+    STL_FADE,        /**< Gray level set with fonts_set_fade_level() (fading text on black) */
 } menu_font_style_t;
 
 /**
@@ -45,5 +48,10 @@ typedef enum {
  * @param custom_font_path Path to the custom font file.
  */
 void fonts_init(char *custom_font_path);
+
+/**
+ * @brief Set the STL_FADE colour of a font to a gray level (0 black - 255 white).
+ */
+void fonts_set_fade_level(uint8_t font_id, uint8_t level);
 
 #endif /* FONTS_H__ */

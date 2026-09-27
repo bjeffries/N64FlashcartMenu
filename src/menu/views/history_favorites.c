@@ -23,7 +23,6 @@ static entry_t entries[HISTORY_COUNT > FAVORITES_COUNT ? HISTORY_COUNT : FAVORIT
 static int32_t entry_count = 0;
 static int32_t selected = 0;
 static int info_page = 0;
-static int hold_frames = 0;
 
 
 static void entries_free (void) {
@@ -84,20 +83,8 @@ static void process (menu_t *menu) {
         return;
     }
 
-    // Held directions repeat every frame; throttle that to one tile every CAROUSEL_REPEAT_FRAMES.
-    bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
-    bool move_now = horizontal && (hold_frames % CAROUSEL_REPEAT_FRAMES == 0);
-    hold_frames = horizontal ? hold_frames + 1 : 0;
-
-    if (entry_count > 1 && move_now) {
-        if (menu->actions.go_left) {
-            selected = (selected + entry_count - 1) % entry_count;
-            sound_play_effect(SFX_CURSOR);
-        } else if (menu->actions.go_right) {
-            selected = (selected + 1) % entry_count;
-            sound_play_effect(SFX_CURSOR);
-        }
-    }
+    // Favorites are alphabetical, so a long hold pages by letter; History is by date.
+    selected = ui_components_carousel_scroll(menu, entries, entry_count, selected, tab == TAB_FAVORITES);
 
     if (entry_count == 0) {
         return;
@@ -163,6 +150,7 @@ static void draw (menu_t *menu, surface_t *display) {
     }
     ui_components_game_info_draw(NULL, &entries[selected], &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
+    ui_components_letter_indicator_draw();
 
     int x = GAME_INFO_VALUE_X;
     x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Play") + LIBRARY_HINT_GAP;
@@ -187,7 +175,7 @@ static void init (menu_t *menu, menu_tab_t new_tab) {
         item_list = menu->bookkeeping.history_items;
         item_max = HISTORY_COUNT;
     }
-    hold_frames = 0;
+    ui_components_carousel_scroll_reset();
     entries_load();
 }
 

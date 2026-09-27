@@ -514,6 +514,18 @@
 #define CAROUSEL_MAX_ANIMATED_STEPS     (3.0f)
 /** @brief While ←/→ is held, move one tile every this many frames (12 per second at 60fps). */
 #define CAROUSEL_REPEAT_FRAMES          (5)
+/** @brief Holding ←/→ this long switches from tiles to letters (Library, Favorites). */
+#define CAROUSEL_PAGING_DELAY_MS        (1000)
+/** @brief While paging, one letter every this long. */
+#define CAROUSEL_PAGING_INTERVAL_MS     (300)
+/** @brief Paging letter: baseline (40px font, capitals top out at the safe area). */
+#define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + 28)
+/** @brief Paging letter: box it is right-aligned in, against the right safe edge. */
+#define LETTER_INDICATOR_WIDTH          (40)
+#define LETTER_INDICATOR_FADE_IN_MS     (120)
+/** @brief Paging letter stays this long after the last page, then fades out. */
+#define LETTER_INDICATOR_HOLD_MS        (400)
+#define LETTER_INDICATOR_FADE_OUT_MS    (300)
 
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
 #define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x6A, 0x6A, 0x6A, 0xFF)

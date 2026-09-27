@@ -265,6 +265,13 @@ void ui_components_file_list_free(void);
  */
 void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected, bool selected_favorite);
 
+/** @brief Forget any held direction (call when a carousel view opens). */
+void ui_components_carousel_scroll_reset(void);
+/** @brief Handle ←/→ for a circular carousel list; a long hold pages by letter if letter_paging. Returns the new selection. */
+int32_t ui_components_carousel_scroll(menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging);
+/** @brief Draw the letter being paged to (top right), fading in and out. */
+void ui_components_letter_indicator_draw(void);
+
 /** @brief Controller button icons (assets/images/button_*.png, see scripts/make_icons.py). */
 typedef enum {
     ICON_A,

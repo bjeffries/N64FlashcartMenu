@@ -13,6 +13,7 @@ static void register_styles (rdpq_font_t *font) {
     rdpq_font_style(font, STL_RED, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0x40, 0x40, 0xFF) }));
     rdpq_font_style(font, STL_GRAY, &((rdpq_fontstyle_t) { .color = RGBA32(0x80, 0x80, 0x80, 0xFF) }));
     rdpq_font_style(font, STL_BLACK, &((rdpq_fontstyle_t) { .color = RGBA32(0x00, 0x00, 0x00, 0xFF) }));
+    rdpq_font_style(font, STL_FADE, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0xFF, 0xFF, 0xFF) }));
 }
 
 static void load_default_font (char *custom_font_path) {
@@ -37,6 +38,11 @@ static void load_font (menu_font_type_t id, const char *path) {
     rdpq_text_register_font(id, font);
 }
 
+
+void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
+    rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(font_id), STL_FADE,
+        &((rdpq_fontstyle_t) { .color = RGBA32(level, level, level, 0xFF) }));
+}
 
 void fonts_init (char *custom_font_path) {
     load_default_font(custom_font_path);

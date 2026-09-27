@@ -24,7 +24,6 @@ static const char *rom_meta_extensions[] = { "meta", "metadata", NULL };
 
 static bool directory_entry_limit_exceeded = false;
 static int info_page = 0;
-static int hold_frames = 0;
 static bool confirm_hide = false;
 
 static const char *hidden_root_paths[] = {
@@ -451,23 +450,11 @@ static void process (menu_t *menu) {
         return;
     }
 
-    // Held directions repeat every frame; throttle that to one tile every CAROUSEL_REPEAT_FRAMES.
-    bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
-    bool move_now = horizontal && (hold_frames % CAROUSEL_REPEAT_FRAMES == 0);
-    hold_frames = horizontal ? hold_frames + 1 : 0;
-
-    // C-buttons also report a direction (go_fast); in the Library they are action buttons instead.
-    if (menu->browser.entries > 1 && move_now) {
-        // The Library is circular: left from the first game goes to the last, and vice versa.
-        int32_t entries = menu->browser.entries;
-        if (menu->actions.go_left) {
-            menu->browser.selected = (menu->browser.selected + entries - 1) % entries;
-            sound_play_effect(SFX_CURSOR);
-        } else if (menu->actions.go_right) {
-            menu->browser.selected = (menu->browser.selected + 1) % entries;
-            sound_play_effect(SFX_CURSOR);
-        }
-        menu->browser.entry = &menu->browser.list[menu->browser.selected];
+    // Circular: left from the first game goes to the last. A long hold pages by letter.
+    int32_t selected = ui_components_carousel_scroll(menu, menu->browser.list, menu->browser.entries, menu->browser.selected, true);
+    if (selected != menu->browser.selected) {
+        menu->browser.selected = selected;
+        menu->browser.entry = &menu->browser.list[selected];
     }
 
     if (menu->actions.enter && menu->browser.entry) {
@@ -577,6 +564,7 @@ static void draw (menu_t *menu, surface_t *d) {
     }
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
+    ui_components_letter_indicator_draw();
 
     // Games show Play / Config / Favorite / Hide; folders show Open / Set to Default / Back.
     int x = GAME_INFO_VALUE_X;
@@ -616,6 +604,7 @@ static void draw (menu_t *menu, surface_t *d) {
 
 void view_browser_init (menu_t *menu) {
     confirm_hide = false;
+    ui_components_carousel_scroll_reset();
 
     // Favorites and History share the carousel, so its cached labels may belong to another list.
     ui_components_carousel_invalidate();
