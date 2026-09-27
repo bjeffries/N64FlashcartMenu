@@ -1,6 +1,7 @@
 #include "../bookkeeping.h"
 #include "../cart_load.h"
 #include "../datel_codes.h"
+#include "../fonts.h"
 #include "../rom_info.h"
 #include "../sound.h"
 #include "boot/boot.h"
@@ -664,6 +665,18 @@ static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, b
         view_history_favorites_draw_behind_loading(menu);
     }
     if (animate) {
+        // "Loading" where the button hints were, fading in with the eclipse, centred on its ink.
+        static float loading_ink_center = -1.0f;
+        if (loading_ink_center < 0.0f) {
+            int nbytes = strlen("Loading");
+            rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_DEFAULT, "Loading", &nbytes);
+            loading_ink_center = (paragraph->bbox.x0 + paragraph->bbox.x1) / 2.0f;
+            rdpq_paragraph_free(paragraph);
+        }
+        fonts_set_fade_level(FNT_DEFAULT, (uint8_t) (ui_components_loading_animation_fade_in() * 0xFF));
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_FADE }, FNT_DEFAULT,
+            (int) (DISPLAY_CENTER_X - loading_ink_center + 0.5f), LIBRARY_BUTTONS_Y, "Loading");
+
         // Nearing totality, the rest of the screen fades to black (fully black from 100%).
         if (progress > LOADING_FADE_START) {
             float fade = MIN(1.0f, (progress - LOADING_FADE_START) / (1.0f - LOADING_FADE_START));

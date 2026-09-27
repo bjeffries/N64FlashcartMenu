@@ -271,6 +271,8 @@ void ui_components_loading_animation_prepare(void);
 void ui_components_loading_animation_free(void);
 /** @brief Draw the game loading animation for a progress of 0-1 (bottom-right quadrant). */
 void ui_components_loading_animation_draw(float progress);
+/** @brief How far the animation's opening fade-in is, 0-1. */
+float ui_components_loading_animation_fade_in(void);
 /** @brief Loading finished: play the corona. */
 void ui_components_loading_animation_done(void);
 /** @brief Whether the corona has finished playing after ui_components_loading_animation_done(). */

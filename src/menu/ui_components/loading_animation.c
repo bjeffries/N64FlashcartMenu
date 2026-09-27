@@ -75,6 +75,17 @@ void ui_components_loading_animation_free (void) {
 }
 
 /**
+ * @brief How far the opening fade-in is, 0-1 (for things that fade in with the animation).
+ */
+float ui_components_loading_animation_fade_in (void) {
+    if (!started) {
+        return 0.0f;
+    }
+    uint32_t elapsed = get_ticks_ms() - start_ms;
+    return MIN(1.0f, elapsed / (float) (FADE_IN_LAST * FRAME_MS));
+}
+
+/**
  * @brief Mark loading as finished: the corona plays next.
  */
 void ui_components_loading_animation_done (void) {
