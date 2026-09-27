@@ -56,6 +56,9 @@ typedef struct {
     bool wrap_file_list_scrolling;
 
 
+    /** @brief Play the boot animation at power-on */
+    bool boot_animation_enabled;
+
     /** @brief Enable Sound effects within the menu */
     bool soundfx_enabled;
 

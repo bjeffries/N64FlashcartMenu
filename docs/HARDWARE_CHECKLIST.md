@@ -41,6 +41,8 @@ the metadata JSON.
 
 ## 3. First boot
 
+- [ ] **3.0 The Eclipse Cart animation plays** at power-on (about 4 seconds, ending in a fade),
+      smoothly and without flicker on "ECLIPSE" or "CART".
 - [ ] **3.1 The menu starts on the Library tab** within a few seconds, with no error screen.
 - [ ] **3.2 Your folders appear as folder tiles**; `menu` and system folders are hidden.
 - [ ] **3.3 Opening a folder shows cartridges with labels** for games in `labels.db`, grey
@@ -82,6 +84,7 @@ These depend on SD card speed, which the emulator doesn't reproduce.
       Time, Paper Mario).
 - [ ] **6.3 Reset during a game:** with **Fast Reboot** off (Menu Settings) you return to the
       menu; with it on, the game restarts.
+      Returning to the menu this way **doesn't** play the boot animation.
 - [ ] **6.4 History:** after playing, the game appears first in the History tab.
 - [ ] **6.5 Last Played** on the game's info page shows today's date (needs the clock, section 9).
 - [ ] **6.6 Expansion Pak games** (e.g. Donkey Kong 64, Majora's Mask) boot; without the pak
@@ -91,7 +94,8 @@ These depend on SD card speed, which the emulator doesn't reproduce.
 
 Power the console off and on after each change to confirm it was saved.
 
-- [ ] **7.1 Menu Settings** toggles keep their values.
+- [ ] **7.1 Menu Settings** toggles keep their values. With **Boot Animation** off, power-on goes straight to
+      the Library.
 - [ ] **7.2 Config (C-Right)**: change a game's Save Type, then reopen Config: the value is kept,
       and a `.ini` file appears next to the ROM.
 - [ ] **7.3 Favorites (C-Left)** keep their order (alphabetical) after a restart.

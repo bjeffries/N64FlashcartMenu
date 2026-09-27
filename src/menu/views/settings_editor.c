@@ -25,6 +25,12 @@ static void set_soundfx (menu_t *menu, bool value) {
     settings_save(&menu->settings);
 }
 
+static bool get_boot_animation (menu_t *menu) { return menu->settings.boot_animation_enabled; }
+static void set_boot_animation (menu_t *menu, bool value) {
+    menu->settings.boot_animation_enabled = value;
+    settings_save(&menu->settings);
+}
+
 static bool get_hidden_games (menu_t *menu) { return menu->settings.show_hidden_games; }
 static void set_hidden_games (menu_t *menu, bool value) {
     menu->settings.show_hidden_games = value;
@@ -106,6 +112,8 @@ static void ask_reset (menu_t *menu) {
 }
 
 static option_t options[] = {
+    { .label = "Boot Animation", .type = OPTION_TOGGLE, .get = get_boot_animation, .set = set_boot_animation,
+      .description = "Play the Eclipse Cart animation when the console is switched on." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,
