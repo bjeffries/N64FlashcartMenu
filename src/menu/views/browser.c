@@ -404,46 +404,22 @@ static bool select_file (menu_t *menu, path_t *file) {
     return false;
 }
 
-static void show_properties (menu_t *menu, void *arg) {
-    menu->next_mode = MENU_MODE_FILE_INFO;
-}
-
-static void delete_entry (menu_t *menu, void *arg) {
+/** @brief Whether the selected folder is the Library's start folder (Menu Settings > Start Folder). */
+static bool selected_folder_is_default (menu_t *menu) {
     path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
-
-    if (remove(path_get(path))) {
-        menu->browser.valid = false;
-        if (menu->browser.entry->type == ENTRY_TYPE_DIR) {
-            menu_show_error(menu, "Couldn't delete directory\nDirectory might not be empty");
-        } else {
-            menu_show_error(menu, "Couldn't delete file");
-        }
-        path_free(path);
-        return;
-    }
-
+    bool is_default = (strcmp(strip_fs_prefix(path_get(path)), menu->settings.default_directory) == 0);
     path_free(path);
-
-    if (reload_directory(menu)) {
-        menu->browser.valid = false;
-        menu_show_error(menu, "Couldn't refresh directory contents after delete operation");
-    }
+    return is_default;
 }
 
-static void set_default_directory (menu_t *menu, void *arg) {
+/** @brief Make the selected folder the one the Library opens in. */
+static void set_selected_folder_default (menu_t *menu) {
+    path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
     free(menu->settings.default_directory);
-    menu->settings.default_directory = strdup(strip_fs_prefix(path_get(menu->browser.directory)));
+    menu->settings.default_directory = strdup(strip_fs_prefix(path_get(path)));
+    path_free(path);
     settings_save(&menu->settings);
 }
-
-static component_context_menu_t entry_context_menu = {
-    .list = {
-        { .text = "Show entry properties", .action = show_properties },
-        { .text = "Delete selected entry", .action = delete_entry },
-        { .text = "Set current directory as default", .action = set_default_directory },
-        COMPONENT_CONTEXT_MENU_LIST_END,
-    }
-};
 
 /** @brief Hide or unhide the selected game, then refresh the list if it just disappeared from it. */
 static void set_selected_hidden (menu_t *menu, bool hide) {
@@ -468,10 +444,6 @@ static void process (menu_t *menu) {
             confirm_hide = false;
             sound_play_effect(SFX_EXIT);
         }
-        return;
-    }
-
-    if (ui_components_context_menu_process(menu, &entry_context_menu)) {
         return;
     }
 
@@ -560,6 +532,12 @@ static void process (menu_t *menu) {
         }
         path_free(path);
         sound_play_effect(SFX_SETTING);
+    } else if (menu->actions.favorite && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
+        // C-Left on a folder: open the Library there from now on (reset in Menu Settings).
+        if (!selected_folder_is_default(menu)) {
+            set_selected_folder_default(menu);
+            sound_play_effect(SFX_SETTING);
+        }
     } else if (menu->actions.remove && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
         if (menu->browser.entry->hidden) {
             set_selected_hidden(menu, false);       // unhiding is harmless: no confirmation
@@ -576,10 +554,6 @@ static void process (menu_t *menu) {
             info_page = (info_page + (menu->actions.go_down ? 1 : pages - 1)) % pages;
             sound_play_effect(SFX_CURSOR);
         }
-    } else if (menu->actions.lz_context && !menu->actions.tab_prev && menu->browser.entry) {
-        // Z: file options (properties, delete, set default folder)
-        ui_components_context_menu_show(&entry_context_menu);
-        sound_play_effect(SFX_SETTING);
     }
 }
 
@@ -604,7 +578,7 @@ static void draw (menu_t *menu, surface_t *d) {
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
 
-    // Games show Play / Config / Favorite / Hide; there is only room for Back on folders.
+    // Games show Play / Config / Favorite / Hide; folders show Open / Set to Default / Back.
     int x = GAME_INFO_VALUE_X;
     entry_t *entry = menu->browser.entry;
     bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
@@ -616,13 +590,14 @@ static void draw (menu_t *menu, surface_t *d) {
         if (is_game) {
             x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
             ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
+        } else if (entry->type == ENTRY_TYPE_DIR && !selected_folder_is_default(menu)) {
+            x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Set to Default") + LIBRARY_HINT_GAP;
         }
     }
     if (!is_game && !path_is_root(menu->browser.directory)) {
         ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
     }
 
-    ui_components_context_menu_draw(&entry_context_menu);
 
     if (confirm_hide && menu->browser.entry) {
         char title[128];
@@ -646,7 +621,6 @@ void view_browser_init (menu_t *menu) {
     ui_components_carousel_invalidate();
 
     if (!menu->browser.valid) {
-        ui_components_context_menu_init(&entry_context_menu);
         if (load_directory(menu)) {
             path_free(menu->browser.directory);
             menu->browser.directory = path_init(menu->storage_prefix, "");

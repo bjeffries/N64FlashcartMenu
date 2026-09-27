@@ -1,6 +1,6 @@
 /**
  * @file file_info.c
- * @brief File properties screen (Z > Show entry properties in the Library)
+ * @brief File properties screen (A on a file the Library can't play)
  * @ingroup view
  */
 

@@ -107,6 +107,12 @@ static const char *start_folder_value (menu_t *menu) {
     return (folder && folder[0] != '\0') ? folder : "/";
 }
 
+static void reset_start_folder (menu_t *menu) {
+    free(menu->settings.default_directory);
+    menu->settings.default_directory = strdup("/");
+    settings_save(&menu->settings);
+}
+
 static void ask_reset (menu_t *menu) {
     confirm_reset = true;
 }
@@ -138,8 +144,9 @@ static option_t options[] = {
     { .label = "Hide ROM Tags", .type = OPTION_TOGGLE, .get = get_rom_tags, .set = set_rom_tags },
     { .label = "Rumble Feedback", .type = OPTION_TOGGLE, .get = get_rumble, .set = set_rumble },
 #endif
-    { .label = "Start Folder", .type = OPTION_INFO, .value = start_folder_value,
-      .description = "Folder the Library opens in. Change it with Z in the Library." },
+    { .label = "Start Folder", .type = OPTION_ACTION, .value = start_folder_value,
+      .action = reset_start_folder, .action_name = "Reset",
+      .description = "Folder the Library opens in. Set it with C-Left on a folder; A resets it to the top." },
     { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset,
       .description = "Put every menu setting back to its default." },
 };

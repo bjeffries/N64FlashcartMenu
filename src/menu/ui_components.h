@@ -421,6 +421,7 @@ typedef struct {
     component_context_menu_t *picker;           /**< OPTION_CHOICE: pop-up whose current row is the value */
     void (*action)(menu_t *menu);               /**< OPTION_ACTION: what A does */
     const char *(*value)(menu_t *menu);         /**< Optional value text (overrides the picker's row text) */
+    const char *action_name;                    /**< OPTION_ACTION: A's hint (default "Open") */
 } option_t;
 
 /** @brief A scrollable list of options. */

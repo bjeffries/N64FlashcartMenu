@@ -104,8 +104,9 @@ Power the console off and on after each change to confirm it was saved.
 - [ ] **7.3 Favorites (C-Left)** keep their order (alphabetical) after a restart.
 - [ ] **7.4 Hide (C-Up)**: the game stays hidden after a restart; `menu/hidden.txt` lists it.
       **Show Hidden Games** brings it back greyed out, and C-Up unhides it.
-- [ ] **7.5 Start Folder**: in the Library press Z > "Set current directory as default" inside a
-      folder, restart: the Library opens there.
+- [ ] **7.5 Start Folder**: in the Library select a folder and press C-Left (Set to Default),
+      restart: the Library opens in that folder. Menu Settings > Start Folder shows it, and A there
+      resets it to the top level.
 
 ## 8. Cheats (needs an Expansion Pak)
 
