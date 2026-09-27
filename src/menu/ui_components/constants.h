@@ -418,10 +418,10 @@
 #define CARTRIDGE_OUTLINE_OFFSET        (4)
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
 #define CARTRIDGE_LABEL_BLEED           (2)
-/** @brief Baseline of the captions under unselected tiles. */
-#define CAROUSEL_CAPTION_Y              (CAROUSEL_SMALL_TILE_Y + CAROUSEL_TILE_SIZE + 14)
-/** @brief Baseline of the selected entry's title (40px font). */
-#define CAROUSEL_TITLE_Y                (CAROUSEL_TILE_Y + CAROUSEL_SELECTED_TILE_SIZE + 44)
+/** @brief Baseline of the captions under unselected tiles: level with the bottom of the selected cartridge's outline. */
+#define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2) + CARTRIDGE_LARGE_HEIGHT + CARTRIDGE_OUTLINE_OFFSET)
+/** @brief Baseline of the selected entry's title: 22px below the captions, plus the title's 18px capitals. */
+#define CAROUSEL_TITLE_Y                (CAROUSEL_CAPTION_Y + 40)
 /** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
 #define GAME_INFO_LABEL_X               (CAROUSEL_SELECTED_X)
 /** @brief Left edge of the info panel's values. */
