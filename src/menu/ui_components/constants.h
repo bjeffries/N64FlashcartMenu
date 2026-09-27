@@ -520,8 +520,8 @@
 #define CAROUSEL_PAGING_INTERVAL_MS     (300)
 /** @brief Paging letter: baseline (40px font, capitals top out at the safe area). */
 #define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + 28)
-/** @brief Paging letter: box it is right-aligned in, against the right safe edge. */
-#define LETTER_INDICATOR_WIDTH          (40)
+/** @brief Paging letter: left edge, lined up with the cartridge, page dots and info labels. */
+#define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X)
 #define LETTER_INDICATOR_FADE_IN_MS     (120)
 /** @brief Paging letter stays this long after the last page, then fades out. */
 #define LETTER_INDICATOR_HOLD_MS        (400)

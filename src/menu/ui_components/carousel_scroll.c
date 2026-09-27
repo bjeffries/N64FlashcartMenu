@@ -5,7 +5,7 @@
  *
  * Holding ←/→ moves one tile every CAROUSEL_REPEAT_FRAMES. After CAROUSEL_PAGING_DELAY_MS it
  * switches to jumping a letter at a time (A -> B -> C, landing on the first entry of each letter
- * in either direction) every CAROUSEL_PAGING_INTERVAL_MS, and shows the letter in the top-right
+ * in either direction) every CAROUSEL_PAGING_INTERVAL_MS, and shows the letter in the top-left
  * corner, fading in and out. Letters come from file names, which is what the lists are sorted by;
  * names that don't start with a letter are grouped as '#', and folders page separately from games.
  */
@@ -145,7 +145,7 @@ int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t coun
 }
 
 /**
- * @brief Draw the letter being paged to in the top-right corner, fading in and out.
+ * @brief Draw the letter being paged to in the top-left corner, fading in and out.
  */
 void ui_components_letter_indicator_draw (void) {
     if (!indicator.visible) {
@@ -171,7 +171,7 @@ void ui_components_letter_indicator_draw (void) {
     // The background is black, so fading the colour towards black fades the letter.
     fonts_set_fade_level(FNT_TITLE, (uint8_t) level);
     rdpq_text_printf(
-        &(rdpq_textparms_t) { .style_id = STL_FADE, .width = LETTER_INDICATOR_WIDTH, .align = ALIGN_RIGHT },
-        FNT_TITLE, VISIBLE_AREA_X1 - LETTER_INDICATOR_WIDTH, LETTER_INDICATOR_Y, "%c", indicator.letter
+        &(rdpq_textparms_t) { .style_id = STL_FADE },
+        FNT_TITLE, LETTER_INDICATOR_X, LETTER_INDICATOR_Y, "%c", indicator.letter
     );
 }
