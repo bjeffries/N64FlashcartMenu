@@ -26,12 +26,53 @@ static struct {
     bool paging;
 } scroll;
 
+// Something that fades in when shown, stays while it keeps being updated, then fades out.
+typedef struct {
+    uint32_t shown_ms;      // when it started showing (fade in)
+    uint32_t updated_ms;    // last update (fade out after this)
+    bool visible;
+} fade_t;
+
 static struct {
     char letter;
-    uint32_t shown_ms;      // when it started showing (fade in)
-    uint32_t updated_ms;    // last page (fade out after this)
-    bool visible;
+    fade_t fade;
 } indicator;
+
+// Position counter ("12/87"): shown on every selection change.
+static fade_t position;
+
+
+static void fade_touch (fade_t *fade, uint32_t now) {
+    if (!fade->visible) {
+        fade->shown_ms = now;
+    }
+    fade->visible = true;
+    fade->updated_ms = now;
+}
+
+/** @brief Current brightness (0-255), or -1 once it has faded out. */
+static int fade_level (fade_t *fade) {
+    if (!fade->visible) {
+        return -1;
+    }
+    uint32_t now = get_ticks_ms();
+    uint32_t since_shown = now - fade->shown_ms;
+    uint32_t since_update = now - fade->updated_ms;
+
+    int level = 0xFF;
+    if (since_shown < LETTER_INDICATOR_FADE_IN_MS) {
+        level = (since_shown * 0xFF) / LETTER_INDICATOR_FADE_IN_MS;
+    }
+    if (since_update > LETTER_INDICATOR_HOLD_MS) {
+        uint32_t fading = since_update - LETTER_INDICATOR_HOLD_MS;
+        if (fading >= LETTER_INDICATOR_FADE_OUT_MS) {
+            fade->visible = false;
+            return -1;
+        }
+        level = MIN(level, (int) (((LETTER_INDICATOR_FADE_OUT_MS - fading) * 0xFF) / LETTER_INDICATOR_FADE_OUT_MS));
+    }
+    return level;
+}
 
 
 static const char *base_name (const char *name) {
@@ -91,6 +132,8 @@ void ui_components_carousel_scroll_reset (void) {
     scroll.paging = false;
 }
 
+static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging);
+
 /**
  * @brief Handle ←/→ for a carousel list (circular).
  *
@@ -98,6 +141,14 @@ void ui_components_carousel_scroll_reset (void) {
  * @return The new selection.
  */
 int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging) {
+    int32_t next = scroll_step(menu, list, count, selected, letter_paging);
+    if (next != selected) {
+        fade_touch(&position, get_ticks_ms());
+    }
+    return next;
+}
+
+static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging) {
     // C-buttons also report a direction (go_fast); in carousels they are action buttons instead.
     bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
     if (!horizontal || count < 2) {
@@ -118,12 +169,8 @@ int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t coun
                 scroll.paging = true;
                 scroll.last_page_ms = now;
                 scroll.hold_frames++;
-                if (!indicator.visible) {
-                    indicator.shown_ms = now;
-                }
-                indicator.visible = true;
                 indicator.letter = letter_of(&list[next]);
-                indicator.updated_ms = now;
+                fade_touch(&indicator.fade, now);
                 sound_play_effect(SFX_CURSOR);
                 return next;
             }
@@ -148,24 +195,9 @@ int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t coun
  * @brief Draw the letter being paged to in the top-left corner, fading in and out.
  */
 void ui_components_letter_indicator_draw (void) {
-    if (!indicator.visible) {
+    int level = fade_level(&indicator.fade);
+    if (level < 0) {
         return;
-    }
-    uint32_t now = get_ticks_ms();
-    uint32_t since_shown = now - indicator.shown_ms;
-    uint32_t since_update = now - indicator.updated_ms;
-
-    int level = 0xFF;
-    if (since_shown < LETTER_INDICATOR_FADE_IN_MS) {
-        level = (since_shown * 0xFF) / LETTER_INDICATOR_FADE_IN_MS;
-    }
-    if (since_update > LETTER_INDICATOR_HOLD_MS) {
-        uint32_t fading = since_update - LETTER_INDICATOR_HOLD_MS;
-        if (fading >= LETTER_INDICATOR_FADE_OUT_MS) {
-            indicator.visible = false;
-            return;
-        }
-        level = MIN(level, (int) (((LETTER_INDICATOR_FADE_OUT_MS - fading) * 0xFF) / LETTER_INDICATOR_FADE_OUT_MS));
     }
 
     // The background is black, so fading the colour towards black fades the letter.
@@ -174,4 +206,42 @@ void ui_components_letter_indicator_draw (void) {
         &(rdpq_textparms_t) { .style_id = STL_FADE },
         FNT_TITLE, LETTER_INDICATOR_X, LETTER_INDICATOR_Y, "%c", indicator.letter
     );
+}
+
+/**
+ * @brief Draw the position counter ("12/87") in the top-right corner, mirroring the letter
+ *        indicator: it fades in on every selection change and out after a pause. Drawn over a
+ *        background-coloured backing, since the tab bar's R end sits under it.
+ *
+ * @param index 1-based position of the selection, or 0 to draw nothing (e.g. a folder).
+ * @param total Number of entries counted.
+ */
+void ui_components_position_indicator_draw (int index, int total) {
+    int level = fade_level(&position);
+    if (level < 0 || index <= 0 || total <= 0) {
+        return;
+    }
+    char text[16];
+    snprintf(text, sizeof(text), "%d/%d", index, total);
+
+    // Right edge of the ink mirrors the letter indicator's left edge.
+    int nbytes = strlen(text);
+    rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, TITLE_FONT, text, &nbytes);
+    int ink_x0 = (int) layout->bbox.x0;
+    int ink_x1 = (int) layout->bbox.x1;
+    rdpq_paragraph_free(layout);
+    int x = (DISPLAY_WIDTH - LETTER_INDICATOR_X) - ink_x1;
+
+    int cap = fonts_cap_height(TITLE_FONT);
+    rdpq_mode_push();
+        rdpq_set_mode_standard();
+        rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+        rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+        rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, (uint8_t) level));
+        rdpq_fill_rectangle(x + ink_x0 - POSITION_INDICATOR_PADDING, LETTER_INDICATOR_Y - cap - POSITION_INDICATOR_PADDING,
+            x + ink_x1 + POSITION_INDICATOR_PADDING, TAB_BAR_PILL_Y + TAB_BAR_PILL_HEIGHT + 1);
+    rdpq_mode_pop();
+
+    fonts_set_fade_level(TITLE_FONT, (uint8_t) level);
+    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_FADE }, TITLE_FONT, x, LETTER_INDICATOR_Y, "%s", text);
 }

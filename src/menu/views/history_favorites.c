@@ -156,6 +156,9 @@ static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_game_info_draw(NULL, &entries[selected], &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
+    if (tab == TAB_FAVORITES) {
+        ui_components_position_indicator_draw(selected + 1, entry_count);
+    }
 
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;

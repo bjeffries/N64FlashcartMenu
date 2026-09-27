@@ -323,6 +323,8 @@ void ui_components_carousel_scroll_reset(void);
 int32_t ui_components_carousel_scroll(menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging);
 /** @brief Draw the letter being paged to (top left), fading in and out. */
 void ui_components_letter_indicator_draw(void);
+/** @brief Draw the position counter ("index/total", top right), fading like the letter indicator; index 0 draws nothing. */
+void ui_components_position_indicator_draw(int index, int total);
 
 /** @brief Controller button icons (assets/images/button_*.png, see scripts/make_icons.py). */
 typedef enum {

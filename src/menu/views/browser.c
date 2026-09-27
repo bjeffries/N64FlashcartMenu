@@ -572,6 +572,19 @@ static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
 
+    // Position among the games (not folders); hidden games are only in the list when shown.
+    int total = 0;
+    int index = 0;
+    for (int32_t i = 0; i < menu->browser.entries; i++) {
+        if (menu->browser.list[i].type == ENTRY_TYPE_ROM) {
+            total++;
+            if (i == menu->browser.selected) {
+                index = total;
+            }
+        }
+    }
+    ui_components_position_indicator_draw(index, total);
+
     // Hints in the order A, B, C-Left, C-Up, C-Right, C-Down.
     // Games: Play / Back / Favorite / Config / Hide. Folders: Open / Back / Set to Default.
     button_hint_t hints[BUTTON_HINTS_MAX];

@@ -557,6 +557,8 @@
 /** @brief Paging letter: left edge, lined up with the cartridge, page dots and info labels. */
 #define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X)
 #define LETTER_INDICATOR_FADE_IN_MS     (120)
+/** @brief Position counter: backing margin around its text (it covers the tab bar's R end). */
+#define POSITION_INDICATOR_PADDING      (6)
 /** @brief Paging letter stays this long after the last page, then fades out. */
 #define LETTER_INDICATOR_HOLD_MS        (400)
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)
