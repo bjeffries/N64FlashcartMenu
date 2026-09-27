@@ -453,7 +453,7 @@
 #define GAME_INFO_ROW_PITCH             (MAX(16, fonts_ascent(GAME_INFO_FONT) + 3))
 /** @brief Extra space between groups of info rows. */
 #define GAME_INFO_GROUP_GAP             (6)
-/** @brief Info value badges (player count, accessories, region): palette tone 2 with white text
+/** @brief Player count badge: palette tone 2 behind the player marks
  *         (one shade lighter than the read-only rows of settings screens; text uses the dark shadow). */
 #define GAME_INFO_BADGE_COLOR           PALETTE_TONE_2
 /** @brief Player icons: supported players, and unused player slots. */

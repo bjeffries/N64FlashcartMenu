@@ -17,7 +17,7 @@
 
 #define MAX_PLAYERS         (4)
 #define BADGE_PADDING       (3)
-#define BADGE_GAP           (4)
+#define TAG_GAP             (12)    // between accessory tags
 #define GAME_INFO_PAGES     (3)
 
 /** @brief Info for the currently selected entry, reloaded only when the selection changes. */
@@ -139,18 +139,16 @@ static void draw_text (int x, int y, menu_font_style_t style, const char *text) 
     draw_shadowed((rdpq_textparms_t) { .style_id = style, .width = right - x, .wrap = WRAP_ELLIPSES }, x, y, upper);
 }
 
-/** @brief Grey badge with white text for the RUMBLE PAK / USA style tags. Returns its width. */
-static int draw_badge (int x, int y, const char *text) {
+/** @brief One RMB PAK / USA style tag (plain value text). Returns its width, or -1 if it doesn't fit. */
+static int draw_tag (int x, int y, const char *text) {
     int nbytes = strlen(text);
     rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, GAME_INFO_FONT, text, &nbytes);
-    int width = (int) (layout->advance_x) + (BADGE_PADDING * 2);
+    int width = (int) (layout->advance_x);
     rdpq_paragraph_free(layout);
     if (x + width > value_right) {
         return -1;
     }
-    ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
-    // The badge is the same tone as the normal shadow, so its text gets the dark one.
-    render_paragraph_with_shadow((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x + BADGE_PADDING, y, text, STL_SHADOW_DARK);
+    render_paragraph_with_shadow((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x, y, text, STL_SHADOW);
     return width;
 }
 
@@ -187,11 +185,11 @@ static void draw_accessories (int x, int y, rom_info_t *info) {
         return;
     }
     for (int i = 0; i < count; i++) {
-        int width = draw_badge(x, y, badges[i]);
+        int width = draw_tag(x, y, badges[i]);
         if (width < 0) {
             break;
         }
-        x += width + BADGE_GAP;
+        x += width + TAG_GAP;
     }
 }
 
@@ -283,7 +281,7 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     draw_row(y, "Region");
     const char *region = info ? format_region(info->destination_code) : NULL;
     if (region) {
-        draw_badge(x, y, region);
+        draw_tag(x, y, region);
     } else {
         draw_value(y, NULL);
     }
