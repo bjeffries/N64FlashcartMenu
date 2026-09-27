@@ -101,12 +101,14 @@ FONT_DEFAULT = AnalogueOS-Regular.ttf 20 --monochrome
 FONT_TITLE = AnalogueOS-Regular.ttf 40 --monochrome
 FONT_SMALL = AnalogueOS-Regular.ttf 12 --char-spacing 1
 else
-# Pixel Operator 8 (CC0) is drawn on an 8-unit pixel grid, so multiples of 8 are crisp; at 16px
-# its lines are 2px (no interlace flicker). Regular weight everywhere (a Bold is in the folder).
-# Its letter gap is one font pixel; -1 takes 1px off it (16px: 2px -> 1px, 24px: 3px -> 2px).
+# Pixel Operator (CC0) for titles, labels, tabs and button hints: drawn on a 16-unit pixel grid,
+# so 16px and 32px are crisp. At 16px its letter gap is already 1px; at 32px -1 takes it from 2px
+# to 1px. Its 16px lines are 1px, which may flicker on an interlaced CRT.
+# Pixel Operator 8 for the other text (info panel, captions, descriptions): an 8-unit grid, so at
+# 16px its lines are 2px; -1 takes its letter gap from 2px to 1px.
 # Other weights and variants are in assets/fonts/pixel_operator/.
-FONT_DEFAULT = pixel_operator/PixelOperator8.ttf 16 --monochrome --char-spacing -1
-FONT_TITLE = pixel_operator/PixelOperator8.ttf 24 --monochrome --char-spacing -1
+FONT_DEFAULT = pixel_operator/PixelOperator.ttf 16 --monochrome
+FONT_TITLE = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
 FONT_SMALL = pixel_operator/PixelOperator8.ttf 16 --monochrome --char-spacing -1
 endif
 FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_SMALL)))
