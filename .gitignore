@@ -16,6 +16,7 @@
 /devsd
 /filesystem/*.wav64
 /filesystem/*.sprite
+/filesystem/boot
 
 # Ignore external development tools
 /tools/*
