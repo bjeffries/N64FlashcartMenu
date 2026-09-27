@@ -145,7 +145,7 @@ void ui_components_table_scrollbar_draw (int first_row_y, int pitch, int first_v
     int thumb = MAX(TABLE_SCROLLBAR_MIN_THUMB, (height * visible) / count);
     int thumb_y = top + ((height - thumb) * first_visible) / (count - visible);
     ui_components_box_draw(TABLE_SCROLLBAR_X, top, VISIBLE_AREA_X1, bottom, SCROLLBAR_BG_COLOR);
-    ui_components_box_draw(TABLE_SCROLLBAR_X, thumb_y, VISIBLE_AREA_X1, thumb_y + thumb, SCROLLBAR_POSITION_COLOR);
+    ui_components_box_draw(TABLE_SCROLLBAR_X, thumb_y, VISIBLE_AREA_X1, thumb_y + thumb, TABLE_SCROLLBAR_THUMB_COLOR);
 }
 
 /**

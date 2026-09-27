@@ -64,6 +64,16 @@ ui_palette_id_t ui_palette_from_key(const char *key);
 #define PALETTE_LEGACY_ORANGE   RGBA32(0xFF, 0x99, 0x00, 0xFF)
 #define PALETTE_LEGACY_RED      RGBA32(0xFF, 0x40, 0x40, 0xFF)
 
+/** @brief Mix two colours: amount 0 is a, 255 is b. */
+static inline color_t palette_mix (color_t a, color_t b, int amount) {
+    return RGBA32(
+        a.r + (((b.r - a.r) * amount) / 255),
+        a.g + (((b.g - a.g) * amount) / 255),
+        a.b + (((b.b - a.b) * amount) / 255),
+        0xFF
+    );
+}
+
 /** @brief A colour with a different alpha (e.g. a fade to black). */
 #define PALETTE_WITH_ALPHA(color, alpha)    ((color_t) { .r = (color).r, .g = (color).g, .b = (color).b, .a = (alpha) })
 

@@ -517,6 +517,8 @@
 #define TABLE_SCROLLBAR_WIDTH           (4)
 #define TABLE_SCROLLBAR_X               (VISIBLE_AREA_X1 - TABLE_SCROLLBAR_WIDTH)
 #define TABLE_SCROLLBAR_MIN_THUMB       (8)
+/** @brief Scroll bar thumb: the palette's lightest tone, halfway to white (light gray in Monochrome). */
+#define TABLE_SCROLLBAR_THUMB_COLOR     palette_mix(PALETTE_TONE_3, RGBA32(0xFF, 0xFF, 0xFF, 0xFF), 0x80)
 /** @brief Distance between Cheat Codes rows (title-style text, like option lists). */
 #define CHEAT_ROW_PITCH                 (OPTION_LIST_ROW_PITCH)
 /** @brief Background band behind read-only information rows. */
