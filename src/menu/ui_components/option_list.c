@@ -87,6 +87,8 @@ bool ui_components_option_list_process (menu_t *menu, option_list_t *list) {
             }
             sound_play_effect(SFX_SETTING);
             break;
+        case OPTION_INFO:
+            break;
         case OPTION_ACTION:
             if (option->action) {       // rows without an action are read-only information
                 option->action(menu);
@@ -107,6 +109,7 @@ const char *ui_components_option_list_action_name (option_list_t *list) {
     switch (list->options[list->selected].type) {
         case OPTION_TOGGLE: return "Toggle";
         case OPTION_CHOICE: return "Change";
+        case OPTION_INFO: return NULL;
         default: return list->options[list->selected].action ? "Open" : NULL;
     }
 }
@@ -149,7 +152,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
             value = choice_text(menu, option);
         } else if (option->value) {
             value = option->value(menu);
-            value_style = STL_GRAY;
+            value_style = (option->type == OPTION_INFO) ? STL_DEFAULT : STL_GRAY;
         }
         if (value) {
             ui_components_text_draw(
@@ -179,4 +182,21 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
     if (picker) {
         ui_components_context_menu_draw(picker);
     }
+}
+
+/**
+ * @brief Draw a whole option-list screen: header, rows, and the A / B button hints.
+ *        The view still attaches / detaches the display and draws any dialogs on top.
+ */
+void ui_components_option_screen_draw (menu_t *menu, const char *title, option_list_t *list) {
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", title);
+
+    ui_components_option_list_draw(menu, list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * 8));
+
+    int x = GAME_INFO_VALUE_X;
+    const char *action = ui_components_option_list_action_name(list);
+    if (action) {
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, action) + LIBRARY_HINT_GAP;
+    }
+    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
 }

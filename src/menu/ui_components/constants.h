@@ -456,6 +456,10 @@
 /** @brief Baseline of the first row on option-list screens without a game title (e.g. Menu Settings). */
 #define SETTINGS_LIST_Y                 (96)
 
+/** @brief Time screen: baseline of the large date and time, and of the help text below it. */
+#define TIME_VALUE_Y                    (150)
+#define TIME_HELP_Y                     (240)
+
 /** @brief Distance between option list rows. */
 #define OPTION_LIST_ROW_PITCH           (32)
 /** @brief Left edge of option values. */

@@ -130,7 +130,7 @@ static option_t options[] = {
     { .label = "Hide ROM Tags", .type = OPTION_TOGGLE, .get = get_rom_tags, .set = set_rom_tags },
     { .label = "Rumble Feedback", .type = OPTION_TOGGLE, .get = get_rumble, .set = set_rumble },
 #endif
-    { .label = "Start Folder", .type = OPTION_ACTION, .value = start_folder_value,
+    { .label = "Start Folder", .type = OPTION_INFO, .value = start_folder_value,
       .description = "Folder the Library opens in. Change it with Z in the Library." },
     { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset,
       .description = "Put every menu setting back to its default." },
@@ -169,16 +169,7 @@ static void process (menu_t *menu) {
 static void draw (menu_t *menu, surface_t *d) {
     rdpq_attach_clear(d, NULL);
 
-    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Menu Settings");
-
-    ui_components_option_list_draw(menu, &list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * 8));
-
-    int x = GAME_INFO_VALUE_X;
-    const char *action = ui_components_option_list_action_name(&list);
-    if (action) {
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, action) + LIBRARY_HINT_GAP;
-    }
-    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
+    ui_components_option_screen_draw(menu, "Menu Settings", &list);
 
     if (confirm_reset) {
         ui_components_messagebox_draw(
