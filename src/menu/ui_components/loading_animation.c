@@ -4,7 +4,8 @@
  * @ingroup ui_components
  *
  * Uses the boot animation's frames (without the title): the sun and moon fade in, the moon's
- * approach follows the loading progress, and the corona appears once loading is done. The eclipse
+ * approach follows the loading progress, and the corona appears once loading is done, holds, then
+ * fades out so the game starts from black rather than cutting away from the ring. The eclipse
  * is centred on the bottom-right quadrant of the screen, over the Library.
  *
  * On the SummerCart64 the game is loaded over the cartridge space the menu's own files (rom:/)
@@ -23,7 +24,8 @@
 #define APPROACH_LAST       (54)
 #define CORONA_LAST         (57)    // 55-57: corona fades in
 #define FRAME_MS            (1000 / BOOT_ANIMATION_FPS)
-#define DONE_HOLD_MS        (150)   // show the full corona this long before the game starts
+#define DONE_HOLD_MS        (150)   // show the full corona this long,
+#define RING_FADE_MS        (200)   // then fade it out (after loading: 100% is still totality)
 
 // The sun's centre in the boot animation (make_eclipse_intro.py: SUN_CENTRE = 213.5, 200).
 #define SUN_X               (213)
@@ -100,7 +102,7 @@ void ui_components_loading_animation_done (void) {
  */
 bool ui_components_loading_animation_finished (void) {
     uint32_t corona_ms = (CORONA_LAST - APPROACH_LAST) * FRAME_MS;
-    return done && (get_ticks_ms() - done_ms) >= corona_ms + DONE_HOLD_MS;
+    return done && (get_ticks_ms() - done_ms) >= corona_ms + DONE_HOLD_MS + RING_FADE_MS;
 }
 
 static int current_frame (float progress) {
@@ -138,5 +140,17 @@ void ui_components_loading_animation_draw (float progress) {
     rdpq_mode_push();
         rdpq_set_mode_copy(true);   // black is transparent
         rdpq_sprite_blit(sprites[image], x, y, NULL);
+
+        // After the hold, fade the ring out (the screen around it is already black).
+        uint32_t fade_start = ((CORONA_LAST - APPROACH_LAST) * FRAME_MS) + DONE_HOLD_MS;
+        uint32_t since_done = done ? get_ticks_ms() - done_ms : 0;
+        if (done && since_done > fade_start) {
+            uint32_t fading = MIN(RING_FADE_MS, since_done - fade_start);
+            rdpq_set_mode_standard();
+            rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+            rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+            rdpq_set_prim_color(RGBA32(0x00, 0x00, 0x00, (uint8_t) ((fading * 0xFF) / RING_FADE_MS)));
+            rdpq_fill_rectangle(x, y, x + sprites[image]->width, y + sprites[image]->height);
+        }
     rdpq_mode_pop();
 }
