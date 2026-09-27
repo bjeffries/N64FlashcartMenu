@@ -152,7 +152,11 @@ static void draw (menu_t *menu, surface_t *display) {
         return;
     }
 
-    ui_components_carousel_draw(NULL, entries, entry_count, selected);
+    path_t *path = path_create(entries[selected].name);
+    bool favorite = bookkeeping_favorite_find(&menu->bookkeeping, path) >= 0;
+    path_free(path);
+
+    ui_components_carousel_draw(NULL, entries, entry_count, selected, favorite);
 
     int pages = ui_components_game_info_page_count(&entries[selected]);
     if (info_page >= pages) {
@@ -166,9 +170,6 @@ static void draw (menu_t *menu, surface_t *display) {
     if (entries[selected].type == ENTRY_TYPE_ROM) {
         x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
     }
-    path_t *path = path_create(entries[selected].name);
-    bool favorite = bookkeeping_favorite_find(&menu->bookkeeping, path) >= 0;
-    path_free(path);
     ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite");
 
     rdpq_detach_show();

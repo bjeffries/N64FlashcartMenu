@@ -53,6 +53,7 @@ static label_slot_t label_cache[LABEL_CACHE_SIZE];
 static bool label_cache_ready = false;
 
 static sprite_t *selection_outline = NULL;
+static sprite_t *favorite_outline = NULL;
 
 static bool scroll_ready = false;       // false: snap to the selection on the next draw
 static float scroll_position = 0;       // selection index currently in the focus frame (fractional while moving)
@@ -338,7 +339,7 @@ void ui_components_carousel_invalidate (void) {
 /**
  * @brief Draw the carousel row and the selected entry's title.
  */
-void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entries, int32_t selected) {
+void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entries, int32_t selected, bool selected_favorite) {
     if (!label_cache_ready) {
         label_cache_reset();
     }
@@ -390,10 +391,11 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         } else {
             if (!selection_outline) {
                 selection_outline = sprite_load("rom:/cartridge_large_outline.sprite");
+                favorite_outline = sprite_load("rom:/cartridge_large_outline_favorite.sprite");
             }
             rdpq_mode_push();
                 rdpq_set_mode_copy(true);
-                rdpq_sprite_blit(selection_outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
+                rdpq_sprite_blit(selected_favorite ? favorite_outline : selection_outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
             rdpq_mode_pop();
         }
     }

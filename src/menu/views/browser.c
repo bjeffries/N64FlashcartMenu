@@ -574,7 +574,14 @@ static void draw (menu_t *menu, surface_t *d) {
 
     ui_components_tab_header_draw(TAB_LIBRARY);
 
-    ui_components_carousel_draw(menu->browser.directory, menu->browser.list, menu->browser.entries, menu->browser.selected);
+    bool favorite = false;
+    if (menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {
+        path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
+        favorite = bookkeeping_favorite_find(&menu->bookkeeping, path) >= 0;
+        path_free(path);
+    }
+
+    ui_components_carousel_draw(menu->browser.directory, menu->browser.list, menu->browser.entries, menu->browser.selected, favorite);
 
     int pages = ui_components_game_info_page_count(menu->browser.entry);
     if (info_page >= pages) {
@@ -593,9 +600,6 @@ static void draw (menu_t *menu, surface_t *d) {
             x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
         }
         if (is_game) {
-            path_t *path = path_clone_push(menu->browser.directory, entry->name);
-            bool favorite = bookkeeping_favorite_find(&menu->bookkeeping, path) >= 0;
-            path_free(path);
             x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
             ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
         }

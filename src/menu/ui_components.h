@@ -251,8 +251,9 @@ void ui_components_file_list_free(void);
  * @param list List of entries.
  * @param entries Number of entries.
  * @param selected Index of the selected entry.
+ * @param selected_favorite The selected entry is a favorite (gold selection outline).
  */
-void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected);
+void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected, bool selected_favorite);
 
 /** @brief Controller button icons (assets/images/button_*.png, see scripts/make_icons.py). */
 typedef enum {

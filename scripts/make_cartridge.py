@@ -8,6 +8,7 @@ Writes three sprites (RGBA, transparent background) into assets/images/:
                                fits behind it (2px hidden on each side) without scaling
   cartridge_large_outline.png  white selection outline around the large cartridge's
                                silhouette, OUTLINE_OFFSET px bigger on every side
+  cartridge_large_outline_favorite.png  the same outline in gold, for favorites
 
 Each sprite is an overlay: the label is drawn first, then the cartridge on top,
 and the label shows through a transparent window with rounded corners and a
@@ -23,6 +24,7 @@ from PIL import Image
 
 BODY = (0xC4, 0xC4, 0xC4, 0xFF)
 WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
+GOLD = (0xF2, 0xC2, 0x30, 0xFF)       # outline of a favorite
 HIGHLIGHT = (0xD8, 0xD8, 0xD8, 0xFF)
 SEAM = (0x8A, 0x8A, 0x8A, 0xFF)
 OUTLINE = (0x9A, 0x9A, 0x9A, 0xFF)
@@ -51,7 +53,7 @@ def in_rounded_rect(x, y, rx, ry, rw, rh, radius):
     return (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= radius ** 2
 
 
-def build_outline(mask, w, h, out_path):
+def build_outline(mask, w, h, out_path, color):
     """White ring OUTLINE_GAP..OUTLINE_OFFSET px outside the silhouette in `mask`."""
     ow, oh = w + 2 * OUTLINE_OFFSET, h + 2 * OUTLINE_OFFSET
     img = Image.new('RGBA', (ow, oh), CLEAR)
@@ -64,7 +66,7 @@ def build_outline(mask, w, h, out_path):
                 continue
             d = min((sx - mx) ** 2 + (sy - my) ** 2 for mx, my in solid) ** 0.5
             if OUTLINE_GAP < d <= OUTLINE_OFFSET + 0.25:
-                px[x, y] = WHITE
+                px[x, y] = color
     img.save(out_path)
     print(f'{out_path}: {ow}x{oh} (outline offset {OUTLINE_OFFSET})')
 
@@ -139,7 +141,8 @@ def build(scale, out_path, outline_path=None, label_size=None):
     print(f'{out_path}: {w}x{h}, label window at ({label_x},{label_y}) {label_w}x{label_h}')
 
     if outline_path:
-        build_outline(mask, w, h, outline_path)
+        build_outline(mask, w, h, outline_path, WHITE)
+        build_outline(mask, w, h, outline_path.replace('.png', '_favorite.png'), GOLD)
 
 
 def main():
