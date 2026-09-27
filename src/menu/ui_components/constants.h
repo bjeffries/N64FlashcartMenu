@@ -466,8 +466,8 @@
 #define OPTION_LIST_VISIBLE_ROWS        (13)
 /** @brief Background band behind read-only information rows. */
 #define OPTION_LIST_INFO_BAND_COLOR     RGBA32(0x1E, 0x1E, 0x1E, 0xFF)
-/** @brief Left edge of option values (the label column is about 25 characters wide). */
-#define OPTION_LIST_VALUE_X             (330)
+/** @brief Left edge of option values (the label column is about 23 characters wide). */
+#define OPTION_LIST_VALUE_X             (310)
 
 /** @brief Space between button hints. */
 #define LIBRARY_HINT_GAP                (14)

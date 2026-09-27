@@ -36,6 +36,13 @@ static struct tm rtc_tm = {0};
 static bool is_editing_mode;
 static rtc_field_t editing_field_type;
 
+// After saving, the clock reading lags a frame or more behind; show the saved time (ticking
+// forward) until the reading catches up, so the old time never flashes back on screen.
+#define SAVED_TIME_TIMEOUT_MS   (3000)
+static bool showing_saved_time = false;
+static time_t saved_time;
+static uint64_t saved_at_ms;
+
 
 static void adjust_rtc_time (struct tm *t, int incr) {
     switch (editing_field_type) {
@@ -57,6 +64,10 @@ static void save_rtc_time (menu_t *menu) {
         struct timeval new_time = { .tv_sec = mktime(&rtc_tm) };
         if (settimeofday(&new_time, NULL) != 0) {
             menu_show_error(menu, "Failed to set the clock");
+        } else {
+            showing_saved_time = true;
+            saved_time = new_time.tv_sec;
+            saved_at_ms = get_ticks_ms();
         }
     } else {
         menu_show_error(menu, "This clock can't be set");
@@ -149,7 +160,18 @@ static void draw (menu_t *menu, surface_t *d) {
             "No real-time clock was found."
         );
     } else {
-        struct tm now = *gmtime(&menu->current_time);
+        time_t shown = menu->current_time;
+        if (showing_saved_time) {
+            uint64_t elapsed_ms = get_ticks_ms() - saved_at_ms;
+            time_t expected = saved_time + (time_t) (elapsed_ms / 1000);
+            time_t difference = menu->current_time - expected;
+            if ((difference >= -1 && difference <= 1) || elapsed_ms > SAVED_TIME_TIMEOUT_MS) {
+                showing_saved_time = false;     // the clock has caught up
+            } else {
+                shown = expected;
+            }
+        }
+        struct tm now = *gmtime(&shown);
         draw_fields(is_editing_mode ? &rtc_tm : &now, is_editing_mode);
 
         ui_components_text_draw(
@@ -180,6 +202,7 @@ void view_rtc_init (menu_t *menu) {
     rtc_set_source(rtc_get_source());
     is_editing_mode = false;
     editing_field_type = RTC_EDIT_YEAR;
+    showing_saved_time = false;
 }
 
 void view_rtc_display (menu_t *menu, surface_t *display) {
