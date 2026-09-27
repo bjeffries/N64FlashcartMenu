@@ -25,7 +25,7 @@ typedef enum {
     UI_PALETTE_DUSK,
     UI_PALETTE_DAWN,
     UI_PALETTE_COUNT,
-    UI_PALETTE_DEFAULT = UI_PALETTE_GALAXY,     /**< Before settings load, and for unknown keys */
+    UI_PALETTE_DEFAULT = UI_PALETTE_DUSK,       /**< Before settings load, and for unknown keys */
 } ui_palette_id_t;
 
 /** @brief One palette: five colours. */
