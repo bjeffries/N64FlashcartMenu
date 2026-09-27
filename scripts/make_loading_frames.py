@@ -6,8 +6,8 @@ Library. Frames smoothed against black leave dark fringes on a coloured backgrou
 renders the frames against each distinct palette background (from palette.c), with the same
 geometry and timing as boot_animation/make_eclipse_intro.py:
 
-  - the moon ends in the background colour, so at totality it disappears into the sky as it
-    does on black;
+  - the colours are the boot animation's in every set (the moon still goes from grey to
+    black); only the smoothing of the edges differs;
   - in the last 20% of loading the menu fades the screen to black (LOADING_FADE_START), so each
     of those frames is smoothed against the background it will be drawn on, and the corona
     frames (after loading) against black.
@@ -88,7 +88,7 @@ def render(E, frame, background, sun_mask, corona_mask):
     if frame <= APPROACH_LAST:
         image.paste(mix(background, E.colour_lerp(E.SUN_START_COLOUR, E.SUN_END_COLOUR, p), fade), (0, 0), sun_mask)
     moon_mask = sun_mask if centre == E.SUN_CENTRE else E.disc_mask(centre, E.MOON_RADIUS)
-    moon = E.colour_lerp(E.MOON_START_COLOUR, background, p)     # ends in the sky's colour
+    moon = E.colour_lerp(E.MOON_START_COLOUR, E.MOON_END_COLOUR, p)     # grey to black, as on the boot animation
     image.paste(mix(background, moon, fade), (0, 0), moon_mask)
     if corona > 0:
         image.paste(mix(background, E.CORONA_COLOUR, corona * fade), (0, 0), corona_mask)
