@@ -173,7 +173,7 @@ static int draw_code (cheat_file_code_t *code, int x, int y, bool row_selected, 
         menu_font_style_t style = (editing_row ? digit_selected : row_selected) ? STL_DEFAULT : STL_GRAY;
         rdpq_text_printf(&(rdpq_textparms_t) { .style_id = style }, FNT_DEFAULT, cx, y, "%X", get_digit(code, digit));
         if (digit_selected) {
-            ui_components_box_draw(cx - 1, y + 3, cx + DIGIT_WIDTH - 2, y + 5, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            ui_components_box_draw(cx - 1, y + 3, cx + DIGIT_WIDTH - 2, y + 5, EDIT_UNDERLINE_COLOR);
         }
     }
     return x + (CODE_DIGITS * DIGIT_WIDTH) + VALUE_GAP;
@@ -207,7 +207,7 @@ static void draw_list (void) {
         bool editing_row = editing && is_selected;
 
         if (is_selected) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, SELECTION_MARKER_COLOR);
         }
         rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, CAROUSEL_SELECTED_X + 16, y - 2, "%02d", i + 1);
 

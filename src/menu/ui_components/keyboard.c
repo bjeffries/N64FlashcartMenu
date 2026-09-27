@@ -171,7 +171,7 @@ keyboard_result_t ui_components_keyboard_process (menu_t *menu) {
 }
 
 static void draw_key (int x, int y, int width, const char *label, bool selected, bool highlighted) {
-    color_t background = selected ? RGBA32(0xFF, 0xFF, 0xFF, 0xFF) : (highlighted ? KEYBOARD_KEY_ACTIVE_COLOR : KEYBOARD_KEY_COLOR);
+    color_t background = selected ? KEYBOARD_KEY_SELECTED_COLOR : (highlighted ? KEYBOARD_KEY_ACTIVE_COLOR : KEYBOARD_KEY_COLOR);
     ui_components_box_draw(x, y, x + width, y + KEY_HEIGHT, background);
     rdpq_text_printf(
         &(rdpq_textparms_t) { .style_id = selected ? STL_BLACK : STL_DEFAULT, .width = width, .align = ALIGN_CENTER },
@@ -203,7 +203,7 @@ void ui_components_keyboard_draw (void) {
     ui_components_box_draw(x0, y0 + 20, x0 + keys_width, y0 + 50, KEYBOARD_FIELD_COLOR);
     rdpq_textmetrics_t metrics = rdpq_text_printf(NULL, FNT_DEFAULT, x0 + 8, y0 + 42, "%s", keyboard.text);
     int cursor_x = x0 + 8 + (int) (metrics.advance_x) + 1;
-    ui_components_box_draw(cursor_x, y0 + 26, cursor_x + 2, y0 + 45, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+    ui_components_box_draw(cursor_x, y0 + 26, cursor_x + 2, y0 + 45, KEYBOARD_CURSOR_COLOR);
 
     int keys_y = y0 + 62;
     for (int row = 0; row < LETTER_ROWS; row++) {

@@ -133,7 +133,7 @@ static void draw_fields (struct tm *t, bool editing) {
         rdpq_textmetrics_t metrics = rdpq_text_printf(&(rdpq_textparms_t) { .style_id = style },
             FNT_TITLE, x, TIME_VALUE_Y, "%s", values[i]);
         if (selected) {
-            ui_components_box_draw(x, TIME_VALUE_Y + 8, x + (int) (metrics.advance_x), TIME_VALUE_Y + 11, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            ui_components_box_draw(x, TIME_VALUE_Y + 8, x + (int) (metrics.advance_x), TIME_VALUE_Y + 11, EDIT_UNDERLINE_COLOR);
         }
         x += (int) (metrics.advance_x);
 

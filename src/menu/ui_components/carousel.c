@@ -407,7 +407,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         int cy = CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2);
         if (entry->type == ENTRY_TYPE_DIR) {
             // White folder grown by the outline width, then the folder again on top of it.
-            draw_folder_shape(cx, cy, CARTRIDGE_LARGE_WIDTH, CARTRIDGE_LARGE_HEIGHT, CARTRIDGE_OUTLINE_OFFSET, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            draw_folder_shape(cx, cy, CARTRIDGE_LARGE_WIDTH, CARTRIDGE_LARGE_HEIGHT, CARTRIDGE_OUTLINE_OFFSET, CAROUSEL_OUTLINE_COLOR);
             draw_folder_shape(cx, cy, CARTRIDGE_LARGE_WIDTH, CARTRIDGE_LARGE_HEIGHT, 0, CAROUSEL_FOLDER_COLOR);
         } else {
             if (!selection_outline) {

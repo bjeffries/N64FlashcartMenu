@@ -4,10 +4,13 @@
  * @ingroup ui_components
  *
  * This header defines all layout, sizing, and color constants used by UI components.
+ * Colors are UI roles; their values come from the palette (palette.h).
  */
 
 #ifndef COMPONENTS_CONSTANTS_H__
 #define COMPONENTS_CONSTANTS_H__
+
+#include "palette.h"
 
 /**
  * @def TAB_HEIGHT
@@ -277,95 +280,95 @@
  * @def BACKGROUND_EMPTY_COLOR
  * @brief Color used when no background image is present (RGBA8888).
  */
-#define BACKGROUND_EMPTY_COLOR          RGBA32(0x00, 0x00, 0x00, 0xFF)
+#define BACKGROUND_EMPTY_COLOR          PALETTE_BLACK
 /**
  * @def BACKGROUND_OVERLAY_COLOR
  * @brief Overlay color for the background (RGBA8888, semi-transparent).
  */
-#define BACKGROUND_OVERLAY_COLOR        RGBA32(0x00, 0x00, 0x00, 0xA0)
+#define BACKGROUND_OVERLAY_COLOR        PALETTE_WITH_ALPHA(PALETTE_BLACK, 0xA0)
 
 /**
  * @def BORDER_COLOR
  * @brief Color of UI borders (RGBA8888).
  */
-#define BORDER_COLOR                    RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define BORDER_COLOR                    PALETTE_WHITE
 
 /**
  * @def PROGRESSBAR_BG_COLOR
  * @brief Background color of the progress bar (RGBA8888).
  */
-#define PROGRESSBAR_BG_COLOR            RGBA32(0x33, 0x33, 0x33, 0xFF)
+#define PROGRESSBAR_BG_COLOR            PALETTE_GRAY_3
 /**
  * @def PROGRESSBAR_DONE_COLOR
  * @brief Color of the completed portion of the progress bar (RGBA8888).
  */
-#define PROGRESSBAR_DONE_COLOR          RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define PROGRESSBAR_DONE_COLOR          PALETTE_WHITE
 
 /**
  * @def SCROLLBAR_BG_COLOR
  * @brief Background color of the scrollbar (RGBA8888).
  */
-#define SCROLLBAR_BG_COLOR              RGBA32(0x3F, 0x3F, 0x3F, 0xFF)
+#define SCROLLBAR_BG_COLOR              PALETTE_GRAY_4
 /**
  * @def SCROLLBAR_INACTIVE_COLOR
  * @brief Inactive color of the scrollbar (RGBA8888).
  */
-#define SCROLLBAR_INACTIVE_COLOR        RGBA32(0x5F, 0x5F, 0x5F, 0xFF)
+#define SCROLLBAR_INACTIVE_COLOR        PALETTE_GRAY_6
 /**
  * @def SCROLLBAR_POSITION_COLOR
  * @brief Color of the scrollbar position indicator (RGBA8888).
  */
-#define SCROLLBAR_POSITION_COLOR        RGBA32(0x7F, 0x7F, 0x7F, 0xFF)
+#define SCROLLBAR_POSITION_COLOR        PALETTE_GRAY_9
 
 /**
  * @def DIALOG_BG_COLOR
  * @brief Background color for dialog boxes (RGBA8888).
  */
-#define DIALOG_BG_COLOR                 RGBA32(0x11, 0x11, 0x11, 0xFF)
+#define DIALOG_BG_COLOR                 PALETTE_GRAY_1
 /** @brief Dialog outline color and thickness (matches the selection outline). */
-#define DIALOG_BORDER_COLOR             RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define DIALOG_BORDER_COLOR             PALETTE_WHITE
 #define DIALOG_BORDER                   (2)
 /** @brief Thin line above the button hints on non-Library screens. */
-#define LAYOUT_SEPARATOR_COLOR          RGBA32(0x33, 0x33, 0x33, 0xFF)
+#define LAYOUT_SEPARATOR_COLOR          PALETTE_GRAY_3
 
 /**
  * @def BOXART_LOADING_COLOR
  * @brief Color used while boxart is loading (RGBA8888).
  */
-#define BOXART_LOADING_COLOR            RGBA32(0x00, 0x00, 0x00, 0xFF)
+#define BOXART_LOADING_COLOR            PALETTE_BLACK
 
 /**
  * @def FILE_LIST_HIGHLIGHT_COLOR
  * @brief Highlight color for file list entries (RGBA8888).
  */
-#define FILE_LIST_HIGHLIGHT_COLOR       RGBA32(0x7F, 0x7F, 0x7F, 0xFF)
+#define FILE_LIST_HIGHLIGHT_COLOR       PALETTE_GRAY_9
 
 /**
  * @def CONTEXT_MENU_HIGHLIGHT_COLOR
  * @brief Highlight color for context menu entries (RGBA8888).
  */
-#define CONTEXT_MENU_HIGHLIGHT_COLOR    RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define CONTEXT_MENU_HIGHLIGHT_COLOR    PALETTE_WHITE
 
 /**
  * @def TAB_INACTIVE_BORDER_COLOR
  * @brief Border color for inactive tabs (RGBA8888).
  */
-#define TAB_INACTIVE_BORDER_COLOR       RGBA32(0x5F, 0x5F, 0x5F, 0xFF)
+#define TAB_INACTIVE_BORDER_COLOR       PALETTE_GRAY_6
 /**
  * @def TAB_ACTIVE_BORDER_COLOR
  * @brief Border color for active tabs (RGBA8888).
  */
-#define TAB_ACTIVE_BORDER_COLOR         RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define TAB_ACTIVE_BORDER_COLOR         PALETTE_WHITE
 /**
  * @def TAB_INACTIVE_BACKGROUND_COLOR
  * @brief Background color for inactive tabs (RGBA8888).
  */
-#define TAB_INACTIVE_BACKGROUND_COLOR   RGBA32(0x3F, 0x3F, 0x3F, 0xFF)
+#define TAB_INACTIVE_BACKGROUND_COLOR   PALETTE_GRAY_4
 /**
  * @def TAB_ACTIVE_BACKGROUND_COLOR
  * @brief Background color for active tabs (RGBA8888).
  */
-#define TAB_ACTIVE_BACKGROUND_COLOR     RGBA32(0x6F, 0x6F, 0x6F, 0xFF)
+#define TAB_ACTIVE_BACKGROUND_COLOR     PALETTE_GRAY_8
 
 /*
  * Library (carousel) layout. Text Y values are baselines.
@@ -435,8 +438,8 @@
  *         the same grey as information rows in the settings screens. */
 #define GAME_INFO_BADGE_COLOR           OPTION_LIST_INFO_BAND_COLOR
 /** @brief Player icons: supported players, and unused player slots. */
-#define GAME_INFO_PLAYER_ON_COLOR       RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
-#define GAME_INFO_PLAYER_OFF_COLOR      RGBA32(0x55, 0x55, 0x55, 0xFF)
+#define GAME_INFO_PLAYER_ON_COLOR       PALETTE_WHITE
+#define GAME_INFO_PLAYER_OFF_COLOR      PALETTE_GRAY_5
 
 /** @brief About page: text line height (12px font), the first line's ascent, and the bottom of the text area. */
 #define GAME_INFO_ABOUT_LINE_HEIGHT     (14)
@@ -448,9 +451,9 @@
 /** @brief Distance between the info page dots (three dots span the title's capitals). */
 #define GAME_INFO_DOT_PITCH             (11)
 /** @brief Current info page dot. */
-#define GAME_INFO_DOT_ON_COLOR          RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define GAME_INFO_DOT_ON_COLOR          PALETTE_WHITE
 /** @brief Other info page dots. */
-#define GAME_INFO_DOT_OFF_COLOR         RGBA32(0x55, 0x55, 0x55, 0xFF)
+#define GAME_INFO_DOT_OFF_COLOR         PALETTE_GRAY_5
 
 /** @brief Space between tab names in the header (widened by 1px if needed to centre exactly). */
 #define TAB_HEADER_GAP                  (20)
@@ -464,8 +467,8 @@
 #define TAB_BAR_PILL_HEIGHT             (16)
 /** @brief Thickness of the bar joining L and R; its bottom lines up with the pills'. */
 #define TAB_BAR_HEIGHT                  (3)
-/** @brief Tab bar colour (same grey as the pills). */
-#define TAB_BAR_COLOR                   RGBA32(0xC8, 0xC8, 0xC8, 0xFF)
+/** @brief Tab bar colour (same gray as the L / R pills, scripts/make_icons.py). */
+#define TAB_BAR_COLOR                   PALETTE_GRAY_13
 /** @brief Baseline of the first Settings tab row. */
 #define SETTINGS_HUB_Y                  (110)
 /** @brief Distance between Settings tab rows. */
@@ -486,9 +489,9 @@
 #define TIME_HELP_Y                     (240)
 
 /** @brief On-screen keyboard: key, SHIFT-on key and text field backgrounds. */
-#define KEYBOARD_KEY_COLOR              RGBA32(0x33, 0x33, 0x33, 0xFF)
-#define KEYBOARD_KEY_ACTIVE_COLOR       RGBA32(0x70, 0x70, 0x70, 0xFF)
-#define KEYBOARD_FIELD_COLOR            RGBA32(0x00, 0x00, 0x00, 0xFF)
+#define KEYBOARD_KEY_COLOR              PALETTE_GRAY_3
+#define KEYBOARD_KEY_ACTIVE_COLOR       PALETTE_GRAY_8
+#define KEYBOARD_FIELD_COLOR            PALETTE_BLACK
 
 /** @brief Cheat Codes screen: left edge of the On / Off column. */
 #define CHEAT_STATE_X                   (VISIBLE_AREA_X1 - 52)
@@ -498,7 +501,7 @@
 /** @brief Rows an option list shows before it scrolls. */
 #define OPTION_LIST_VISIBLE_ROWS        (13)
 /** @brief Background band behind read-only information rows. */
-#define OPTION_LIST_INFO_BAND_COLOR     RGBA32(0x1E, 0x1E, 0x1E, 0xFF)
+#define OPTION_LIST_INFO_BAND_COLOR     PALETTE_GRAY_2
 /** @brief Left edge of option values (the label column is about 23 characters wide). */
 #define OPTION_LIST_VALUE_X             (310)
 
@@ -539,8 +542,27 @@
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)
 
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
-#define CAROUSEL_PLACEHOLDER_COLOR      RGBA32(0x6A, 0x6A, 0x6A, 0xFF)
+#define CAROUSEL_PLACEHOLDER_COLOR      PALETTE_GRAY_7
 /** @brief Folder icon color. */
-#define CAROUSEL_FOLDER_COLOR           RGBA32(0xC4, 0xC4, 0xC4, 0xFF)
+#define CAROUSEL_FOLDER_COLOR           PALETTE_GRAY_12
+
+/** @brief Text (STL_DEFAULT). */
+#define TEXT_COLOR                      PALETTE_WHITE
+/** @brief Secondary text: labels, unselected tabs and captions, values you can't change (STL_GRAY). */
+#define TEXT_SECONDARY_COLOR            PALETTE_GRAY_9
+/** @brief Text on light backgrounds, e.g. the selected keyboard key (STL_BLACK). */
+#define TEXT_ON_LIGHT_COLOR             PALETTE_BLACK
+/** @brief Screen background (and what fades cover the screen with). */
+#define BACKGROUND_COLOR                PALETTE_BLACK
+/** @brief Outline around the selected folder (cartridges use sprites drawn in the same white). */
+#define CAROUSEL_OUTLINE_COLOR          PALETTE_WHITE
+/** @brief Bar marking the selected row in option lists and the Settings tab. */
+#define SELECTION_MARKER_COLOR          PALETTE_WHITE
+/** @brief Underline of the field / digit being edited (Time, Cheat Codes). */
+#define EDIT_UNDERLINE_COLOR            PALETTE_WHITE
+/** @brief Selected keyboard key. */
+#define KEYBOARD_KEY_SELECTED_COLOR     PALETTE_WHITE
+/** @brief Keyboard text cursor. */
+#define KEYBOARD_CURSOR_COLOR           PALETTE_WHITE
 
 #endif /* COMPONENTS_CONSTANTS_H__ */

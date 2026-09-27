@@ -53,7 +53,7 @@ static void draw (menu_t *menu, surface_t *display) {
         int y = SETTINGS_HUB_Y + (i * SETTINGS_HUB_ROW_PITCH);
         bool is_selected = (i == selected);
         if (is_selected) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, SELECTION_MARKER_COLOR);
         }
         rdpq_text_printf(
             &(rdpq_textparms_t) { .style_id = is_selected ? STL_DEFAULT : STL_GRAY },

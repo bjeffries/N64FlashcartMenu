@@ -150,7 +150,7 @@ void ui_components_loading_animation_draw (float progress) {
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(RGBA32(0x00, 0x00, 0x00, (uint8_t) ((fading * 0xFF) / RING_FADE_MS)));
+            rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, (uint8_t) ((fading * 0xFF) / RING_FADE_MS)));
             rdpq_fill_rectangle(x, y, x + sprites[image]->width, y + sprites[image]->height);
         }
     rdpq_mode_pop();

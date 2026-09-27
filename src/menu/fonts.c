@@ -1,19 +1,20 @@
 #include <libdragon.h>
 
 #include "fonts.h"
+#include "ui_components/constants.h"
 #include "utils/fs.h"
 
 
 static void register_styles (rdpq_font_t *font) {
-    rdpq_font_style(font, STL_DEFAULT, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0xFF, 0xFF, 0xFF) }));
-    rdpq_font_style(font, STL_GREEN, &((rdpq_fontstyle_t) { .color = RGBA32(0x70, 0xFF, 0x70, 0xFF) }));
-    rdpq_font_style(font, STL_BLUE, &((rdpq_fontstyle_t) { .color = RGBA32(0x70, 0xBC, 0xFF, 0xFF) }));
-    rdpq_font_style(font, STL_YELLOW, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0xFF, 0x70, 0xFF) }));
-    rdpq_font_style(font, STL_ORANGE, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0x99, 0x00, 0xFF) }));
-    rdpq_font_style(font, STL_RED, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0x40, 0x40, 0xFF) }));
-    rdpq_font_style(font, STL_GRAY, &((rdpq_fontstyle_t) { .color = RGBA32(0x80, 0x80, 0x80, 0xFF) }));
-    rdpq_font_style(font, STL_BLACK, &((rdpq_fontstyle_t) { .color = RGBA32(0x00, 0x00, 0x00, 0xFF) }));
-    rdpq_font_style(font, STL_FADE, &((rdpq_fontstyle_t) { .color = RGBA32(0xFF, 0xFF, 0xFF, 0xFF) }));
+    rdpq_font_style(font, STL_DEFAULT, &((rdpq_fontstyle_t) { .color = TEXT_COLOR }));
+    rdpq_font_style(font, STL_GREEN, &((rdpq_fontstyle_t) { .color = PALETTE_LEGACY_GREEN }));
+    rdpq_font_style(font, STL_BLUE, &((rdpq_fontstyle_t) { .color = PALETTE_LEGACY_BLUE }));
+    rdpq_font_style(font, STL_YELLOW, &((rdpq_fontstyle_t) { .color = PALETTE_LEGACY_YELLOW }));
+    rdpq_font_style(font, STL_ORANGE, &((rdpq_fontstyle_t) { .color = PALETTE_LEGACY_ORANGE }));
+    rdpq_font_style(font, STL_RED, &((rdpq_fontstyle_t) { .color = PALETTE_LEGACY_RED }));
+    rdpq_font_style(font, STL_GRAY, &((rdpq_fontstyle_t) { .color = TEXT_SECONDARY_COLOR }));
+    rdpq_font_style(font, STL_BLACK, &((rdpq_fontstyle_t) { .color = TEXT_ON_LIGHT_COLOR }));
+    rdpq_font_style(font, STL_FADE, &((rdpq_fontstyle_t) { .color = TEXT_COLOR }));
 }
 
 static void load_default_font (char *custom_font_path) {
@@ -40,8 +41,16 @@ static void load_font (menu_font_type_t id, const char *path) {
 
 
 void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
-    rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(font_id), STL_FADE,
-        &((rdpq_fontstyle_t) { .color = RGBA32(level, level, level, 0xFF) }));
+    // From the background (0) to the text colour (255).
+    color_t from = BACKGROUND_COLOR;
+    color_t to = TEXT_COLOR;
+    color_t color = RGBA32(
+        from.r + (((to.r - from.r) * level) / 0xFF),
+        from.g + (((to.g - from.g) * level) / 0xFF),
+        from.b + (((to.b - from.b) * level) / 0xFF),
+        0xFF
+    );
+    rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(font_id), STL_FADE, &((rdpq_fontstyle_t) { .color = color }));
 }
 
 void fonts_init (char *custom_font_path) {

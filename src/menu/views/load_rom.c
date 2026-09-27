@@ -683,7 +683,7 @@ static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, b
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(RGBA32(0x00, 0x00, 0x00, (uint8_t) (fade * 0xFF)));
+            rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, (uint8_t) (fade * 0xFF)));
             rdpq_fill_rectangle(0, 0, d->width, d->height);
         }
         ui_components_loading_animation_draw(progress);

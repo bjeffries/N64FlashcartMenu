@@ -163,7 +163,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         if (!selectable) {
             ui_components_box_draw(CAROUSEL_SELECTED_X, y - 17, VISIBLE_AREA_X1, y + 5, OPTION_LIST_INFO_BAND_COLOR);
         } else if (is_selected) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, SELECTION_MARKER_COLOR);
         }
         rdpq_text_printf(
             &(rdpq_textparms_t) { .style_id = is_selected ? STL_DEFAULT : STL_GRAY },

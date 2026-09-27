@@ -36,7 +36,7 @@ typedef enum {
     STL_RED,         /**< Red font style */
     STL_GRAY,        /**< Gray font style */
     STL_BLACK,       /**< Black font style (text on light badges) */
-    STL_FADE,        /**< Gray level set with fonts_set_fade_level() (fading text on black) */
+    STL_FADE,        /**< Between background and text colour, set with fonts_set_fade_level() */
 } menu_font_style_t;
 
 /**
@@ -50,7 +50,7 @@ typedef enum {
 void fonts_init(char *custom_font_path);
 
 /**
- * @brief Set the STL_FADE colour of a font to a gray level (0 black - 255 white).
+ * @brief Set the STL_FADE colour of a font: 0 is the background colour, 255 the text colour.
  */
 void fonts_set_fade_level(uint8_t font_id, uint8_t level);
 

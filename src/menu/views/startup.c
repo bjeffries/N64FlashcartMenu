@@ -14,6 +14,7 @@
 #include "views.h"
 #include "../boot_animation_frames.h"
 #include "../sound.h"
+#include "../ui_components/constants.h"
 
 #define HOLD_MS     (700)   // show the finished title this long after the last frame
 #define FADE_MS     (300)   // then fade to black over this long
@@ -74,7 +75,7 @@ static void draw_animation (menu_t *menu, surface_t *d) {
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(RGBA32(0x00, 0x00, 0x00, alpha));
+            rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, alpha));
             rdpq_fill_rectangle(0, 0, d->width, d->height);
         }
     }

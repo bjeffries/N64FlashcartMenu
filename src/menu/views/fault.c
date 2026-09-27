@@ -1,10 +1,11 @@
 #include "views.h"
+#include "../ui_components/constants.h"
 
 
 static void draw (menu_t *menu, surface_t *d) {
     rdpq_attach(d, NULL);
 
-    rdpq_clear(RGBA32(0x00, 0x00, 0x00, 0xFF));
+    rdpq_clear(BACKGROUND_COLOR);
 
     const char *firmware_message = (
         "Minimum supported firmware version:\n"

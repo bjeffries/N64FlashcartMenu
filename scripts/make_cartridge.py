@@ -23,14 +23,16 @@ import os
 import sys
 from PIL import Image
 
-BODY = (0xC4, 0xC4, 0xC4, 0xFF)
-WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
-GOLD = (0xF2, 0xC2, 0x30, 0xFF)       # outline of a favorite
-LIGHT_RED = (0xF2, 0x9A, 0x9A, 0xFF)  # outline of a hidden game (same as the B button icon)
-HIGHLIGHT = (0xD8, 0xD8, 0xD8, 0xFF)
-SEAM = (0x8A, 0x8A, 0x8A, 0xFF)
-OUTLINE = (0x9A, 0x9A, 0x9A, 0xFF)
-RECESS = (0x6A, 0x6A, 0x6A, 0xFF)
+from palette import PALETTE     # src/menu/ui_components/palette.h
+
+BODY = PALETTE['GRAY_12']           # same as folders (CAROUSEL_FOLDER_COLOR)
+WHITE = PALETTE['WHITE']            # selection outline
+GOLD = PALETTE['GOLD']              # outline of a favorite
+LIGHT_RED = PALETTE['RED']          # outline of a hidden game (same as the B button icon)
+HIGHLIGHT = PALETTE['GRAY_14']
+SEAM = PALETTE['GRAY_10']
+OUTLINE = PALETTE['GRAY_11']
+RECESS = PALETTE['GRAY_7']
 CLEAR = (0, 0, 0, 0)
 
 # Base (unselected) geometry; the large sprite scales these.

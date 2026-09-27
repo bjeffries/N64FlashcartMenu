@@ -15,12 +15,14 @@ import os
 import sys
 from PIL import Image, ImageDraw
 
-WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
-GREEN = (0x8F, 0xD6, 0x94, 0xFF)        # A
-RED = (0xF2, 0x9A, 0x9A, 0xFF)          # B
-YELLOW = (0xF5, 0xD7, 0x6E, 0xFF)       # C buttons
-LIGHT_GREY = (0xC8, 0xC8, 0xC8, 0xFF)   # L, R, Z
-BLACK = (0x00, 0x00, 0x00, 0xFF)
+from palette import PALETTE     # src/menu/ui_components/palette.h
+
+WHITE = PALETTE['WHITE']
+GREEN = PALETTE['GREEN']                # A
+RED = PALETTE['RED']                    # B
+YELLOW = PALETTE['YELLOW']              # C buttons
+LIGHT_GREY = PALETTE['GRAY_13']         # L, R, Z (and the tab bar: TAB_BAR_COLOR)
+BLACK = PALETTE['BLACK']
 CLEAR = (0, 0, 0, 0)
 
 ROUND_SIZE = 18                 # diameter of A / B / C buttons
