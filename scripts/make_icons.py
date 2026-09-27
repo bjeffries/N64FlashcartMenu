@@ -25,7 +25,9 @@ CLEAR = (0, 0, 0, 0)
 
 ROUND_SIZE = 18                 # diameter of A / B / C buttons
 PILL_W, PILL_H = 20, 16         # L / R shoulder buttons
-TAB_END_W = 28                  # pill plus the curve down into the bar
+TAB_PILL_W = 26                 # tab bar ends: longer than a button, like a trigger
+TAB_LETTER_INSET = TAB_PILL_W - PILL_W  # the letter sits centred in the pill's inner 20px
+TAB_END_W = TAB_PILL_W + 8      # pill plus the curve down into the bar
 TAB_BAR_H = 3                   # bar thickness; its bottom lines up with the pill's
 PILL_RADIUS = 4
 SUPERSAMPLE = 8
@@ -79,7 +81,7 @@ def tab_end_l():
     """
     w, h, ss = TAB_END_W, PILL_H, SUPERSAMPLE
     bar_top = h - TAB_BAR_H
-    curve_x0, curve_x1 = PILL_W - 3, TAB_END_W    # where the top edge leaves the pill / meets the bar
+    curve_x0, curve_x1 = TAB_PILL_W - 3, TAB_END_W    # where the top edge leaves the pill / meets the bar
 
     def inside(x, y):
         if x < PILL_RADIUS:                         # rounded left corners
@@ -127,8 +129,8 @@ def main():
         'button_c_up': triangle(circle(ROUND_SIZE, YELLOW), 'up'),
         'button_c_left': triangle(circle(ROUND_SIZE, YELLOW), 'left'),
         'button_z': letter(circle(ROUND_SIZE, LIGHT_GREY), 'Z'),
-        'tab_l': letter(tab_end_l(), 'L', 0, PILL_W),
-        'tab_r': letter(tab_end_l().transpose(Image.FLIP_LEFT_RIGHT), 'R', TAB_END_W - PILL_W, PILL_W),
+        'tab_l': letter(tab_end_l(), 'L', TAB_LETTER_INSET, PILL_W),
+        'tab_r': letter(tab_end_l().transpose(Image.FLIP_LEFT_RIGHT), 'R', TAB_END_W - TAB_PILL_W, PILL_W),
     }
     for name, img in icons.items():
         path = os.path.join(out_dir, name + '.png')
