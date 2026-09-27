@@ -173,9 +173,11 @@ keyboard_result_t ui_components_keyboard_process (menu_t *menu) {
 static void draw_key (int x, int y, int width, const char *label, bool selected, bool highlighted) {
     color_t background = selected ? KEYBOARD_KEY_SELECTED_COLOR : (highlighted ? KEYBOARD_KEY_ACTIVE_COLOR : KEYBOARD_KEY_COLOR);
     ui_components_box_draw(x, y, x + width, y + KEY_HEIGHT, background);
-    rdpq_text_printf(
+    // Body text, centred vertically on its capitals.
+    int baseline = y + (KEY_HEIGHT / 2) + (fonts_cap_height(BODY_FONT) / 2);
+    ui_components_body_text_draw(
         &(rdpq_textparms_t) { .style_id = selected ? STL_BLACK : STL_DEFAULT, .width = width, .align = ALIGN_CENTER },
-        (strlen(label) > 1) ? FNT_SMALL : FNT_DEFAULT, x, y + ((strlen(label) > 1) ? 17 : 20), "%s", label
+        x, baseline, label
     );
 }
 
@@ -195,15 +197,17 @@ void ui_components_keyboard_draw (void) {
     int x0 = DISPLAY_CENTER_X - (keys_width / 2);
     int y0 = DISPLAY_CENTER_Y - (dialog_height / 2);
 
-    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, x0, y0 + 10, "%s", keyboard.title);
-    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY, .width = keys_width, .align = ALIGN_RIGHT },
-        FNT_SMALL, x0, y0 + 10, "%d/%d", (int) strlen(keyboard.text), keyboard.max_length);
+    ui_components_body_text_draw(&(rdpq_textparms_t) { .style_id = STL_GRAY }, x0, y0 + 12, keyboard.title);
+    ui_components_body_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY, .width = keys_width, .align = ALIGN_RIGHT },
+        x0, y0 + 12, "%d/%d", (int) strlen(keyboard.text), keyboard.max_length);
 
     // Text field with a cursor.
     ui_components_box_draw(x0, y0 + 20, x0 + keys_width, y0 + 50, KEYBOARD_FIELD_COLOR);
-    rdpq_textmetrics_t metrics = rdpq_text_printf(NULL, FNT_DEFAULT, x0 + 8, y0 + 42, "%s", keyboard.text);
+    // The typed text is title-style; the cursor spans its capitals.
+    int text_baseline = y0 + 20 + 15 + (fonts_cap_height(TITLE_FONT) / 2);
+    rdpq_textmetrics_t metrics = rdpq_text_printf(NULL, TITLE_FONT, x0 + 8, text_baseline, "%s", keyboard.text);
     int cursor_x = x0 + 8 + (int) (metrics.advance_x) + 1;
-    ui_components_box_draw(cursor_x, y0 + 26, cursor_x + 2, y0 + 45, KEYBOARD_CURSOR_COLOR);
+    ui_components_box_draw(cursor_x, text_baseline - fonts_cap_height(TITLE_FONT) - 2, cursor_x + 2, text_baseline + 2, KEYBOARD_CURSOR_COLOR);
 
     int keys_y = y0 + 62;
     for (int row = 0; row < LETTER_ROWS; row++) {

@@ -513,8 +513,8 @@
 #define OPTION_LIST_VISIBLE_ROWS        (8)
 /** @brief Rows the Config screen's option list shows (the game title sits above it). */
 #define CONFIG_LIST_VISIBLE_ROWS        (6)
-/** @brief Distance between Cheat Codes rows. */
-#define CHEAT_ROW_PITCH                 (24)
+/** @brief Distance between Cheat Codes rows (title-style text, like option lists). */
+#define CHEAT_ROW_PITCH                 (OPTION_LIST_ROW_PITCH)
 /** @brief Background band behind read-only information rows. */
 #define OPTION_LIST_INFO_BAND_COLOR     PALETTE_TONE_1
 /** @brief Left edge of option values (the label column is about 23 characters wide). */
