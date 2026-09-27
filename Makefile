@@ -108,6 +108,7 @@ IMAGES = \
 	cartridge_large.png \
 	cartridge_large_outline.png \
 	cartridge_large_outline_favorite.png \
+	cartridge_large_outline_hidden.png \
 	button_a.png \
 	button_b.png \
 	button_c_right.png \

@@ -9,6 +9,7 @@ Writes three sprites (RGBA, transparent background) into assets/images/:
   cartridge_large_outline.png  white selection outline around the large cartridge's
                                silhouette, OUTLINE_OFFSET px bigger on every side
   cartridge_large_outline_favorite.png  the same outline in gold, for favorites
+  cartridge_large_outline_hidden.png  the same outline in light red (the B button's), for hidden games
 
 Each sprite is an overlay: the label is drawn first, then the cartridge on top,
 and the label shows through a transparent window with rounded corners and a
@@ -25,6 +26,7 @@ from PIL import Image
 BODY = (0xC4, 0xC4, 0xC4, 0xFF)
 WHITE = (0xFF, 0xFF, 0xFF, 0xFF)
 GOLD = (0xF2, 0xC2, 0x30, 0xFF)       # outline of a favorite
+LIGHT_RED = (0xF2, 0x9A, 0x9A, 0xFF)  # outline of a hidden game (same as the B button icon)
 HIGHLIGHT = (0xD8, 0xD8, 0xD8, 0xFF)
 SEAM = (0x8A, 0x8A, 0x8A, 0xFF)
 OUTLINE = (0x9A, 0x9A, 0x9A, 0xFF)
@@ -143,6 +145,7 @@ def build(scale, out_path, outline_path=None, label_size=None):
     if outline_path:
         build_outline(mask, w, h, outline_path, WHITE)
         build_outline(mask, w, h, outline_path.replace('.png', '_favorite.png'), GOLD)
+        build_outline(mask, w, h, outline_path.replace('.png', '_hidden.png'), LIGHT_RED)
 
 
 def main():

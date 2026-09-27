@@ -57,6 +57,7 @@ static bool label_cache_ready = false;
 
 static sprite_t *selection_outline = NULL;
 static sprite_t *favorite_outline = NULL;
+static sprite_t *hidden_outline = NULL;
 
 static bool scroll_ready = false;       // false: snap to the selection on the next draw
 static float scroll_position = 0;       // selection index currently in the focus frame (fractional while moving)
@@ -412,10 +413,13 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
             if (!selection_outline) {
                 selection_outline = sprite_load("rom:/cartridge_large_outline.sprite");
                 favorite_outline = sprite_load("rom:/cartridge_large_outline_favorite.sprite");
+                hidden_outline = sprite_load("rom:/cartridge_large_outline_hidden.sprite");
             }
             rdpq_mode_push();
                 rdpq_set_mode_copy(true);
-                rdpq_sprite_blit(selected_favorite ? favorite_outline : selection_outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
+                // Hidden (light red) wins over favorite (gold): it's the state you'd want to notice.
+                sprite_t *outline = entry->hidden ? hidden_outline : (selected_favorite ? favorite_outline : selection_outline);
+                rdpq_sprite_blit(outline, cx - CARTRIDGE_OUTLINE_OFFSET, cy - CARTRIDGE_OUTLINE_OFFSET, NULL);
             rdpq_mode_pop();
         }
     }
