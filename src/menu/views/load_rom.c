@@ -863,7 +863,11 @@ static void load (menu_t *menu) {
 #endif
 
     if (err != CART_LOAD_OK) {
-        menu_show_error(menu, cart_load_convert_error_message(err));
+        if (err == CART_LOAD_ERR_ROM_LOAD_FAIL && menu->flashcart_err == FLASHCART_ERR_FUNCTION_NOT_SUPPORTED) {
+            menu_show_error(menu, "No SummerCart64 was found.\nGames can only be played from the cartridge.");
+        } else {
+            menu_show_error(menu, cart_load_convert_error_message(err));
+        }
         return;
     }
 

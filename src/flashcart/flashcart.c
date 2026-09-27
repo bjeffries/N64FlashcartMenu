@@ -57,7 +57,9 @@ static bool dummy_has_feature (flashcart_features_t feature) {
  * @return flashcart_err_t Error code.
  */
 static flashcart_err_t dummy_load_rom (char *rom_path, flashcart_progress_callback_t *progress) {
-    return FLASHCART_OK;
+    // Without a supported cart nothing can be loaded; reporting success would make the menu
+    // "boot" into itself and crash (e.g. in emulators).
+    return FLASHCART_ERR_FUNCTION_NOT_SUPPORTED;
 }
 
 /**
