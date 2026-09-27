@@ -59,6 +59,7 @@ SRCS = \
 	menu/ui_components/file_list.c \
 	menu/ui_components/game_info.c \
 	menu/ui_components/icons.c \
+	menu/ui_components/keyboard.c \
 	menu/ui_components/option_list.c \
 	menu/ui_components/tab_header.c \
 	menu/ui_components/tabs.c \

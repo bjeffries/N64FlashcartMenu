@@ -5,7 +5,7 @@
  * @ingroup views
  *
  * A toggles a code (or starts entering one in an empty slot), C-Right edits it digit by digit,
- * C-Up clears it. Leaving with B applies the codes and saves them next to the ROM (.datel).
+ * C-Left names it with the on-screen keyboard, C-Up clears it. Leaving with B applies the codes and saves them next to the ROM (.datel).
  */
 
 #include "../ui_components/constants.h"
@@ -18,6 +18,8 @@
 #define ADDRESS_DIGITS      (8)
 #define DIGIT_WIDTH         (13)    // fixed cell per hex digit so codes line up
 #define VALUE_GAP           (10)    // space between the address and the value
+#define DESCRIPTION_GAP     (6)     // space between the value and the description
+#define DESCRIPTION_MAX     (14)    // characters that fit in the description column
 #define VISIBLE_ROWS        (10)
 
 static cheat_file_code_t *cheat_codes;
@@ -99,12 +101,20 @@ static void process (menu_t *menu) {
         menu->actions.go_left = menu->actions.go_right = false;
     }
 
+    cheat_file_code_t *code = &cheat_codes[selected];
+
+    if (ui_components_keyboard_is_open()) {
+        if (ui_components_keyboard_process(menu) == KEYBOARD_DONE) {
+            snprintf(code->description, sizeof(code->description), "%s", ui_components_keyboard_text());
+            changed = true;
+        }
+        return;
+    }
+
     if (editing) {
         process_editing(menu);
         return;
     }
-
-    cheat_file_code_t *code = &cheat_codes[selected];
 
     if (menu->actions.go_up) {
         selected = (selected + MAX_CHEAT_CODES - 1) % MAX_CHEAT_CODES;
@@ -123,6 +133,9 @@ static void process (menu_t *menu) {
         }
     } else if (menu->actions.configure) {
         start_editing();
+        sound_play_effect(SFX_ENTER);
+    } else if (menu->actions.favorite && !is_empty(code)) {     // C-Left
+        ui_components_keyboard_open("Description", code->description, DESCRIPTION_MAX);
         sound_play_effect(SFX_ENTER);
     } else if (menu->actions.remove && !is_empty(code)) {
         *code = (cheat_file_code_t) { 0 };
@@ -156,7 +169,7 @@ static void draw_column_headers (void) {
     rdpq_text_printf(&parms, FNT_SMALL, CAROUSEL_SELECTED_X + 16, y, "#");
     rdpq_text_printf(&parms, FNT_SMALL, x, y, "ADDRESS");
     rdpq_text_printf(&parms, FNT_SMALL, x + (ADDRESS_DIGITS * DIGIT_WIDTH) + VALUE_GAP, y, "VALUE");
-    rdpq_text_printf(&parms, FNT_SMALL, x + (CODE_DIGITS * DIGIT_WIDTH) + VALUE_GAP, y, "DESCRIPTION");
+    rdpq_text_printf(&parms, FNT_SMALL, x + (CODE_DIGITS * DIGIT_WIDTH) + VALUE_GAP + DESCRIPTION_GAP, y, "DESCRIPTION");
     rdpq_text_printf(&parms, FNT_SMALL, CHEAT_STATE_X, y, "ENABLED");
 }
 
@@ -187,12 +200,12 @@ static void draw_list (void) {
             continue;
         }
 
-        x = draw_code(code, x, y, is_selected, editing_row);
+        x = draw_code(code, x, y, is_selected, editing_row) + DESCRIPTION_GAP;
 
         if (code->description[0] != '\0') {
             ui_components_text_draw(
                 &(rdpq_textparms_t) { .style_id = is_selected ? STL_DEFAULT : STL_GRAY, .width = CHEAT_STATE_X - x - 12, .wrap = WRAP_ELLIPSES },
-                FNT_SMALL, x, y - 2, code->description
+                FNT_DEFAULT, x, y, code->description
             );
         }
 
@@ -222,7 +235,9 @@ static void draw (menu_t *menu, surface_t *display) {
     draw_list();
 
     int x = GAME_INFO_VALUE_X;
-    if (editing) {
+    if (ui_components_keyboard_is_open()) {
+        ui_components_keyboard_draw();      // draws its own button hints
+    } else if (editing) {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
             FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
@@ -236,10 +251,13 @@ static void draw (menu_t *menu, surface_t *display) {
             FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
             "Codes are applied when Cheats is On in Config. Changes are saved when you go back."
         );
+        // Five hints don't fit from the value column, and this screen has no page dots on the left.
         bool empty = is_empty(&cheat_codes[selected]);
+        x = empty ? GAME_INFO_VALUE_X : CAROUSEL_SELECTED_X;
         x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, empty ? "Add" : "Toggle") + LIBRARY_HINT_GAP;
         if (!empty) {
             x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Edit") + LIBRARY_HINT_GAP;
+            x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Name") + LIBRARY_HINT_GAP;
             x += ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Clear") + LIBRARY_HINT_GAP;
         }
         ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");

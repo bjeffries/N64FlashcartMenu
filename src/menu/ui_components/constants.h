@@ -460,6 +460,11 @@
 #define TIME_VALUE_Y                    (150)
 #define TIME_HELP_Y                     (240)
 
+/** @brief On-screen keyboard: key, SHIFT-on key and text field backgrounds. */
+#define KEYBOARD_KEY_COLOR              RGBA32(0x33, 0x33, 0x33, 0xFF)
+#define KEYBOARD_KEY_ACTIVE_COLOR       RGBA32(0x70, 0x70, 0x70, 0xFF)
+#define KEYBOARD_FIELD_COLOR            RGBA32(0x00, 0x00, 0x00, 0xFF)
+
 /** @brief Cheat Codes screen: left edge of the On / Off column. */
 #define CHEAT_STATE_X                   (VISIBLE_AREA_X1 - 52)
 

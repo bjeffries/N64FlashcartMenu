@@ -441,6 +441,34 @@ void ui_components_option_list_draw(menu_t *menu, option_list_t *list, int y_top
  */
 void ui_components_option_screen_draw(menu_t *menu, const char *title, option_list_t *list);
 
+/** @brief What happened to the on-screen keyboard this frame. */
+typedef enum {
+    KEYBOARD_EDITING,   /**< Still open */
+    KEYBOARD_DONE,      /**< Closed with DONE / Start: use ui_components_keyboard_text() */
+    KEYBOARD_CANCELLED, /**< Closed with Z: discard */
+} keyboard_result_t;
+
+/**
+ * @brief Open the on-screen QWERTY keyboard dialog.
+ *
+ * @param title Dialog title.
+ * @param initial Starting text (may be NULL).
+ * @param max_length Maximum number of characters.
+ */
+void ui_components_keyboard_open(const char *title, const char *initial, int max_length);
+
+/** @brief Whether the keyboard is showing (give it all input while it is). */
+bool ui_components_keyboard_is_open(void);
+
+/** @brief Handle input for the open keyboard. */
+keyboard_result_t ui_components_keyboard_process(menu_t *menu);
+
+/** @brief The text typed (valid after KEYBOARD_DONE). */
+const char *ui_components_keyboard_text(void);
+
+/** @brief Draw the keyboard dialog and its button hints (nothing when closed). */
+void ui_components_keyboard_draw(void);
+
 /**
  * @brief Initialize the context menu component.
  * 
