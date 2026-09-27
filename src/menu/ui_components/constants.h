@@ -513,6 +513,10 @@
 #define OPTION_LIST_VISIBLE_ROWS        (8)
 /** @brief Rows the Config screen's option list shows (the game title sits above it). */
 #define CONFIG_LIST_VISIBLE_ROWS        (6)
+/** @brief Scroll bar at the right edge of scrolling tables (option lists, Cheat Codes). */
+#define TABLE_SCROLLBAR_WIDTH           (4)
+#define TABLE_SCROLLBAR_X               (VISIBLE_AREA_X1 - TABLE_SCROLLBAR_WIDTH)
+#define TABLE_SCROLLBAR_MIN_THUMB       (8)
 /** @brief Distance between Cheat Codes rows (title-style text, like option lists). */
 #define CHEAT_ROW_PITCH                 (OPTION_LIST_ROW_PITCH)
 /** @brief Background band behind read-only information rows. */

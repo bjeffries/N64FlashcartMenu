@@ -293,6 +293,19 @@ void ui_components_loading_animation_done(void);
 /** @brief Whether the corona has finished playing after ui_components_loading_animation_done(). */
 bool ui_components_loading_animation_finished(void);
 
+/**
+ * @brief Scroll bar for a table whose rows are title-style text (option lists, Cheat Codes):
+ *        from the top of the first visible row to the bottom of the last. Draws nothing if all
+ *        rows fit.
+ *
+ * @param first_row_y Baseline of the first visible row.
+ * @param pitch Distance between rows.
+ * @param first_visible Index of the first visible row.
+ * @param count Number of rows.
+ * @param visible Number of rows that fit.
+ */
+void ui_components_table_scrollbar_draw(int first_row_y, int pitch, int first_visible, int count, int visible);
+
 /** @brief Forget any held direction (call when a carousel view opens). */
 void ui_components_carousel_scroll_reset(void);
 /** @brief Handle ←/→ for a circular carousel list; a long hold pages by letter if letter_paging. Returns the new selection. */

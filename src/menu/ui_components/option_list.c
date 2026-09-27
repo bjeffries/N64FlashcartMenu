@@ -135,6 +135,19 @@ const char *ui_components_option_list_action_name (option_list_t *list) {
     }
 }
 
+void ui_components_table_scrollbar_draw (int first_row_y, int pitch, int first_visible, int count, int visible) {
+    if (count <= visible) {
+        return;
+    }
+    int top = first_row_y - fonts_cap_height(TITLE_FONT) - 3;
+    int bottom = first_row_y + ((visible - 1) * pitch) + 3;
+    int height = bottom - top;
+    int thumb = MAX(TABLE_SCROLLBAR_MIN_THUMB, (height * visible) / count);
+    int thumb_y = top + ((height - thumb) * first_visible) / (count - visible);
+    ui_components_box_draw(TABLE_SCROLLBAR_X, top, VISIBLE_AREA_X1, bottom, SCROLLBAR_BG_COLOR);
+    ui_components_box_draw(TABLE_SCROLLBAR_X, thumb_y, VISIBLE_AREA_X1, thumb_y + thumb, SCROLLBAR_POSITION_COLOR);
+}
+
 /**
  * @brief Draw the rows between y_top and y_bottom (baselines), the selected row's description
  *        just below the last row, and the open picker on top.
@@ -153,6 +166,8 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
     }
 
     int cap = fonts_cap_height(TITLE_FONT);
+    bool scrolls = list->count > visible;
+    int band_x1 = scrolls ? TABLE_SCROLLBAR_X - 6 : VISIBLE_AREA_X1;    // stop short of the scroll bar
     int rows_drawn = 0;
     for (int row = 0; row < visible && list->first_visible + row < list->count; row++, rows_drawn++) {
         int i = list->first_visible + row;
@@ -163,7 +178,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
 
         // Rows are title-style text; the band and marker span its capitals plus a margin.
         if (!selectable) {
-            ui_components_box_draw(CAROUSEL_SELECTED_X, y - cap - 6, VISIBLE_AREA_X1, y + 6, OPTION_LIST_INFO_BAND_COLOR);
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - cap - 6, band_x1, y + 6, OPTION_LIST_INFO_BAND_COLOR);
         } else if (is_selected) {
             ui_components_box_draw(CAROUSEL_SELECTED_X, y - cap - 3, CAROUSEL_SELECTED_X + 4, y + 3, SELECTION_MARKER_COLOR);
         }
@@ -193,13 +208,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
     }
 
     // Scroll hints when rows are off screen.
-    rdpq_textparms_t hint = { .style_id = STL_GRAY };
-    if (list->first_visible > 0) {
-        ui_components_body_text_draw(&hint, VISIBLE_AREA_X1 - 16, y_top - cap - 8, "...");
-    }
-    if (list->first_visible + visible < list->count) {
-        ui_components_body_text_draw(&hint, VISIBLE_AREA_X1 - 16, y_top + ((visible - 1) * pitch) + 14, "...");
-    }
+    ui_components_table_scrollbar_draw(y_top, pitch, list->first_visible, list->count, visible);
 
     if (list->selected >= 0 && list->options[list->selected].description) {
         ui_components_body_text_draw(

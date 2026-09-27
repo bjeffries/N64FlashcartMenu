@@ -233,11 +233,7 @@ static void draw_list (void) {
             TITLE_FONT, CHEAT_STATE_X, y, "%s", code->enabled ? "On" : "Off");
     }
 
-    // Scroll hint below the list (the column headers sit where a top hint would go; the row
-    // numbers show the position).
-    if (first_visible + VISIBLE_ROWS < MAX_CHEAT_CODES) {
-        ui_components_body_text_draw(&(rdpq_textparms_t) { .style_id = STL_GRAY }, VISIBLE_AREA_X1 - 16, CONFIG_LIST_Y + ((VISIBLE_ROWS - 1) * CHEAT_ROW_PITCH) + 14, "...");
-    }
+    ui_components_table_scrollbar_draw(CONFIG_LIST_Y, CHEAT_ROW_PITCH, first_visible, MAX_CHEAT_CODES, VISIBLE_ROWS);
 }
 
 static void draw (menu_t *menu, surface_t *display) {
