@@ -17,7 +17,8 @@
 
 #define MAX_PLAYERS         (4)
 #define BADGE_PADDING       (3)
-#define TAG_GAP             (12)    // between accessory tags
+#define TAG_GAP             (12)    // between accessory tags, with a small square in the middle
+#define TAG_SEPARATOR_SIZE  (3)
 #define GAME_INFO_PAGES     (3)
 
 /** @brief Info for the currently selected entry, reloaded only when the selection changes. */
@@ -185,6 +186,15 @@ static void draw_accessories (int x, int y, rom_info_t *info) {
         return;
     }
     for (int i = 0; i < count; i++) {
+        if (i > 0) {
+            // Square separator, centred in the gap and on the capitals.
+            int sx = x - (TAG_GAP / 2) - (TAG_SEPARATOR_SIZE / 2);
+            int sy = y - (fonts_cap_height(GAME_INFO_FONT) / 2) - (TAG_SEPARATOR_SIZE / 2);
+            if (x + 1 > value_right) {
+                break;
+            }
+            ui_components_box_draw(sx, sy, sx + TAG_SEPARATOR_SIZE, sy + TAG_SEPARATOR_SIZE, TEXT_SECONDARY_COLOR);
+        }
         int width = draw_tag(x, y, badges[i]);
         if (width < 0) {
             break;
