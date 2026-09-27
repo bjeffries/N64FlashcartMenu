@@ -11,6 +11,7 @@
 
 #include "../ui_components.h"
 #include "../fonts.h"
+#include "../sound.h"
 #include "constants.h"
 #include "utils/utils.h"
 
@@ -59,9 +60,11 @@ static void current_load (path_t *path, entry_t *entry, bookkeeping_t *bookkeepi
         current.size = st.st_size;
     }
     current.last_played = bookkeeping_history_last_played(bookkeeping, path);
+    sound_poll();
 
     if (entry->type == ENTRY_TYPE_ROM) {
         current.is_rom = (rom_config_load(path, &current.rom_info) == ROM_OK);
+        sound_poll();
     }
 }
 

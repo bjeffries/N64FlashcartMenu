@@ -129,7 +129,8 @@ FILESYSTEM = \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite))) \
-	$(addprefix $(FILESYSTEM_DIR)/boot/, $(notdir $(BOOT_IMAGES:%.png=%.sprite)))
+	$(addprefix $(FILESYSTEM_DIR)/boot/, $(notdir $(BOOT_IMAGES:%.png=%.sprite))) \
+	$(FILESYSTEM_DIR)/boot/eclipse_boot_hall.wav64
 
 # DEV_SD=1 packs devsd/ (see scripts/make_devsd.py) into rom:/ so emulators have games to show.
 # Copied as a whole folder because ROM file names contain spaces, which make can't track.
@@ -169,6 +170,11 @@ $(FILESYSTEM_DIR)/%.xm64: $(ASSETS_DIR)/sounds/%.xm
 $(FILESYSTEM_DIR)/%.sprite: $(ASSETS_DIR)/images/%.png
 	@echo "    [SPRITE] $@"
 	@$(N64_MKSPRITE) $(MKSPRITE_FLAGS) -o $(dir $@) "$<"
+
+$(FILESYSTEM_DIR)/boot/eclipse_boot_hall.wav64: boot_animation/boot_audio/eclipse_boot_hall.wav
+	@echo "    [AUDIO WAV] $@"
+	@mkdir -p $(dir $@)
+	@$(N64_AUDIOCONV) --wav-compress 1 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/boot/%.sprite: $(ASSETS_DIR)/boot/%.png
 	@echo "    [SPRITE] $@"

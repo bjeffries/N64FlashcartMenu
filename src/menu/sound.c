@@ -18,6 +18,9 @@ static bool sound_initialized = false;
 static bool sfx_enabled = false;
 static bool sfx_opened = false;
 
+static wav64_t boot_sound;
+static bool boot_sound_opened = false;
+
 /**
  * @brief Reconfigure the sound system with the specified frequency.
  * 
@@ -103,8 +106,23 @@ void sound_play_effect(sound_effect_t sfx) {
 /**
  * @brief Deinitialize the sound system.
  */
+void sound_play_boot (void) {
+    if (!sound_initialized || boot_sound_opened) {
+        return;
+    }
+    wav64_open(&boot_sound, "rom:/boot/eclipse_boot_hall.wav64");
+    boot_sound_opened = true;
+    mixer_ch_set_vol(SOUND_BOOT_CHANNEL, 1.0f, 1.0f);
+    wav64_play(&boot_sound, SOUND_BOOT_CHANNEL);
+}
+
 void sound_deinit (void) {
     if (sound_initialized) {
+        if (boot_sound_opened) {
+            mixer_ch_stop(SOUND_BOOT_CHANNEL);
+            wav64_close(&boot_sound);
+            boot_sound_opened = false;
+        }
         if (sfx_opened) {
             wav64_close(&sfx_cursor);
             wav64_close(&sfx_exit);
@@ -128,5 +146,11 @@ void sound_poll (void) {
         // Check whether one audio buffer is ready, otherwise wait for next
         // frame to perform mixing.
         mixer_try_play();
+
+        // The boot sound plays once; free it when it has finished.
+        if (boot_sound_opened && !mixer_ch_playing(SOUND_BOOT_CHANNEL)) {
+            wav64_close(&boot_sound);
+            boot_sound_opened = false;
+        }
     }
 }

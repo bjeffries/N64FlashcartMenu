@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "../labels.h"
+#include "../sound.h"
 #include "../ui_components.h"
 #include "../fonts.h"
 #include "constants.h"
@@ -120,12 +121,14 @@ static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position
         if (slot->has_id) {
             slot->small = load_label(slot->id, &small_style);
         }
+        sound_poll();   // each new tile reads the SD card; keep audio flowing between them
     }
 
     if (large && !slot->large_loaded) {
         slot->large_loaded = true;
         if (slot->small) {
             slot->large = load_label(slot->id, &large_style);
+            sound_poll();
         }
     }
 

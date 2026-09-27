@@ -296,6 +296,8 @@ static bool load_directory (menu_t *menu) {
             menu->browser.entries++;
         }
 
+        sound_poll();   // keep audio (the boot sound) flowing through long SD scans
+
         result = dir_findnext(path_get(path), &info);
     }
 

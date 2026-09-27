@@ -7,12 +7,13 @@
  * sprites in rom:/boot/, loaded one at a time as they're needed so the animation doesn't hold
  * ~700 KiB of memory. Timing follows the clock, so a slow frame never slows the animation down.
  * It only plays on a cold boot (not when Reset brings you back from a game) and can't be skipped;
- * Menu Settings > Boot Animation turns it off.
+ * Menu Settings > Boot Animation turns it off (and its sound, which ignores Sound Effects).
  */
 
 #include "utils/fs.h"
 #include "views.h"
 #include "../boot_animation_frames.h"
+#include "../sound.h"
 
 #define HOLD_MS     (700)   // show the finished title this long after the last frame
 #define FADE_MS     (300)   // then fade to black over this long
@@ -38,6 +39,7 @@ static void animation_finish (menu_t *menu) {
 static void draw_animation (menu_t *menu, surface_t *d) {
     if (animation.start_ms == 0) {
         animation.start_ms = get_ticks_ms();    // start on the first drawn frame, after loading
+        sound_play_boot();      // 6.5 s: its hall tail carries on into the Library
     }
     uint32_t elapsed = get_ticks_ms() - animation.start_ms;
     uint32_t frames_ms = (BOOT_ANIMATION_FRAMES * 1000) / BOOT_ANIMATION_FPS;

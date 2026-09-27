@@ -43,6 +43,9 @@ the metadata JSON.
 
 - [ ] **3.0 The Eclipse Cart animation plays** at power-on (about 4 seconds, ending in a fade),
       smoothly and without flicker on "ECLIPSE" or "CART".
+- [ ] **3.0a Its sound plays** with it (the second chord lands as the corona appears), and the
+      reverb tail carries on into the Library for about 2.5 s **without crackles or stutters**,
+      even when the Library opens a folder with many games. *If it stutters, note the folder size.*
 - [ ] **3.1 The menu starts on the Library tab** within a few seconds, with no error screen.
 - [ ] **3.2 Your folders appear as folder tiles**; `menu` and system folders are hidden.
 - [ ] **3.3 Opening a folder shows cartridges with labels** for games in `labels.db`, grey

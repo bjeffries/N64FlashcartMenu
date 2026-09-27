@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #define SOUND_SFX_CHANNEL           (0) /**< First Channel of sound effects 0-7 (8 in total) */
+#define SOUND_BOOT_CHANNEL          (8) /**< Boot animation cue: stereo, channels 8-9 */
 #define SOUND_MP3_PLAYER_CHANNEL    (10) /**< First Channel for MP3 player sound 10-15 (6 in total [surround sound possible]) */
 
 
@@ -64,6 +65,14 @@ void sound_play_effect(sound_effect_t sfx);
  * that were allocated.
  */
 void sound_deinit(void);
+
+/**
+ * @brief Play the boot animation's sound (rom:/boot/eclipse_boot_hall.wav64).
+ *
+ * Plays on its own channels regardless of the Sound Effects setting, and closes itself when it
+ * ends (in sound_poll).
+ */
+void sound_play_boot(void);
 
 /**
  * @brief Poll the sound system.
