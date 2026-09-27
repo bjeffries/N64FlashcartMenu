@@ -16,7 +16,7 @@ static const struct {
     menu_mode_t mode;
 } tabs[TAB_COUNT] = {
     [TAB_LIBRARY] = { "Library", MENU_MODE_BROWSER },
-    [TAB_FAVORITES] = { "Favorites", MENU_MODE_FAVORITE },
+    [TAB_FAVORITES] = { "Faves", MENU_MODE_FAVORITE },
     [TAB_HISTORY] = { "History", MENU_MODE_HISTORY },
     [TAB_SETTINGS] = { "Settings", MENU_MODE_SETTINGS_HUB },
 };

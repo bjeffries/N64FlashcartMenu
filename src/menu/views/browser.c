@@ -585,7 +585,7 @@ static void draw_content (menu_t *menu, bool show_hints) {
         hints[count++] = (button_hint_t) { ICON_B, "Back" };
     }
     if (is_game) {
-        hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfavorite" : "Favorite" };
+        hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfave" : "Fave" };
         if (entry->type == ENTRY_TYPE_ROM) {
             hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
         }

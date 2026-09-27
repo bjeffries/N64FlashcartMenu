@@ -276,7 +276,7 @@ static void draw_tile_caption (entry_t *entry, int32_t position, float centre_x)
             .align = ALIGN_CENTER,
             .wrap = WRAP_ELLIPSES,
         },
-        FNT_SMALL,
+        FNT_DEFAULT,    // PixelOperator 16px: fits more of the name under a small tile
         roundf(centre_x - (CAROUSEL_TILE_SIZE / 2)),
         CAROUSEL_CAPTION_Y,
         title

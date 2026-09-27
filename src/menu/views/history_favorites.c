@@ -160,7 +160,7 @@ static void draw_content (menu_t *menu, bool show_hints) {
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;
     hints[count++] = (button_hint_t) { ICON_A, "Play" };
-    hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfavorite" : "Favorite" };
+    hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfave" : "Fave" };
     if (entries[selected].type == ENTRY_TYPE_ROM) {
         hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
     }
