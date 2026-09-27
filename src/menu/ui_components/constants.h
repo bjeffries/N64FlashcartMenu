@@ -428,8 +428,6 @@
 #define GAME_INFO_VALUE_X               (200)
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
-/** @brief Cap height of the title font (FNT_TITLE, 40px); the page dots span it. */
-#define GAME_INFO_TITLE_CAP_HEIGHT      (28)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
 /** @brief Distance between info rows in a group. */
@@ -534,8 +532,8 @@
 #define CAROUSEL_PAGING_DELAY_MS        (1000)
 /** @brief While paging, one letter every this long. */
 #define CAROUSEL_PAGING_INTERVAL_MS     (400)
-/** @brief Paging letter: baseline (40px font, capitals top out at the safe area). */
-#define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + 28)
+/** @brief Paging letter: baseline (title font; its capitals top out at the safe area). */
+#define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + fonts_cap_height(FNT_TITLE))
 /** @brief Paging letter: left edge, lined up with the cartridge, page dots and info labels. */
 #define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X)
 #define LETTER_INDICATOR_FADE_IN_MS     (120)

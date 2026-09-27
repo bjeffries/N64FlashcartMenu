@@ -90,11 +90,24 @@ SRCS = \
 	utils/fs.c \
 	utils/utf_converter.c \
 
+# Menu font: silkscreen or analogue. Built as rom:/font-default, font-title and font-small.
+MENU_FONT ?= silkscreen
+ifeq ($(MENU_FONT),analogue)
 # Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
 # 12px (captions, info rows) is off-grid, so it is anti-aliased instead of monochrome, with 1px
 # extra letter spacing for readability.
-FONT_SIZES = 12 20 40
 FONT_TTF = $(ASSETS_DIR)/fonts/AnalogueOS-Regular.ttf
+FONT_DEFAULT = 20 --monochrome
+FONT_TITLE = 40 --monochrome
+FONT_SMALL = 12 --char-spacing 1
+else
+# Silkscreen is drawn on an 8-unit pixel grid, so only multiples of 8 are crisp; at 8px its strokes
+# are 1px, which flickers on an interlaced CRT, so small text is 16px too.
+FONT_TTF = $(ASSETS_DIR)/fonts/Silkscreen-Regular.ttf
+FONT_DEFAULT = 16 --monochrome
+FONT_TITLE = 32 --monochrome
+FONT_SMALL = 16 --monochrome
+endif
 
 SOUNDS_WAV = \
 	cursorsound.wav \
@@ -130,7 +143,9 @@ SPNG_OBJS = $(filter $(BUILD_DIR)/libs/libspng/%.o,$(OBJS))
 DEPS = $(OBJS:.o=.d)
 
 FILESYSTEM = \
-	$(foreach s,$(FONT_SIZES),$(FILESYSTEM_DIR)/AnalogueOS-$(s).font64) \
+	$(FILESYSTEM_DIR)/font-default.font64 \
+	$(FILESYSTEM_DIR)/font-title.font64 \
+	$(FILESYSTEM_DIR)/font-small.font64 \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite))) \
@@ -157,13 +172,20 @@ $(FILESYSTEM_DIR)/%.sprite: MKSPRITE_FLAGS=--format RGBA16 --compress 1
 
 $(@info $(shell mkdir -p ./$(FILESYSTEM_DIR) &> /dev/null))
 
-$(FILESYSTEM_DIR)/AnalogueOS-%.font64: FONT_FLAGS=--monochrome
-$(FILESYSTEM_DIR)/AnalogueOS-12.font64: FONT_FLAGS=--char-spacing 1
-$(FILESYSTEM_DIR)/AnalogueOS-%.font64: $(FONT_TTF)
-	@echo "    [FONT] $@"
+# Rebuild the fonts when MENU_FONT changes (the stamp's name changes with it).
+$(BUILD_DIR)/font-$(MENU_FONT).stamp:
+	@mkdir -p $(BUILD_DIR)
+	@rm -f $(BUILD_DIR)/font-*.stamp
+	@touch $@
+
+$(FILESYSTEM_DIR)/font-default.font64: FONT_SPEC=$(FONT_DEFAULT)
+$(FILESYSTEM_DIR)/font-title.font64: FONT_SPEC=$(FONT_TITLE)
+$(FILESYSTEM_DIR)/font-small.font64: FONT_SPEC=$(FONT_SMALL)
+$(FILESYSTEM_DIR)/font-%.font64: $(FONT_TTF) $(BUILD_DIR)/font-$(MENU_FONT).stamp
+	@echo "    [FONT] $@ ($(MENU_FONT) $(firstword $(FONT_SPEC))px)"
 	@mkdir -p $(BUILD_DIR)/fonts/$*
-	@$(N64_MKFONT) --compress 1 $(FONT_FLAGS) --size $* --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$<"
-	@mv $(BUILD_DIR)/fonts/$*/AnalogueOS-Regular.font64 $@
+	@$(N64_MKFONT) --compress 1 $(wordlist 2,9,$(FONT_SPEC)) --size $(firstword $(FONT_SPEC)) --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$<"
+	@mv $(BUILD_DIR)/fonts/$*/$(basename $(notdir $(FONT_TTF))).font64 $@
 
 $(FILESYSTEM_DIR)/%.wav64: $(ASSETS_DIR)/sounds/%.wav
 	@echo "    [AUDIO WAV] $@"

@@ -446,7 +446,7 @@ void ui_components_game_info_dots_draw (int page, int count) {
         return;
     }
     int column_height = GAME_INFO_DOT_SIZE + ((count - 1) * GAME_INFO_DOT_PITCH);
-    int top = CAROUSEL_TITLE_Y - (GAME_INFO_TITLE_CAP_HEIGHT / 2) - (column_height / 2);
+    int top = CAROUSEL_TITLE_Y - (fonts_cap_height(FNT_TITLE) / 2) - (column_height / 2);
     for (int i = 0; i < count; i++) {
         int x = GAME_INFO_LABEL_X;
         int y = top + (i * GAME_INFO_DOT_PITCH);
