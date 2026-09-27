@@ -220,7 +220,7 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
  *        The view still attaches / detaches the display and draws any dialogs on top.
  */
 void ui_components_option_screen_draw (menu_t *menu, const char *title, option_list_t *list) {
-    rdpq_text_printf(NULL, FNT_BAR, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", title);
+    rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", title);
 
     ui_components_option_list_draw(menu, list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * (OPTION_LIST_VISIBLE_ROWS - 1)));
 

@@ -633,7 +633,7 @@ static void config_process (menu_t *menu) {
 static void config_draw (menu_t *menu, surface_t *d) {
     ui_components_attach_clear(d);
 
-    rdpq_text_printf(NULL, FNT_BAR, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Config");
+    rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Config");
 
     char title[128];
     ui_components_carousel_title(rom_filename, false, title, sizeof(title));
@@ -669,12 +669,12 @@ static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, b
         static float loading_ink_center = -1.0f;
         if (loading_ink_center < 0.0f) {
             int nbytes = strlen("Loading");
-            rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_BAR, "Loading", &nbytes);
+            rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, TITLE_FONT, "Loading", &nbytes);
             loading_ink_center = (paragraph->bbox.x0 + paragraph->bbox.x1) / 2.0f;
             rdpq_paragraph_free(paragraph);
         }
-        fonts_set_fade_level(FNT_BAR, (uint8_t) (ui_components_loading_animation_fade_in() * 0xFF));
-        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_FADE }, FNT_BAR,
+        fonts_set_fade_level(TITLE_FONT, (uint8_t) (ui_components_loading_animation_fade_in() * 0xFF));
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_FADE }, TITLE_FONT,
             (int) (DISPLAY_CENTER_X - loading_ink_center + 0.5f), LIBRARY_BUTTONS_Y, "Loading");
 
         // Nearing totality, the rest of the screen fades to black (fully black from 100%).

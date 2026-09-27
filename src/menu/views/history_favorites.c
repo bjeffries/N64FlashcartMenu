@@ -129,9 +129,9 @@ static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_tab_header_draw(tab);
 
     if (entry_count == 0) {
-        ui_components_text_draw(
+        ui_components_body_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
-            FNT_DEFAULT, CAROUSEL_SELECTED_X, CAROUSEL_TILE_Y + 40,
+            CAROUSEL_SELECTED_X, CAROUSEL_TILE_Y + 40,
             (tab == TAB_FAVORITES)
                 ? "No favorites yet.\nPress C-Left on a game in the Library\nto add it here."
                 : "Nothing played yet.\nGames you launch will appear here."

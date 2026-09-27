@@ -158,7 +158,7 @@ void ui_components_file_list_draw(entry_t *list, int entries, int selected) {
                 .wrap = WRAP_ELLIPSES,
                 .line_spacing = TEXT_LINE_SPACING_ADJUST,
             },
-            FNT_DEFAULT,
+            BODY_FONT,
             file_list_layout
         );
 
@@ -219,7 +219,7 @@ void ui_components_file_list_draw(entry_t *list, int entries, int selected) {
                 .wrap = WRAP_ELLIPSES,
                 .line_spacing = TEXT_LINE_SPACING_ADJUST,
             },
-            FNT_DEFAULT,
+            BODY_FONT,
             NULL
         );
 

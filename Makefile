@@ -90,33 +90,23 @@ SRCS = \
 	utils/fs.c \
 	utils/utf_converter.c \
 
-# Menu font: pixeloperator or analogue. Each role is "<font file> <size> <mkfont flags>", built as
-# rom:/font-default (text), font-title (titles), font-small (info panel, captions, descriptions) and
-# font-bar (top and bottom bars: tabs, screen titles, button hints).
+# Menu font: pixeloperator or analogue. The UI has two text styles: titles (rom:/font-title: game
+# titles, the top and bottom bars, list rows) and body text (rom:/font-default, drawn with a 1px
+# shadow). Each is "<font file> <size> <mkfont flags>".
 MENU_FONT ?= pixeloperator
 ifeq ($(MENU_FONT),analogue)
 # Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
-# 12px (captions, info rows) is off-grid, so it is anti-aliased instead of monochrome, with 1px
-# extra letter spacing for readability.
 FONT_DEFAULT = AnalogueOS-Regular.ttf 20 --monochrome
 FONT_TITLE = AnalogueOS-Regular.ttf 40 --monochrome
-FONT_SMALL = AnalogueOS-Regular.ttf 12 --char-spacing 1
-FONT_BAR = AnalogueOS-Regular.ttf 20 --monochrome
 else
-# Pixel Operator (CC0) for titles, labels, tabs and button hints: drawn on a 16-unit pixel grid,
-# so 16px and 32px are crisp. At 16px its letter gap is already 1px; at 32px -1 takes it from 2px
-# to 1px. Its 16px lines are 1px, which may flicker on an interlaced CRT.
-# Pixel Operator 8 for the other text (info panel, captions, descriptions): an 8-unit grid, so at
-# 16px its lines are 2px; -1 takes its letter gap from 2px to 1px.
+# Pixel Operator (CC0) is drawn on a 16-unit pixel grid, so 16px and 32px are crisp. At 16px its
+# letter gap is already 1px and its lines are 1px (the shadow gives them a second line, for
+# interlaced CRTs); at 32px -1 takes the letter gap from 2px to 1px.
 # Other weights and variants are in assets/fonts/pixel_operator/.
 FONT_DEFAULT = pixel_operator/PixelOperator.ttf 16 --monochrome
 FONT_TITLE = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
-# Top and bottom bars (tabs, screen titles, button hints): 32px, on the 16-unit grid (24px left
-# uneven gaps in the letters); -1 takes its letter gap from 2px to 1px.
-FONT_BAR = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
-FONT_SMALL = pixel_operator/PixelOperator8.ttf 16 --monochrome --char-spacing -1
 endif
-FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_SMALL)) $(firstword $(FONT_BAR)))
+FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)))
 
 SOUNDS_WAV = \
 	cursorsound.wav \
@@ -154,8 +144,6 @@ DEPS = $(OBJS:.o=.d)
 FILESYSTEM = \
 	$(FILESYSTEM_DIR)/font-default.font64 \
 	$(FILESYSTEM_DIR)/font-title.font64 \
-	$(FILESYSTEM_DIR)/font-small.font64 \
-	$(FILESYSTEM_DIR)/font-bar.font64 \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite))) \
@@ -190,8 +178,6 @@ $(BUILD_DIR)/font-$(MENU_FONT).stamp:
 
 $(FILESYSTEM_DIR)/font-default.font64: FONT_SPEC=$(FONT_DEFAULT)
 $(FILESYSTEM_DIR)/font-title.font64: FONT_SPEC=$(FONT_TITLE)
-$(FILESYSTEM_DIR)/font-small.font64: FONT_SPEC=$(FONT_SMALL)
-$(FILESYSTEM_DIR)/font-bar.font64: FONT_SPEC=$(FONT_BAR)
 $(FILESYSTEM_DIR)/font-%.font64: $(FONT_FILES) $(BUILD_DIR)/font-$(MENU_FONT).stamp Makefile
 	@echo "    [FONT] $@ ($(notdir $(word 1,$(FONT_SPEC))) $(word 2,$(FONT_SPEC))px)"
 	@mkdir -p $(BUILD_DIR)/fonts/$*

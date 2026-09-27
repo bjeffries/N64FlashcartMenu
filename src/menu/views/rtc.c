@@ -150,7 +150,7 @@ static void draw_fields (struct tm *t, bool editing) {
 static void draw (menu_t *menu, surface_t *d) {
     ui_components_attach_clear(d);
 
-    rdpq_text_printf(NULL, FNT_BAR, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Time");
+    rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Time");
 
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;

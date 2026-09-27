@@ -82,8 +82,6 @@ void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
 void fonts_init (char *custom_font_path) {
     load_default_font(custom_font_path);
     load_font(FNT_TITLE, "rom:/font-title.font64");
-    load_font(FNT_SMALL, "rom:/font-small.font64");
-    load_font(FNT_BAR, "rom:/font-bar.font64");
     for (int id = FNT_DEFAULT; id <= FNT_LAST; id++) {
         measure_cap_height(id);
     }

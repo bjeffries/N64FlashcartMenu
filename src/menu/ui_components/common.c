@@ -80,7 +80,7 @@ void ui_components_text_draw (const rdpq_textparms_t *parms, menu_font_type_t fo
 void ui_components_loading_screen_draw (surface_t *d, float progress, const char *message, const char *file_name) {
     ui_components_attach_clear(d);
 
-    rdpq_text_printf(NULL, FNT_BAR, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
+    rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
 
     char title[128];
     ui_components_carousel_title(file_name, false, title, sizeof(title));
@@ -90,7 +90,7 @@ void ui_components_loading_screen_draw (surface_t *d, float progress, const char
     );
 
     ui_components_progressbar_draw(CAROUSEL_SELECTED_X, LOADING_BAR_Y, VISIBLE_AREA_X1, LOADING_BAR_Y + 6, progress);
-    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, CAROUSEL_SELECTED_X, LOADING_BAR_Y + 24, "%d%%", (int) (progress * 100.0f));
+    ui_components_body_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, CAROUSEL_SELECTED_X, LOADING_BAR_Y + 24, "%d%%", (int) (progress * 100.0f));
 
     rdpq_detach_show();
 }
@@ -276,16 +276,21 @@ void ui_components_messagebox_draw (char *fmt, ...) {
     char *formatted = vasnprintf(buffer, &nbytes, fmt, va);
     va_end(va);
 
-    int paragraph_nbytes = nbytes;
-
-    rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) {
+    // Body text with its shadow: laid out twice (shadow style, then text style).
+    rdpq_textparms_t parms = {
         .width = MESSAGEBOX_MAX_WIDTH,
         .height = VISIBLE_AREA_HEIGHT,
         .align = ALIGN_CENTER,
         .valign = VALIGN_CENTER,
         .wrap = WRAP_WORD,
         .line_spacing = TEXT_LINE_SPACING_ADJUST,
-    }, FNT_DEFAULT, formatted, &paragraph_nbytes);
+        .style_id = STL_SHADOW,
+    };
+    int paragraph_nbytes = nbytes;
+    rdpq_paragraph_t *shadow = rdpq_paragraph_build(&parms, BODY_FONT, formatted, &paragraph_nbytes);
+    parms.style_id = STL_DEFAULT;
+    paragraph_nbytes = nbytes;
+    rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&parms, BODY_FONT, formatted, &paragraph_nbytes);
 
     if (formatted != buffer) {
         free(formatted);
@@ -296,7 +301,10 @@ void ui_components_messagebox_draw (char *fmt, ...) {
         paragraph->bbox.y1 - paragraph->bbox.y0 + MESSAGEBOX_MARGIN
     );
 
-    rdpq_paragraph_render(paragraph, DISPLAY_CENTER_X - (MESSAGEBOX_MAX_WIDTH / 2), VISIBLE_AREA_Y0);
+    int x = DISPLAY_CENTER_X - (MESSAGEBOX_MAX_WIDTH / 2);
+    rdpq_paragraph_render(shadow, x + TEXT_SHADOW_OFFSET, VISIBLE_AREA_Y0 + TEXT_SHADOW_OFFSET);
+    rdpq_paragraph_free(shadow);
+    rdpq_paragraph_render(paragraph, x, VISIBLE_AREA_Y0);
 
     rdpq_paragraph_free(paragraph);
 }
@@ -329,7 +337,7 @@ void ui_components_main_text_draw (menu_font_type_t style, rdpq_align_t align, r
             .wrap = WRAP_WORD,
             .line_spacing = TEXT_LINE_SPACING_ADJUST,
         },
-        FNT_DEFAULT,
+        BODY_FONT,
         VISIBLE_AREA_X0 + TEXT_MARGIN_HORIZONTAL,
         VISIBLE_AREA_Y0 + TEXT_MARGIN_VERTICAL + TEXT_OFFSET_VERTICAL,
         formatted,
@@ -369,7 +377,7 @@ void ui_components_actions_bar_text_draw (menu_font_type_t style, rdpq_align_t a
             .wrap = WRAP_ELLIPSES,
             .line_spacing = TEXT_LINE_SPACING_ADJUST,
         },
-        FNT_DEFAULT,
+        BODY_FONT,
         VISIBLE_AREA_X0 + TEXT_MARGIN_HORIZONTAL,
         LAYOUT_ACTIONS_SEPARATOR_Y + BORDER_THICKNESS + TEXT_MARGIN_VERTICAL + TEXT_OFFSET_VERTICAL,
         formatted
@@ -449,7 +457,7 @@ void ui_components_tabs_draw(const char **text, int count, int selected, float w
     for(int i=0;i< count;i++) {
         rdpq_text_print(
             &tab_textparms,
-            FNT_DEFAULT,
+            BODY_FONT,
             x,
             y,
             text[i]
@@ -504,7 +512,7 @@ void ui_component_value_editor(const char **header_text, const char **value_text
     for(int i=0;i< count;i++) {
         rdpq_text_print(
             &value_textparms,
-            FNT_DEFAULT,
+            BODY_FONT,
             x,
             y,
             header_text[i]
@@ -512,7 +520,7 @@ void ui_component_value_editor(const char **header_text, const char **value_text
 
         rdpq_text_print(
             &value_textparms,
-            FNT_DEFAULT,
+            BODY_FONT,
             x,
             y + 24,
             value_text[i]

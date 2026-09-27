@@ -16,11 +16,9 @@
  * in the menu system.
  */
 typedef enum {
-    FNT_DEFAULT = 1, /**< Default font (sizes per font: MENU_FONT in the Makefile) */
-    FNT_TITLE,       /**< Large title font */
-    FNT_SMALL,       /**< Small caption font */
-    FNT_BAR,         /**< Top and bottom bars: tabs, screen titles, button hints */
-    FNT_LAST = FNT_BAR,
+    FNT_DEFAULT = 1, /**< Body text (BODY_FONT, drawn with a shadow); sizes per MENU_FONT in the Makefile */
+    FNT_TITLE,       /**< Titles, the top and bottom bars and list rows (TITLE_FONT) */
+    FNT_LAST = FNT_TITLE,
 } menu_font_type_t;
 
 /**
