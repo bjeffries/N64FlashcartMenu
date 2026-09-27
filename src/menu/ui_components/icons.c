@@ -4,6 +4,8 @@
  * @ingroup ui_components
  */
 
+#include <string.h>
+
 #include "../ui_components.h"
 #include "../fonts.h"
 #include "constants.h"
@@ -54,6 +56,37 @@ int ui_components_icon_width (ui_icon_t icon) {
  *
  * @return Horizontal space used, so hints can be laid out one after another.
  */
+static float text_advance (const char *text, bool ink_only) {
+    int nbytes = strlen(text);
+    rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_DEFAULT, text, &nbytes);
+    float width = ink_only ? paragraph->bbox.x1 : paragraph->advance_x;
+    rdpq_paragraph_free(paragraph);
+    return width;
+}
+
+/**
+ * @brief Draw a row of button hints centred at the bottom of the screen.
+ *
+ * Centred on what is drawn: from the first icon's left edge to the last label's last pixel.
+ */
+void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
+    if (count <= 0) {
+        return;
+    }
+    int width = 0;
+    for (int i = 0; i < count; i++) {
+        bool last = (i == count - 1);
+        width += icon_get(hints[i].icon)->width + HINT_ICON_GAP + (int) (text_advance(hints[i].text, last) + 0.5f);
+        if (!last) {
+            width += LIBRARY_HINT_GAP;
+        }
+    }
+    int x = DISPLAY_CENTER_X - (width / 2);
+    for (int i = 0; i < count; i++) {
+        x += ui_components_button_hint_draw(hints[i].icon, x, LIBRARY_BUTTONS_Y, hints[i].text) + LIBRARY_HINT_GAP;
+    }
+}
+
 int ui_components_button_hint_draw (ui_icon_t icon, int x, int baseline, const char *text) {
     sprite_t *sprite = icon_get(icon);
     // FNT_DEFAULT capitals are 14px tall, so their centre is 7px above the baseline.

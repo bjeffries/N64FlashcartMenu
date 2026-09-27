@@ -152,12 +152,14 @@ static void draw (menu_t *menu, surface_t *display) {
     ui_components_game_info_dots_draw(info_page, pages);
     ui_components_letter_indicator_draw();
 
-    int x = BUTTON_HINTS_X;
-    x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Play") + LIBRARY_HINT_GAP;
-    x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
+    button_hint_t hints[BUTTON_HINTS_MAX];
+    int count = 0;
+    hints[count++] = (button_hint_t) { ICON_A, "Play" };
+    hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfavorite" : "Favorite" };
     if (entries[selected].type == ENTRY_TYPE_ROM) {
-        ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Config");
+        hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
     }
+    ui_components_button_hints_draw(hints, count);
 
     rdpq_detach_show();
 }

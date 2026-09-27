@@ -152,7 +152,8 @@ static void draw (menu_t *menu, surface_t *d) {
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Time");
 
-    int x = BUTTON_HINTS_X;
+    button_hint_t hints[BUTTON_HINTS_MAX];
+    int count = 0;
     if (menu->current_time < 0) {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
@@ -183,15 +184,10 @@ static void draw (menu_t *menu, surface_t *d) {
                   "It can also be set from a PC over USB."
         );
 
-        if (is_editing_mode) {
-            x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Save") + LIBRARY_HINT_GAP;
-            ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Cancel");
-            rdpq_detach_show();
-            return;
-        }
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Adjust") + LIBRARY_HINT_GAP;
+        hints[count++] = (button_hint_t) { ICON_A, is_editing_mode ? "Save" : "Adjust" };
     }
-    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
+    hints[count++] = (button_hint_t) { ICON_B, is_editing_mode ? "Cancel" : "Back" };
+    ui_components_button_hints_draw(hints, count);
 
     rdpq_detach_show();
 }

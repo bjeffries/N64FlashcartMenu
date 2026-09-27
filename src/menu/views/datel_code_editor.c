@@ -251,7 +251,6 @@ static void draw (menu_t *menu, surface_t *display) {
 
     draw_list();
 
-    int x = BUTTON_HINTS_X;
     if (ui_components_keyboard_is_open()) {
         ui_components_keyboard_draw();      // draws its own button hints
     } else if (editing) {
@@ -260,8 +259,7 @@ static void draw (menu_t *menu, surface_t *display) {
             FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
             "Left / Right: choose a digit. Up / Down: change it."
         );
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Done") + LIBRARY_HINT_GAP;
-        ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Cancel");
+        ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Done" }, { ICON_B, "Cancel" } }, 2);
     } else {
         ui_components_text_draw(
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
@@ -269,13 +267,14 @@ static void draw (menu_t *menu, surface_t *display) {
             "Codes are applied when Cheats is On in Config. Changes are saved when you go back."
         );
         bool empty = is_empty(&cheat_codes[selected]);
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, empty ? "Add" : "Toggle") + LIBRARY_HINT_GAP;
-        x += ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back") + LIBRARY_HINT_GAP;
-        if (!empty) {
-            x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Name") + LIBRARY_HINT_GAP;
-            x += ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Clear") + LIBRARY_HINT_GAP;
-            ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Edit");
-        }
+        button_hint_t hints[BUTTON_HINTS_MAX] = {
+            { ICON_A, empty ? "Add" : "Toggle" },
+            { ICON_B, "Back" },
+            { ICON_C_LEFT, "Name" },
+            { ICON_C_UP, "Clear" },
+            { ICON_C_RIGHT, "Edit" },
+        };
+        ui_components_button_hints_draw(hints, empty ? 2 : 5);
     }
 
     if (confirm_clear) {

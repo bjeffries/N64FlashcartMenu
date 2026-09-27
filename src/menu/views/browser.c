@@ -568,24 +568,26 @@ static void draw (menu_t *menu, surface_t *d) {
 
     // Hints in the order A, B, C-Left, C-Up, C-Right, C-Down.
     // Games: Play / Back / Favorite / Config / Hide. Folders: Open / Back / Set to Default.
-    int x = BUTTON_HINTS_X;
+    button_hint_t hints[BUTTON_HINTS_MAX];
+    int count = 0;
     entry_t *entry = menu->browser.entry;
     bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
     if (entry) {
-        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, is_game ? "Play" : "Open Folder") + LIBRARY_HINT_GAP;
+        hints[count++] = (button_hint_t) { ICON_A, is_game ? "Play" : "Open Folder" };
     }
     if (!path_is_root(menu->browser.directory)) {
-        x += ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back") + LIBRARY_HINT_GAP;
+        hints[count++] = (button_hint_t) { ICON_B, "Back" };
     }
     if (is_game) {
-        x += ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, favorite ? "Unfavorite" : "Favorite") + LIBRARY_HINT_GAP;
+        hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfavorite" : "Favorite" };
         if (entry->type == ENTRY_TYPE_ROM) {
-            x += ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Config") + LIBRARY_HINT_GAP;
+            hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
         }
-        ui_components_button_hint_draw(ICON_C_DOWN, x, LIBRARY_BUTTONS_Y, entry->hidden ? "Unhide" : "Hide");
+        hints[count++] = (button_hint_t) { ICON_C_DOWN, entry->hidden ? "Unhide" : "Hide" };
     } else if (entry && !selected_folder_is_default(menu)) {
-        ui_components_button_hint_draw(ICON_C_LEFT, x, LIBRARY_BUTTONS_Y, "Set to Default");
+        hints[count++] = (button_hint_t) { ICON_C_LEFT, "Set to Default" };
     }
+    ui_components_button_hints_draw(hints, count);
 
 
     if (confirm_hide && menu->browser.entry) {

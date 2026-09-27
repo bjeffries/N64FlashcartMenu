@@ -307,6 +307,22 @@ int ui_components_icon_width(ui_icon_t icon);
  */
 int ui_components_button_hint_draw(ui_icon_t icon, int x, int baseline, const char *text);
 
+/** @brief One button hint in a hint row. */
+typedef struct {
+    ui_icon_t icon;
+    const char *text;
+} button_hint_t;
+
+/** @brief Most hints a hint row can hold. */
+#define BUTTON_HINTS_MAX    (6)
+
+/**
+ * @brief Draw a row of button hints centred at the bottom of the screen.
+ *
+ * Pass them in the order A, B, C-Left, C-Up, C-Right, C-Down (then anything else).
+ */
+void ui_components_button_hints_draw(const button_hint_t *hints, int count);
+
 /** @brief Top-level tabs, switched with L / R. */
 typedef enum {
     TAB_LIBRARY,

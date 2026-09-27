@@ -425,8 +425,6 @@
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Cap height of the title font (FNT_TITLE, 40px); the page dots span it. */
 #define GAME_INFO_TITLE_CAP_HEIGHT      (28)
-/** @brief Left edge of the button hint row on every screen (A, B, C-Left, C-Up, C-Right, C-Down). */
-#define BUTTON_HINTS_X                  (GAME_INFO_LABEL_X)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
 /** @brief Distance between info rows in a group. */

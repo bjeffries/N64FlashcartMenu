@@ -639,9 +639,10 @@ static void config_draw (menu_t *menu, surface_t *d) {
 
     ui_components_option_list_draw(menu, &config_list, CONFIG_LIST_Y, CONFIG_LIST_Y + (OPTION_LIST_ROW_PITCH * 9));
 
-    int x = BUTTON_HINTS_X;
-    x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, ui_components_option_list_action_name(&config_list)) + LIBRARY_HINT_GAP;
-    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
+    ui_components_button_hints_draw((button_hint_t[]) {
+        { ICON_A, ui_components_option_list_action_name(&config_list) },
+        { ICON_B, "Back" },
+    }, 2);
 
     if (config_message) {
         ui_components_messagebox_draw("%s", config_message);
