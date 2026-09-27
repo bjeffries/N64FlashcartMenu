@@ -111,9 +111,9 @@ else
 # Other weights and variants are in assets/fonts/pixel_operator/.
 FONT_DEFAULT = pixel_operator/PixelOperator.ttf 16 --monochrome
 FONT_TITLE = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
-# Top and bottom bars (tabs, screen titles, button hints): 24px is off the 16-unit grid, so line
-# widths vary slightly (1-2px); -1 takes its letter gap from 2px to 1px.
-FONT_BAR = pixel_operator/PixelOperator.ttf 24 --monochrome --char-spacing -1
+# Top and bottom bars (tabs, screen titles, button hints): 32px, on the 16-unit grid (24px left
+# uneven gaps in the letters); -1 takes its letter gap from 2px to 1px.
+FONT_BAR = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
 FONT_SMALL = pixel_operator/PixelOperator8.ttf 16 --monochrome --char-spacing -1
 endif
 FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_SMALL)) $(firstword $(FONT_BAR)))
