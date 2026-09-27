@@ -439,15 +439,17 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
 }
 
 /**
- * @brief Draw the page indicator dots in the bottom-left corner.
+ * @brief Draw the page indicator dots in a column just left of the title, centred on its capitals.
  */
 void ui_components_game_info_dots_draw (int page, int count) {
     if (count < 2) {
         return;
     }
+    int column_height = GAME_INFO_DOT_SIZE + ((count - 1) * GAME_INFO_DOT_PITCH);
+    int top = CAROUSEL_TITLE_Y - (GAME_INFO_TITLE_CAP_HEIGHT / 2) - (column_height / 2);
     for (int i = 0; i < count; i++) {
-        int x = GAME_INFO_LABEL_X + (i * GAME_INFO_DOT_PITCH);
-        int y = LIBRARY_BUTTONS_Y - 8;
+        int x = GAME_INFO_LABEL_X;
+        int y = top + (i * GAME_INFO_DOT_PITCH);
         color_t color = (i == page) ? GAME_INFO_DOT_ON_COLOR : GAME_INFO_DOT_OFF_COLOR;
         // 6x6 dot with the corners cut off
         ui_components_box_draw(x + 1, y, x + 5, y + 6, color);

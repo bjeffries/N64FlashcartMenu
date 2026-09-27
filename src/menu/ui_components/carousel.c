@@ -428,7 +428,7 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
             .style_id = entry->hidden ? STL_GRAY : STL_DEFAULT,     // hidden games, when shown, are grayed out
         },  // no width: long titles run off the edge of the screen
         FNT_TITLE,
-        GAME_INFO_LABEL_X,
+        GAME_INFO_TITLE_X,
         CAROUSEL_TITLE_Y,
         title
     );
