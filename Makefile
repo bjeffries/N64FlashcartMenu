@@ -90,24 +90,25 @@ SRCS = \
 	utils/fs.c \
 	utils/utf_converter.c \
 
-# Menu font: silkscreen or analogue. Built as rom:/font-default, font-title and font-small.
-MENU_FONT ?= silkscreen
+# Menu font: pixeloperator or analogue. Each role is "<font file> <size> <mkfont flags>", built as
+# rom:/font-default (text), font-title (titles) and font-small (info panel, captions, descriptions).
+MENU_FONT ?= pixeloperator
 ifeq ($(MENU_FONT),analogue)
 # Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
 # 12px (captions, info rows) is off-grid, so it is anti-aliased instead of monochrome, with 1px
 # extra letter spacing for readability.
-FONT_TTF = $(ASSETS_DIR)/fonts/AnalogueOS-Regular.ttf
-FONT_DEFAULT = 20 --monochrome
-FONT_TITLE = 40 --monochrome
-FONT_SMALL = 12 --char-spacing 1
+FONT_DEFAULT = AnalogueOS-Regular.ttf 20 --monochrome
+FONT_TITLE = AnalogueOS-Regular.ttf 40 --monochrome
+FONT_SMALL = AnalogueOS-Regular.ttf 12 --char-spacing 1
 else
-# Silkscreen is drawn on an 8-unit pixel grid, so only multiples of 8 are crisp; at 8px its strokes
-# are 1px, which flickers on an interlaced CRT, so small text is 16px too.
-FONT_TTF = $(ASSETS_DIR)/fonts/Silkscreen-Regular.ttf
-FONT_DEFAULT = 16 --monochrome
-FONT_TITLE = 32 --monochrome
-FONT_SMALL = 16 --monochrome
+# Pixel Operator (CC0) is drawn on a 16-unit pixel grid, so 16px renders 1:1 and 32px 2:1. Other
+# weights and variants are in assets/fonts/pixel_operator/ (Bold, HB, SC, Mono, and "8" versions
+# drawn on an 8-unit grid).
+FONT_DEFAULT = pixel_operator/PixelOperator.ttf 16 --monochrome
+FONT_TITLE = pixel_operator/PixelOperator.ttf 32 --monochrome
+FONT_SMALL = pixel_operator/PixelOperator.ttf 16 --monochrome
 endif
+FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_SMALL)))
 
 SOUNDS_WAV = \
 	cursorsound.wav \
@@ -181,11 +182,11 @@ $(BUILD_DIR)/font-$(MENU_FONT).stamp:
 $(FILESYSTEM_DIR)/font-default.font64: FONT_SPEC=$(FONT_DEFAULT)
 $(FILESYSTEM_DIR)/font-title.font64: FONT_SPEC=$(FONT_TITLE)
 $(FILESYSTEM_DIR)/font-small.font64: FONT_SPEC=$(FONT_SMALL)
-$(FILESYSTEM_DIR)/font-%.font64: $(FONT_TTF) $(BUILD_DIR)/font-$(MENU_FONT).stamp
-	@echo "    [FONT] $@ ($(MENU_FONT) $(firstword $(FONT_SPEC))px)"
+$(FILESYSTEM_DIR)/font-%.font64: $(FONT_FILES) $(BUILD_DIR)/font-$(MENU_FONT).stamp Makefile
+	@echo "    [FONT] $@ ($(notdir $(word 1,$(FONT_SPEC))) $(word 2,$(FONT_SPEC))px)"
 	@mkdir -p $(BUILD_DIR)/fonts/$*
-	@$(N64_MKFONT) --compress 1 $(wordlist 2,9,$(FONT_SPEC)) --size $(firstword $(FONT_SPEC)) --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$<"
-	@mv $(BUILD_DIR)/fonts/$*/$(basename $(notdir $(FONT_TTF))).font64 $@
+	@$(N64_MKFONT) --compress 1 $(wordlist 3,9,$(FONT_SPEC)) --size $(word 2,$(FONT_SPEC)) --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$(ASSETS_DIR)/fonts/$(word 1,$(FONT_SPEC))"
+	@mv $(BUILD_DIR)/fonts/$*/$(basename $(notdir $(word 1,$(FONT_SPEC)))).font64 $@
 
 $(FILESYSTEM_DIR)/%.wav64: $(ASSETS_DIR)/sounds/%.wav
 	@echo "    [AUDIO WAV] $@"
