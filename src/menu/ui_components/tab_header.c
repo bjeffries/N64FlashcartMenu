@@ -4,6 +4,8 @@
  * @ingroup ui_components
  */
 
+#include <string.h>
+
 #include "../ui_components.h"
 #include "../fonts.h"
 #include "../sound.h"
@@ -20,22 +22,63 @@ static const struct {
 };
 
 
+// Tab name ink extents (from the pen position), measured once, and the gap between names.
+static struct {
+    bool measured;
+    int ink_x0[TAB_COUNT];
+    int ink_width[TAB_COUNT];
+    int gap;
+    int total;          // ink width from the first name's left edge to the last one's right edge
+} layout;
+
+
+static void measure (void) {
+    layout.total = 0;
+    for (int i = 0; i < TAB_COUNT; i++) {
+        int nbytes = strlen(tabs[i].name);
+        rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, FNT_DEFAULT, tabs[i].name, &nbytes);
+        layout.ink_x0[i] = (int) paragraph->bbox.x0;
+        layout.ink_width[i] = (int) (paragraph->bbox.x1 - paragraph->bbox.x0);
+        rdpq_paragraph_free(paragraph);
+        layout.total += layout.ink_width[i];
+    }
+    // An even total centres on whole pixels; widening every gap by 1px keeps the gaps equal.
+    layout.gap = TAB_HEADER_GAP;
+    if ((layout.total + (TAB_COUNT - 1) * layout.gap) % 2 != 0) {
+        layout.gap++;
+    }
+    layout.total += (TAB_COUNT - 1) * layout.gap;
+    layout.measured = true;
+}
+
 /**
- * @brief Draw the tab names (current one white, the rest gray) and the L / R icons.
+ * @brief Draw the tab names (current one white, the rest gray), centred on the screen, with the
+ *        L and R pills at either end joined by a bar underneath. Symmetric about DISPLAY_CENTER_X.
  */
 void ui_components_tab_header_draw (menu_tab_t current) {
-    int x = CAROUSEL_SELECTED_X;
-    for (int i = 0; i < TAB_COUNT; i++) {
-        rdpq_textmetrics_t metrics = rdpq_text_printf(
-            &(rdpq_textparms_t) { .style_id = (i == current) ? STL_DEFAULT : STL_GRAY },
-            FNT_DEFAULT, x, LIBRARY_HEADER_Y, "%s", tabs[i].name
-        );
-        x += (int) (metrics.advance_x) + TAB_HEADER_GAP;
+    if (!layout.measured) {
+        measure();
     }
 
-    int r_x = VISIBLE_AREA_X1 - ui_components_icon_width(ICON_R);
-    ui_components_icon_draw(ICON_R, r_x, LIBRARY_HEADER_Y - 15);
-    ui_components_icon_draw(ICON_L, r_x - 6 - ui_components_icon_width(ICON_L), LIBRARY_HEADER_Y - 15);
+    int left = DISPLAY_CENTER_X - (layout.total / 2);
+    int x = left;
+    for (int i = 0; i < TAB_COUNT; i++) {
+        rdpq_text_printf(
+            &(rdpq_textparms_t) { .style_id = (i == current) ? STL_DEFAULT : STL_GRAY },
+            FNT_DEFAULT, x - layout.ink_x0[i], LIBRARY_HEADER_Y, "%s", tabs[i].name
+        );
+        x += layout.ink_width[i] + layout.gap;
+    }
+
+    // Bar ends mirror each other about the centre: [left end][bar][right end].
+    int half = (layout.total / 2) + TAB_BAR_TEXT_GAP + TAB_BAR_PILL_WIDTH;
+    int end_width = ui_components_icon_width(ICON_L);
+    int bar_x0 = DISPLAY_CENTER_X - half + end_width;
+    int bar_x1 = DISPLAY_CENTER_X + half - end_width;
+    int pill_bottom = TAB_BAR_PILL_Y + TAB_BAR_PILL_HEIGHT;
+    ui_components_box_draw(bar_x0, pill_bottom - TAB_BAR_HEIGHT, bar_x1, pill_bottom, TAB_BAR_COLOR);
+    ui_components_icon_draw(ICON_L, DISPLAY_CENTER_X - half, TAB_BAR_PILL_Y);
+    ui_components_icon_draw(ICON_R, bar_x1, TAB_BAR_PILL_Y);
 }
 
 /**

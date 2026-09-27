@@ -273,8 +273,8 @@ typedef enum {
     ICON_C_UP,
     ICON_C_LEFT,
     ICON_Z,
-    ICON_L,
-    ICON_R,
+    ICON_L,         /**< Left end of the tab bar (L pill curving into the bar) */
+    ICON_R,         /**< Right end of the tab bar (mirror of ICON_L) */
     ICON_COUNT,
 } ui_icon_t;
 

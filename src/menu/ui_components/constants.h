@@ -446,8 +446,20 @@
 /** @brief Other info page dots. */
 #define GAME_INFO_DOT_OFF_COLOR         RGBA32(0x55, 0x55, 0x55, 0xFF)
 
-/** @brief Space between tab names in the header. */
+/** @brief Space between tab names in the header (widened by 1px if needed to centre exactly). */
 #define TAB_HEADER_GAP                  (20)
+/** @brief Space between the outer tab names and the L / R pills. */
+#define TAB_BAR_TEXT_GAP                (43)
+/** @brief Top of the L / R pills (tab names sit on LIBRARY_HEADER_Y). */
+#define TAB_BAR_PILL_Y                  (LIBRARY_HEADER_Y - 7)
+/** @brief Width of the pill part of the tab bar's end sprites (the rest curves into the bar). */
+#define TAB_BAR_PILL_WIDTH              (20)
+/** @brief Height of the L / R pills (scripts/make_icons.py). */
+#define TAB_BAR_PILL_HEIGHT             (16)
+/** @brief Thickness of the bar joining L and R; its bottom lines up with the pills'. */
+#define TAB_BAR_HEIGHT                  (4)
+/** @brief Tab bar colour (same grey as the pills). */
+#define TAB_BAR_COLOR                   RGBA32(0xC8, 0xC8, 0xC8, 0xFF)
 /** @brief Baseline of the first Settings tab row. */
 #define SETTINGS_HUB_Y                  (110)
 /** @brief Distance between Settings tab rows. */
