@@ -11,8 +11,7 @@
 
 #define SOUND_SFX_CHANNEL           (0) /**< First Channel of sound effects 0-7 (8 in total) */
 #define SOUND_BOOT_CHANNEL          (8) /**< Boot animation cue: stereo, channels 8-9 */
-#define SOUND_LOADING_CHANNEL       (9) /**< Wind when a game has loaded (the boot cue is over by then) */
-#define SOUND_MP3_PLAYER_CHANNEL    (10) /**< First Channel for MP3 player sound 10-15 (6 in total [surround sound possible]) */
+#define SOUND_LOADING_CHANNEL       (10) /**< Wind when a game has loaded: stereo, channels 10-11 */
 
 
 /**
@@ -83,7 +82,8 @@ void sound_play_boot(void);
 void sound_stop_boot(void);
 
 /**
- * @brief Read the "game loaded" wind (rom:/loading_wind.wav) into memory, if sound effects are on.
+ * @brief Read the "game loaded" wind (rom:/loading_wind.wav, 16-bit PCM WAV, mono or stereo)
+ *        into memory, if sound effects are on.
  *
  * Call before loading a game: rom:/ can't be read once loading starts.
  */

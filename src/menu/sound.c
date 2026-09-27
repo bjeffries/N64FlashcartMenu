@@ -5,8 +5,10 @@
  */
 
 #include <stdbool.h>
+#include <string.h>
 #include <libdragon.h>
 #include "sound.h"
+#include "utils/utils.h"
 
 #define DEFAULT_FREQUENCY   (44100)
 #define NUM_BUFFERS         (4)
@@ -21,9 +23,10 @@ static bool sfx_opened = false;
 static wav64_t boot_sound;
 static bool boot_sound_opened = false;
 
-// "Game loaded" wind: 16-bit mono PCM held in memory (rom:/ is overwritten while a game loads).
-static int16_t *wind_samples = NULL;
-static int wind_length = 0;
+// "Game loaded" wind: 16-bit PCM held in memory (rom:/ is overwritten while a game loads).
+static int16_t *wind_samples = NULL;    // interleaved if stereo
+static int wind_length = 0;             // in frames (one sample per channel)
+static int wind_channels = 1;
 static waveform_t wind_waveform;
 
 /**
@@ -131,9 +134,18 @@ void sound_stop_boot (void) {
 
 static void wind_read (void *ctx, samplebuffer_t *sbuf, int wpos, int wlen, bool seeking) {
     int16_t *dst = (int16_t *) samplebuffer_append(sbuf, wlen);
-    for (int i = 0; i < wlen; i++) {
-        dst[i] = (wpos + i < wind_length) ? wind_samples[wpos + i] : 0;
+    for (int i = 0; i < wlen * wind_channels; i++) {
+        int index = (wpos * wind_channels) + i;
+        dst[i] = (index < wind_length * wind_channels) ? wind_samples[index] : 0;
     }
+}
+
+static uint32_t read_le (const uint8_t *p, int bytes) {
+    uint32_t value = 0;
+    for (int i = bytes - 1; i >= 0; i--) {
+        value = (value << 8) | p[i];
+    }
+    return value;
 }
 
 void sound_loading_wind_prepare (void) {
@@ -142,23 +154,46 @@ void sound_loading_wind_prepare (void) {
     }
     int size;
     uint8_t *wav = asset_load("rom:/loading_wind.wav", &size);
-    // A plain 44-byte header (make_sounds.py): 16-bit mono PCM, little-endian samples.
-    if (!wav || size <= 44) {
+    if (!wav || size < 12 || memcmp(wav, "RIFF", 4) != 0 || memcmp(wav + 8, "WAVE", 4) != 0) {
         free(wav);
         return;
     }
-    uint32_t rate = wav[24] | (wav[25] << 8) | (wav[26] << 16) | (wav[27] << 24);
-    wind_length = (size - 44) / 2;
-    wind_samples = malloc(wind_length * sizeof(int16_t));
-    for (int i = 0; i < wind_length; i++) {
-        wind_samples[i] = (int16_t) (wav[44 + (i * 2)] | (wav[45 + (i * 2)] << 8));
+    // Walk the RIFF chunks for "fmt " (16-bit PCM, mono or stereo) and "data".
+    uint32_t rate = 0;
+    int channels = 0;
+    const uint8_t *data = NULL;
+    uint32_t data_size = 0;
+    for (int offset = 12; offset + 8 <= size; ) {
+        uint32_t chunk_size = read_le(wav + offset + 4, 4);
+        const uint8_t *chunk = wav + offset + 8;
+        if (memcmp(wav + offset, "fmt ", 4) == 0 && chunk_size >= 16) {
+            bool pcm16 = (read_le(chunk, 2) == 1) && (read_le(chunk + 14, 2) == 16);
+            channels = pcm16 ? (int) read_le(chunk + 2, 2) : 0;
+            rate = read_le(chunk + 4, 4);
+        } else if (memcmp(wav + offset, "data", 4) == 0) {
+            data = chunk;
+            data_size = MIN(chunk_size, (uint32_t) (size - (offset + 8)));
+        }
+        offset += 8 + chunk_size + (chunk_size & 1);
+    }
+    if (!data || (channels != 1 && channels != 2) || rate == 0) {
+        debugf("[SOUND] loading_wind.wav: expected 16-bit PCM, mono or stereo\n");
+        free(wav);
+        return;
+    }
+
+    wind_channels = channels;
+    wind_length = data_size / (2 * channels);
+    wind_samples = malloc(wind_length * channels * sizeof(int16_t));
+    for (int i = 0; i < wind_length * channels; i++) {
+        wind_samples[i] = (int16_t) read_le(data + (i * 2), 2);
     }
     free(wav);
 
     wind_waveform = (waveform_t) {
         .name = "loading_wind",
         .bits = 16,
-        .channels = 1,
+        .channels = channels,
         .frequency = (float) rate,
         .len = wind_length,
         .read = wind_read,
@@ -167,7 +202,7 @@ void sound_loading_wind_prepare (void) {
 
 void sound_loading_wind_play (void) {
     if (wind_samples) {
-        mixer_ch_set_vol(SOUND_LOADING_CHANNEL, 0.5f, 0.5f);
+        mixer_ch_set_vol(SOUND_LOADING_CHANNEL, 1.0f, 1.0f);    // as provided, like the boot cue
         mixer_ch_play(SOUND_LOADING_CHANNEL, &wind_waveform);
     }
 }

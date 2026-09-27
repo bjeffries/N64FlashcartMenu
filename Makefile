@@ -177,7 +177,7 @@ $(FILESYSTEM_DIR)/%.sprite: $(ASSETS_DIR)/images/%.png
 	@$(N64_MKSPRITE) $(MKSPRITE_FLAGS) -o $(dir $@) "$<"
 
 # Played from memory after a game loads (rom:/ is overwritten by then), so kept as plain WAV.
-$(FILESYSTEM_DIR)/loading_wind.wav: $(ASSETS_DIR)/sounds/loading_wind.wav
+$(FILESYSTEM_DIR)/loading_wind.wav: $(ASSETS_DIR)/sounds/loading_wind_1s.wav
 	@echo "    [AUDIO RAW] $@"
 	@cp "$<" $@
 
