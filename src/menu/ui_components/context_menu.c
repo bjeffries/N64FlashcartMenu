@@ -129,8 +129,10 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
         NULL
     );
 
+    // The selected row is drawn as black text on a white bar.
     for (int i = 0; i < cm->row_count; i++) {
         const char *text = cm->list[i].text;
+        rdpq_paragraph_builder_style((i == cm->row_selected) ? STL_BLACK : STL_DEFAULT);
         rdpq_paragraph_builder_span(text, strlen(text));
         if (cm->list[i + 1].text != NULL) {
             rdpq_paragraph_builder_newline();

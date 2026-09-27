@@ -122,7 +122,7 @@
  * @def LOADER_HEIGHT
  * @brief Height of the loader bar (pixels).
  */
-#define LOADER_HEIGHT                   (24)
+#define LOADER_HEIGHT                   (6)
 /**
  * @def LOADER_X
  * @brief X coordinate of the loader bar.
@@ -294,12 +294,12 @@
  * @def PROGRESSBAR_BG_COLOR
  * @brief Background color of the progress bar (RGBA8888).
  */
-#define PROGRESSBAR_BG_COLOR            RGBA32(0x00, 0x00, 0x00, 0xFF)
+#define PROGRESSBAR_BG_COLOR            RGBA32(0x33, 0x33, 0x33, 0xFF)
 /**
  * @def PROGRESSBAR_DONE_COLOR
  * @brief Color of the completed portion of the progress bar (RGBA8888).
  */
-#define PROGRESSBAR_DONE_COLOR          RGBA32(0x3B, 0x7C, 0xF5, 0xFF)
+#define PROGRESSBAR_DONE_COLOR          RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
 
 /**
  * @def SCROLLBAR_BG_COLOR
@@ -321,7 +321,12 @@
  * @def DIALOG_BG_COLOR
  * @brief Background color for dialog boxes (RGBA8888).
  */
-#define DIALOG_BG_COLOR                 RGBA32(0x00, 0x00, 0x00, 0xFF)
+#define DIALOG_BG_COLOR                 RGBA32(0x11, 0x11, 0x11, 0xFF)
+/** @brief Dialog outline color and thickness (matches the selection outline). */
+#define DIALOG_BORDER_COLOR             RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
+#define DIALOG_BORDER                   (2)
+/** @brief Thin line above the button hints on non-Library screens. */
+#define LAYOUT_SEPARATOR_COLOR          RGBA32(0x33, 0x33, 0x33, 0xFF)
 
 /**
  * @def BOXART_LOADING_COLOR
@@ -339,7 +344,7 @@
  * @def CONTEXT_MENU_HIGHLIGHT_COLOR
  * @brief Highlight color for context menu entries (RGBA8888).
  */
-#define CONTEXT_MENU_HIGHLIGHT_COLOR    RGBA32(0x7F, 0x7F, 0x7F, 0xFF)
+#define CONTEXT_MENU_HIGHLIGHT_COLOR    RGBA32(0xFF, 0xFF, 0xFF, 0xFF)
 
 /**
  * @def TAB_INACTIVE_BORDER_COLOR

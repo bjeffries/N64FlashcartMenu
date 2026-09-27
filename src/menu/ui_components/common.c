@@ -78,41 +78,22 @@ void ui_components_border_draw (int x0, int y0, int x1, int y1) {
 }
 
 /**
- * @brief Draw the layout with tabs.
+ * @brief Draw the layout with tabs (same as ui_components_layout_draw in the Library style).
  */
 void ui_components_layout_draw_tabbed (void) {
-    ui_components_border_draw(
-        VISIBLE_AREA_X0,
-        VISIBLE_AREA_Y0 + TAB_HEIGHT + BORDER_THICKNESS,
-        VISIBLE_AREA_X1,
-        VISIBLE_AREA_Y1
-    );
-
-    ui_components_box_draw(
-        VISIBLE_AREA_X0,
-        LAYOUT_ACTIONS_SEPARATOR_Y,
-        VISIBLE_AREA_X1,
-        LAYOUT_ACTIONS_SEPARATOR_Y + BORDER_THICKNESS,
-        BORDER_COLOR
-    );
+    ui_components_layout_draw();
 }
 
 /**
- * @brief Draw the layout.
+ * @brief Draw the layout: no frame, just a thin line above the button hints.
  */
 void ui_components_layout_draw (void) {
-    ui_components_border_draw(
-        VISIBLE_AREA_X0,
-        VISIBLE_AREA_Y0,
-        VISIBLE_AREA_X1,
-        VISIBLE_AREA_Y1
-    );
     ui_components_box_draw(
         VISIBLE_AREA_X0,
         LAYOUT_ACTIONS_SEPARATOR_Y,
         VISIBLE_AREA_X1,
-        LAYOUT_ACTIONS_SEPARATOR_Y + BORDER_THICKNESS,
-        BORDER_COLOR
+        LAYOUT_ACTIONS_SEPARATOR_Y + 1,
+        LAYOUT_SEPARATOR_COLOR
     );
 }
 
@@ -143,7 +124,6 @@ void ui_components_seekbar_draw (float position) {
     int x1 = SEEKBAR_X + SEEKBAR_WIDTH;
     int y1 = SEEKBAR_Y + SEEKBAR_HEIGHT;
 
-    ui_components_border_draw(x0, y0, x1, y1);
     ui_components_progressbar_draw(x0, y0, x1, y1, position);
 }
 
@@ -159,7 +139,6 @@ void ui_components_loader_draw (float progress, const char *msg) {
     int x1 = LOADER_X + LOADER_WIDTH;
     int y1 = LOADER_Y + LOADER_HEIGHT;
 
-    ui_components_border_draw(x0, y0, x1, y1);
     ui_components_progressbar_draw(x0, y0, x1, y1, progress);
 
     if (msg != NULL) {
@@ -225,8 +204,11 @@ void ui_components_dialog_draw (int width, int height) {
     int y0 = DISPLAY_CENTER_Y - (height / 2);
     int x1 = DISPLAY_CENTER_X + (width / 2);
     int y1 = DISPLAY_CENTER_Y + (height / 2);
+    int t = DIALOG_BORDER;
 
-    ui_components_border_draw(x0, y0, x1, y1);
+    // Panel with a white outline, its corner pixels left out so the corners read as rounded.
+    ui_components_box_draw(x0 - t + 1, y0 - t, x1 + t - 1, y1 + t, DIALOG_BORDER_COLOR);
+    ui_components_box_draw(x0 - t, y0 - t + 1, x1 + t, y1 + t - 1, DIALOG_BORDER_COLOR);
     ui_components_box_draw(x0, y0, x1, y1, DIALOG_BG_COLOR);
 }
 
@@ -328,7 +310,7 @@ void ui_components_actions_bar_text_draw (menu_font_type_t style, rdpq_align_t a
     char *formatted = vasnprintf(buffer, &nbytes, fmt, va);
     va_end(va);
 
-    rdpq_text_printn(
+    ui_components_text_draw(
         &(rdpq_textparms_t) {
             .style_id = style,
             .width = VISIBLE_AREA_WIDTH - (TEXT_MARGIN_HORIZONTAL * 2),
@@ -341,8 +323,7 @@ void ui_components_actions_bar_text_draw (menu_font_type_t style, rdpq_align_t a
         FNT_DEFAULT,
         VISIBLE_AREA_X0 + TEXT_MARGIN_HORIZONTAL,
         LAYOUT_ACTIONS_SEPARATOR_Y + BORDER_THICKNESS + TEXT_MARGIN_VERTICAL + TEXT_OFFSET_VERTICAL,
-        formatted,
-        nbytes
+        formatted
     );
 
     if (formatted != buffer) {
