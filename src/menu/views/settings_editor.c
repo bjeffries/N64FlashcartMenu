@@ -1,434 +1,189 @@
+/**
+ * @file settings_editor.c
+ * @brief Menu Settings screen (Settings tab): an option list of the menu's settings
+ * @ingroup view
+ */
+
 #include <stdbool.h>
 #include "../sound.h"
 #include "../settings.h"
+#include "../ui_components/constants.h"
 #include "views.h"
 
-static bool show_message_reset_settings = false;
+static bool confirm_reset = false;
 
-static const char *format_switch (bool state) {
-    switch (state) {
-        case true: return "On";
-        case false: return "Off";
-    }
+
+static void save_and_reload_library (menu_t *menu) {
+    settings_save(&menu->settings);
+    menu->browser.reload = true;
+}
+
+static bool get_soundfx (menu_t *menu) { return menu->settings.soundfx_enabled; }
+static void set_soundfx (menu_t *menu, bool value) {
+    menu->settings.soundfx_enabled = value;
+    sound_use_sfx(value);
+    settings_save(&menu->settings);
+}
+
+static bool get_hidden_games (menu_t *menu) { return menu->settings.show_hidden_games; }
+static void set_hidden_games (menu_t *menu, bool value) {
+    menu->settings.show_hidden_games = value;
+    save_and_reload_library(menu);
+}
+
+static bool get_use_saves_folder (menu_t *menu) { return menu->settings.use_saves_folder; }
+static void set_use_saves_folder (menu_t *menu, bool value) {
+    menu->settings.use_saves_folder = value;
+    settings_save(&menu->settings);
+}
+
+static bool get_show_saves_folder (menu_t *menu) { return menu->settings.show_saves_folder; }
+static void set_show_saves_folder (menu_t *menu, bool value) {
+    menu->settings.show_saves_folder = value;
+    save_and_reload_library(menu);
+}
+
+static bool get_hidden_files (menu_t *menu) { return menu->settings.show_protected_entries; }
+static void set_hidden_files (menu_t *menu, bool value) {
+    menu->settings.show_protected_entries = value;
+    save_and_reload_library(menu);
 }
 
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
-static void set_loading_progress_bar_enabled_type (menu_t *menu, void *arg) {
-    menu->settings.loading_progress_bar_enabled = (bool)(uintptr_t)(arg);
+static bool get_loading_bar (menu_t *menu) { return menu->settings.loading_progress_bar_enabled; }
+static void set_loading_bar (menu_t *menu, bool value) {
+    menu->settings.loading_progress_bar_enabled = value;
     settings_save(&menu->settings);
 }
-#endif
-
-static void set_protected_entries_type (menu_t *menu, void *arg) {
-    menu->settings.show_protected_entries = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-
-    menu->browser.reload = true;
-}
-
-static void set_show_hidden_games_type (menu_t *menu, void *arg) {
-    menu->settings.show_hidden_games = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-
-    menu->browser.reload = true;
-}
-
-static void set_use_saves_folder_type (menu_t *menu, void *arg) {
-    menu->settings.use_saves_folder = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-}
-
-static void set_show_saves_folder_type (menu_t *menu, void *arg) {
-    menu->settings.show_saves_folder = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-
-    menu->browser.reload = true;
-}
-
-static void set_show_save_files_type (menu_t *menu, void *arg) {
-    menu->settings.show_save_files = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-
-    menu->browser.reload = true;
-}
-
-static void set_show_cheat_files_type (menu_t *menu, void *arg) {
-    menu->settings.show_cheat_files = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-
-    menu->browser.reload = true;
-}
-    
-static void set_soundfx_enabled_type (menu_t *menu, void *arg) {
-    menu->settings.soundfx_enabled = (bool)(uintptr_t)(arg);
-    sound_use_sfx(menu->settings.soundfx_enabled);
-    settings_save(&menu->settings);
-}
-
-static void set_pal60_type (menu_t *menu, void *arg) {
-    bool pal60_try_enable = (bool)(uintptr_t)(arg);
-    tv_type_t tv_type = get_tv_type();
-    // FIXME: we can check it is supported by adding a warning and setting it, with a confirmation.
-    if (pal60_try_enable && (tv_type == TV_PAL)) {
-        //enable it without needing to reboot the console.
-        // FIXME: Add message box to press a button as confirmation. 
-        // Set VI timing so it will use 60Hz signal.
-        vi_set_timing_preset(&VI_TIMING_PAL60);
-
-        // FIXME: timeout and restore to PAL 50Hz if message not shown, 
-        //vi_set_timing_preset(&VI_TIMING_PAL);
-        
-    }
-    else if (!pal60_try_enable && (tv_type == TV_PAL)){
-        //disable it without needing to reboot the console.
-        // Set VI timing so it will use 50Hz signal.
-        vi_set_timing_preset(&VI_TIMING_PAL);
-        
-    }
-    else {
-        //not PAL, cannot enable PAL60
-        pal60_try_enable = false;
-    }
-    
-    menu->settings.pal60_enabled = pal60_try_enable;
-    settings_save(&menu->settings);
-}
-
-#ifndef FEATURE_AUTOLOAD_ROM_ENABLED
-static void set_use_rom_fast_reboot_enabled_type (menu_t *menu, void *arg) {
-    menu->settings.rom_fast_reboot_enabled = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-}
-#endif
-
-#ifdef BETA_SETTINGS
-static void set_show_browser_file_extensions_type(menu_t *menu, void *arg) {
-    menu->settings.show_browser_file_extensions = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-    menu->browser.reload = true;
-}
-
-static void set_show_browser_rom_tags_type (menu_t *menu, void *arg) {
-    menu->settings.show_browser_rom_tags = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-}
-
-static void set_rumble_enabled_type (menu_t *menu, void *arg) {
-    menu->settings.rumble_enabled = (bool)(uintptr_t)(arg);
-    settings_save(&menu->settings);
-}
-
-// static void set_use_default_settings (menu_t *menu, void *arg) {
-//     // FIXME: add implementation
-//     menu->browser.reload = true;
-// }
-#endif
-
-static void remove_background_image (menu_t *menu, void *arg) {
-    (void)arg;
-    (void)menu;
-    ui_components_background_clear();
-}
-
-#ifdef FEATURE_AUTOLOAD_ROM_ENABLED
-static int get_loading_progress_bar_enabled_current_selection (menu_t *menu) {
-    return menu->settings.loading_progress_bar_enabled ? 0 : 1;
-}
-
-static component_context_menu_t set_loading_progress_bar_enabled_context_menu = {
-    .get_default_selection = get_loading_progress_bar_enabled_current_selection,
-    .list = {
-        {.text = "On", .action = set_loading_progress_bar_enabled_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_loading_progress_bar_enabled_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-#endif
-
-static int get_protected_entries_current_selection (menu_t *menu) {
-    return menu->settings.show_protected_entries ? 0 : 1;
-}
-
-static component_context_menu_t set_protected_entries_type_context_menu = {
-    .get_default_selection = get_protected_entries_current_selection,
-    .list = {
-        {.text = "On", .action = set_protected_entries_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_protected_entries_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_show_hidden_games_current_selection (menu_t *menu) {
-    return menu->settings.show_hidden_games ? 0 : 1;
-}
-
-static component_context_menu_t set_show_hidden_games_type_context_menu = {
-    .get_default_selection = get_show_hidden_games_current_selection,
-    .list = {
-        {.text = "On", .action = set_show_hidden_games_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_show_hidden_games_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_soundfx_enabled_current_selection (menu_t *menu) {
-    return menu->settings.soundfx_enabled ? 0 : 1;
-}
-
-static component_context_menu_t set_soundfx_enabled_type_context_menu = {
-    .get_default_selection = get_soundfx_enabled_current_selection,
-    .list = {
-        {.text = "On", .action = set_soundfx_enabled_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_soundfx_enabled_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_use_saves_folder_current_selection (menu_t *menu) {
-    return menu->settings.use_saves_folder ? 0 : 1;
-}
-
-static component_context_menu_t set_use_saves_folder_type_context_menu = {
-    .get_default_selection = get_use_saves_folder_current_selection,
-    .list = {
-        {.text = "On", .action = set_use_saves_folder_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_use_saves_folder_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_show_saves_folder_current_selection (menu_t *menu) {
-    return menu->settings.show_saves_folder ? 0 : 1;
-}
-
-static component_context_menu_t set_show_saves_folder_type_context_menu = {
-    .get_default_selection = get_show_saves_folder_current_selection,
-    .list = {
-        {.text = "On", .action = set_show_saves_folder_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_show_saves_folder_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_show_save_files_current_selection (menu_t *menu) {
-    return menu->settings.show_save_files ? 0 : 1;
-}
-
-static component_context_menu_t set_show_save_files_type_context_menu = {
-    .get_default_selection = get_show_save_files_current_selection,
-    .list = {
-        {.text = "On", .action = set_show_save_files_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_show_save_files_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_show_cheat_files_current_selection (menu_t *menu) {
-    return menu->settings.show_cheat_files ? 0 : 1;
-}
-
-static component_context_menu_t set_show_cheat_files_type_context_menu = {
-    .get_default_selection = get_show_cheat_files_current_selection,
-    .list = {
-        {.text = "On", .action = set_show_cheat_files_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_show_cheat_files_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_pal60_current_selection (menu_t *menu) {
-    return menu->settings.pal60_enabled ? 0 : 1;
-}
-
-static component_context_menu_t set_pal60_type_context_menu = {
-    .get_default_selection = get_pal60_current_selection,
-    .list = {
-        {.text = "On", .action = set_pal60_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_pal60_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-#ifndef FEATURE_AUTOLOAD_ROM_ENABLED
-static int get_use_rom_fast_reboot_current_selection (menu_t *menu) {
-    return menu->settings.rom_fast_reboot_enabled ? 0 : 1;
-}
-
-static component_context_menu_t set_use_rom_fast_reboot_context_menu = {
-    .get_default_selection = get_use_rom_fast_reboot_current_selection,
-    .list = {
-        {.text = "On", .action = set_use_rom_fast_reboot_enabled_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_use_rom_fast_reboot_enabled_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-#endif
-
-#ifdef BETA_SETTINGS
-static int get_show_browser_file_extensions_current_selection (menu_t *menu) {
-    return menu->settings.show_browser_file_extensions ? 0 : 1;
-}
-
-static component_context_menu_t set_show_browser_file_extensions_context_menu = {
-    .get_default_selection = get_show_browser_file_extensions_current_selection,
-    .list = {
-        { .text = "On", .action = set_show_browser_file_extensions_type, .arg = (void *)(uintptr_t)(true) },
-        { .text = "Off", .action = set_show_browser_file_extensions_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_show_browser_rom_tags_current_selection (menu_t *menu) {
-    return menu->settings.show_browser_rom_tags ? 0 : 1;
-}
-
-static component_context_menu_t set_show_browser_rom_tags_context_menu = {
-    .get_default_selection = get_show_browser_rom_tags_current_selection,
-    .list = {
-        {.text = "On", .action = set_show_browser_rom_tags_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_show_browser_rom_tags_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-
-static int get_rumble_enabled_current_selection (menu_t *menu) {
-    return menu->settings.rumble_enabled ? 0 : 1;
-}
-
-static component_context_menu_t set_rumble_enabled_type_context_menu = {
-    .get_default_selection = get_rumble_enabled_current_selection,
-    .list = {
-        {.text = "On", .action = set_rumble_enabled_type, .arg = (void *)(uintptr_t)(true) },
-        {.text = "Off", .action = set_rumble_enabled_type, .arg = (void *)(uintptr_t)(false) },
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
-#endif
-
-static component_context_menu_t options_context_menu = { .list = {
-    { .text = "Show Hidden Files", .submenu = &set_protected_entries_type_context_menu },
-    { .text = "Show Hidden Games", .submenu = &set_show_hidden_games_type_context_menu },
-    { .text = "Sound Effects", .submenu = &set_soundfx_enabled_type_context_menu },
-    { .text = "Use Saves Folder", .submenu = &set_use_saves_folder_type_context_menu },
-    { .text = "Show Saves Folder", .submenu = &set_show_saves_folder_type_context_menu },
-    { .text = "Show Save Files", .submenu = &set_show_save_files_type_context_menu },
-    { .text = "Show Cheat Files", .submenu = &set_show_cheat_files_type_context_menu },
-    { .text = "PAL60 Mode", .submenu = &set_pal60_type_context_menu },
-    #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
-    { .text = "ROM Loading Bar", .submenu = &set_loading_progress_bar_enabled_context_menu },
 #else
-    { .text = "Fast Reboot ROM", .submenu = &set_use_rom_fast_reboot_context_menu },
+static bool get_fast_reboot (menu_t *menu) { return menu->settings.rom_fast_reboot_enabled; }
+static void set_fast_reboot (menu_t *menu, bool value) {
+    menu->settings.rom_fast_reboot_enabled = value;
+    settings_save(&menu->settings);
+}
 #endif
-#ifdef BETA_SETTINGS
-    { .text = "Hide ROM Extensions", .submenu = &set_show_browser_file_extensions_context_menu },
-    { .text = "Hide ROM Tags", .submenu = &set_show_browser_rom_tags_context_menu },
-    { .text = "Rumble Feedback", .submenu = &set_rumble_enabled_type_context_menu },
-    // { .text = "Restore Defaults", .action = set_use_default_settings },
-#endif
-    { .text = "Remove Background", .action = remove_background_image },
 
-    COMPONENT_CONTEXT_MENU_LIST_END,
-}};
+static bool get_pal60 (menu_t *menu) { return menu->settings.pal60_enabled; }
+static void set_pal60 (menu_t *menu, bool value) {
+    // PAL60 only exists on PAL consoles; switch the video timing immediately, no reboot needed.
+    if (get_tv_type() != TV_PAL) {
+        value = false;
+        menu_show_error(menu, "PAL60 is only available on PAL consoles");
+    } else {
+        vi_set_timing_preset(value ? &VI_TIMING_PAL60 : &VI_TIMING_PAL);
+    }
+    menu->settings.pal60_enabled = value;
+    settings_save(&menu->settings);
+}
+
+#ifdef BETA_SETTINGS
+static bool get_file_extensions (menu_t *menu) { return menu->settings.show_browser_file_extensions; }
+static void set_file_extensions (menu_t *menu, bool value) {
+    menu->settings.show_browser_file_extensions = value;
+    save_and_reload_library(menu);
+}
+
+static bool get_rom_tags (menu_t *menu) { return menu->settings.show_browser_rom_tags; }
+static void set_rom_tags (menu_t *menu, bool value) {
+    menu->settings.show_browser_rom_tags = value;
+    settings_save(&menu->settings);
+}
+
+static bool get_rumble (menu_t *menu) { return menu->settings.rumble_enabled; }
+static void set_rumble (menu_t *menu, bool value) {
+    menu->settings.rumble_enabled = value;
+    settings_save(&menu->settings);
+}
+#endif
+
+static const char *start_folder_value (menu_t *menu) {
+    const char *folder = menu->settings.default_directory;
+    return (folder && folder[0] != '\0') ? folder : "/";
+}
+
+static void ask_reset (menu_t *menu) {
+    confirm_reset = true;
+}
+
+static option_t options[] = {
+    { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
+      .description = "Menu sounds when moving and selecting." },
+    { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,
+      .description = "List games you hid with C-Up in the Library, grayed out, so you can unhide them." },
+    { .label = "Use Saves Folder", .type = OPTION_TOGGLE, .get = get_use_saves_folder, .set = set_use_saves_folder,
+      .description = "Keep save files in a \"saves\" folder next to each game instead of beside it." },
+    { .label = "Show Saves Folder", .type = OPTION_TOGGLE, .get = get_show_saves_folder, .set = set_show_saves_folder,
+      .description = "List \"saves\" folders in the Library." },
+    { .label = "Show Hidden Files", .type = OPTION_TOGGLE, .get = get_hidden_files, .set = set_hidden_files,
+      .description = "List the menu's own folder and system folders in the Library." },
+#ifdef FEATURE_AUTOLOAD_ROM_ENABLED
+    { .label = "Loading Bar", .type = OPTION_TOGGLE, .get = get_loading_bar, .set = set_loading_bar,
+      .description = "Show progress while a game loads." },
+#else
+    { .label = "Fast Reboot", .type = OPTION_TOGGLE, .get = get_fast_reboot, .set = set_fast_reboot,
+      .description = "Pressing Reset restarts the current game instead of returning to this menu." },
+#endif
+    { .label = "PAL60 Mode", .type = OPTION_TOGGLE, .get = get_pal60, .set = set_pal60,
+      .description = "PAL consoles only: 60Hz output. If your TV goes dark, turn it off in menu/config.ini." },
+#ifdef BETA_SETTINGS
+    { .label = "Hide File Extensions", .type = OPTION_TOGGLE, .get = get_file_extensions, .set = set_file_extensions },
+    { .label = "Hide ROM Tags", .type = OPTION_TOGGLE, .get = get_rom_tags, .set = set_rom_tags },
+    { .label = "Rumble Feedback", .type = OPTION_TOGGLE, .get = get_rumble, .set = set_rumble },
+#endif
+    { .label = "Start Folder", .type = OPTION_ACTION, .value = start_folder_value,
+      .description = "Folder the Library opens in. Change it with Z in the Library." },
+    { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset,
+      .description = "Put every menu setting back to its default." },
+};
+
+static option_list_t list = {
+    .options = options,
+    .count = sizeof(options) / sizeof(options[0]),
+};
 
 
 static void process (menu_t *menu) {
-    if (ui_components_context_menu_process(menu, &options_context_menu)) {
+    if (confirm_reset) {
+        if (menu->actions.enter) {
+            settings_reset_to_defaults();
+            menu_show_error(menu, "Settings reset.\nRestart the N64 for them to take effect.");
+            confirm_reset = false;
+            sound_play_effect(SFX_SETTING);
+        } else if (menu->actions.back) {
+            confirm_reset = false;
+            sound_play_effect(SFX_EXIT);
+        }
         return;
     }
 
-    if (menu->actions.enter) {
-        if (show_message_reset_settings) {
-            settings_reset_to_defaults();
-            menu_show_error(menu, "Reboot N64 to take effect!");
-            show_message_reset_settings = false;
-        } else {
-            ui_components_context_menu_show(&options_context_menu);
-        }
-        sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.back) {
-        if (show_message_reset_settings) {
-            show_message_reset_settings = false;
-        } else {
-            menu->next_mode = MENU_MODE_SETTINGS_HUB;
-        }
+    if (ui_components_option_list_process(menu, &list)) {
+        return;
+    }
+
+    if (menu->actions.back) {
+        menu->next_mode = MENU_MODE_SETTINGS_HUB;
         sound_play_effect(SFX_EXIT);
-    } else if (menu->actions.options){
-        show_message_reset_settings = true;
     }
 }
 
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach(d, NULL);
+    rdpq_attach_clear(d, NULL);
 
-    ui_components_background_draw();
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Menu Settings");
 
-    ui_components_layout_draw();
+    ui_components_option_list_draw(menu, &list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * 8));
 
-	ui_components_main_text_draw(
-        STL_DEFAULT,
-        ALIGN_CENTER, VALIGN_TOP,
-        "MENU SETTINGS EDITOR\n"
-        "\n"
-    );
+    int x = GAME_INFO_VALUE_X;
+    const char *action = ui_components_option_list_action_name(&list);
+    if (action) {
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, action) + LIBRARY_HINT_GAP;
+    }
+    ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
 
-    ui_components_main_text_draw(
-        STL_DEFAULT,
-        ALIGN_LEFT, VALIGN_TOP,
-        "\n\n"
-        "  Default Directory : %s\n\n"
-        "To change the following menu settings, press 'A':\n"
-        "     Show Hidden Files : %s\n"
-        "     Show Hidden Games : %s\n"
-        "     Sound Effects     : %s\n"
-        "     Use Saves folder  : %s\n"
-        "     Show Saves folder : %s\n"
-        "     Show Save files   : %s\n"
-        "     Show Cheat files  : %s\n"
-        "*    PAL60 Mode        : %s\n"
-#ifdef FEATURE_AUTOLOAD_ROM_ENABLED
-        "     Autoload ROM      : %s\n\n"
-        "     ROM Loading Bar   : %s\n"
-#else
-        "     Fast Reboot ROM   : %s\n"
-#endif
-#ifdef BETA_SETTINGS
-        "     Hide ROM Extension: %s\n"
-        "     Hide ROM Tags     : %s\n"
-        "     Rumble Feedback   : %s\n"
-#endif
-        "\n\n"
-        "* NOTE: This setting may cause the display to go dark. If you get it wrong, you must manually edit the menu/config.ini on the SD card to re-disable it.\n"
-        ,
-        menu->settings.default_directory,
-        format_switch(menu->settings.show_protected_entries),
-        format_switch(menu->settings.show_hidden_games),
-        format_switch(menu->settings.soundfx_enabled),
-        format_switch(menu->settings.use_saves_folder),
-        format_switch(menu->settings.show_saves_folder),
-        format_switch(menu->settings.show_save_files),
-        format_switch(menu->settings.show_cheat_files),
-        format_switch(menu->settings.pal60_enabled),
-#ifdef FEATURE_AUTOLOAD_ROM_ENABLED
-        format_switch(menu->settings.rom_autoload_enabled),
-        format_switch(menu->settings.loading_progress_bar_enabled)
-#else
-        format_switch(menu->settings.rom_fast_reboot_enabled)
-#endif
-#ifdef BETA_SETTINGS
-        ,
-        format_switch(menu->settings.show_browser_file_extensions),
-        format_switch(menu->settings.show_browser_rom_tags),
-        format_switch(menu->settings.rumble_enabled)
-#endif
-    );
-
-    ui_components_actions_bar_text_draw(
-        STL_DEFAULT,
-        ALIGN_LEFT, VALIGN_TOP,
-        "A: Change\n"
-        "B: Back"
-    );
-
-    ui_components_actions_bar_text_draw(
-        STL_DEFAULT,
-        ALIGN_RIGHT, VALIGN_TOP,
-        "R: Reset settings\n"
-        "\n"
-    );
-
-    ui_components_context_menu_draw(&options_context_menu);
-
-    if (show_message_reset_settings) {
+    if (confirm_reset) {
         ui_components_messagebox_draw(
-            "Reset settings?\n\n"
-            "A: Yes, B: Back"
+            "Reset all menu settings?\n\n"
+            "A: Reset    B: Cancel"
         );
     }
 
@@ -437,12 +192,12 @@ static void draw (menu_t *menu, surface_t *d) {
 
 
 void view_settings_init (menu_t *menu) {
-    ui_components_context_menu_init(&options_context_menu);
-
+    confirm_reset = false;
+    ui_components_option_list_init(&list);
 }
 
 void view_settings_display (menu_t *menu, surface_t *display) {
     process(menu);
-    
+
     draw(menu, display);
 }

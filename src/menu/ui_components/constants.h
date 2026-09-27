@@ -453,6 +453,9 @@
 #define LOADING_TITLE_Y                 (220)
 #define LOADING_BAR_Y                   (250)
 
+/** @brief Baseline of the first row on option-list screens without a game title (e.g. Menu Settings). */
+#define SETTINGS_LIST_Y                 (96)
+
 /** @brief Distance between option list rows. */
 #define OPTION_LIST_ROW_PITCH           (32)
 /** @brief Left edge of option values. */

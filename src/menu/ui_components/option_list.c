@@ -88,8 +88,10 @@ bool ui_components_option_list_process (menu_t *menu, option_list_t *list) {
             sound_play_effect(SFX_SETTING);
             break;
         case OPTION_ACTION:
-            option->action(menu);
-            sound_play_effect(SFX_ENTER);
+            if (option->action) {       // rows without an action are read-only information
+                option->action(menu);
+                sound_play_effect(SFX_ENTER);
+            }
             break;
     }
     return true;
@@ -105,7 +107,7 @@ const char *ui_components_option_list_action_name (option_list_t *list) {
     switch (list->options[list->selected].type) {
         case OPTION_TOGGLE: return "Toggle";
         case OPTION_CHOICE: return "Change";
-        default: return "Open";
+        default: return list->options[list->selected].action ? "Open" : NULL;
     }
 }
 

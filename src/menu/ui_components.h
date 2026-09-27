@@ -379,7 +379,7 @@ typedef struct component_context_menu {
 typedef enum {
     OPTION_TOGGLE,  /**< On / Off, flipped in place with A */
     OPTION_CHOICE,  /**< One of several values, picked from a pop-up with A */
-    OPTION_ACTION,  /**< Opens another screen or runs something with A */
+    OPTION_ACTION,  /**< Opens another screen or runs something with A (no action: read-only row) */
 } option_type_t;
 
 /** @brief One row of an option list. */
