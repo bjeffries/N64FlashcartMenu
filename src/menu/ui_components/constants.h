@@ -427,13 +427,14 @@
 /** @brief Left edge of the info panel's values: the label column is 112px wide. */
 #define GAME_INFO_VALUE_X               (GAME_INFO_LABEL_X + 112)
 /**
- * @brief Overview page: game screenshot (4:3) in the right half of the info area, right-aligned,
- *        its top level with the first row's text. Values stop short of it.
+ * @brief Overview page: game screenshot (4:3), centred on the right half of the screen and
+ *        vertically between the captions under the small cartridges and the top of the button
+ *        hints. Values stop short of it.
  */
 #define GAME_INFO_SCREENSHOT_WIDTH      (224)
 #define GAME_INFO_SCREENSHOT_HEIGHT     (168)
-#define GAME_INFO_SCREENSHOT_X          (VISIBLE_AREA_X1 - GAME_INFO_SCREENSHOT_WIDTH)
-#define GAME_INFO_SCREENSHOT_Y          (GAME_INFO_Y - fonts_ascent(GAME_INFO_FONT))
+#define GAME_INFO_SCREENSHOT_X          (((DISPLAY_WIDTH * 3) / 4) - (GAME_INFO_SCREENSHOT_WIDTH / 2))
+#define GAME_INFO_SCREENSHOT_Y          (((CAROUSEL_CAPTION_Y + LIBRARY_BUTTONS_Y - fonts_cap_height(TITLE_FONT)) / 2) - (GAME_INFO_SCREENSHOT_HEIGHT / 2))
 #define GAME_INFO_SCREENSHOT_GAP        (12)
 /** @brief Screenshot placeholder, until screenshots are loaded. */
 #define GAME_INFO_SCREENSHOT_PLACEHOLDER_COLOR  PALETTE_TONE_1

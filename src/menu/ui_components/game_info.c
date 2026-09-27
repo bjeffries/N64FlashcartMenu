@@ -177,7 +177,7 @@ static void draw_accessories (int x, int y, rom_info_t *info) {
 
     if (info->features.rumble_pak) badges[count++] = "RMB PAK";
     if (info->features.controller_pak) badges[count++] = "CTL PAK";
-    if (info->features.transfer_pak) badges[count++] = "TRN PAK";
+    if (info->features.transfer_pak) badges[count++] = "TFR PAK";
     if (info->features.expansion_pak == EXPANSION_PAK_REQUIRED) badges[count++] = "EXP PAK";
     else if (info->features.expansion_pak == EXPANSION_PAK_RECOMMENDED) badges[count++] = "EXP PAK+";
     if (info->features.voice_recognition_unit) badges[count++] = "VRU";
