@@ -430,8 +430,8 @@
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
 #define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
-/** @brief Distance between info rows in a group: the small font's capitals + 3px (at least 16). */
-#define GAME_INFO_ROW_PITCH             (MAX(16, fonts_cap_height(FNT_SMALL) + 3))
+/** @brief Distance between info rows in a group: the small font's ascent + 3px (at least 16). */
+#define GAME_INFO_ROW_PITCH             (MAX(16, fonts_ascent(FNT_SMALL) + 3))
 /** @brief Extra space between groups of info rows. */
 #define GAME_INFO_GROUP_GAP             (6)
 /** @brief Info value badges (player count, accessories, region): grey fill with white text,
@@ -441,12 +441,12 @@
 #define GAME_INFO_PLAYER_ON_COLOR       PALETTE_HIGHLIGHT
 #define GAME_INFO_PLAYER_OFF_COLOR      PALETTE_TONE_2
 
-/** @brief About page: text line height and the first line's ascent (from the small font's capitals),
+/** @brief About page: text line height and the first line's ascent (from the small font's ascent),
  *         and the bottom of the text area. */
-#define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_cap_height(FNT_SMALL) + 3))
-#define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_cap_height(FNT_SMALL)))
-/** @brief Info value badges: from 2px above the small font's capitals to 3px below the baseline. */
-#define GAME_INFO_BADGE_TOP(y)          ((y) - fonts_cap_height(FNT_SMALL) - 2)
+#define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_ascent(FNT_SMALL) + 3))
+#define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_ascent(FNT_SMALL)))
+/** @brief Info value badges: from 2px above the small font's ascent to 3px below the baseline. */
+#define GAME_INFO_BADGE_TOP(y)          ((y) - fonts_ascent(FNT_SMALL) - 2)
 #define GAME_INFO_ABOUT_BOTTOM          (LIBRARY_BUTTONS_Y - 34)
 
 /** @brief Size of an info page dot. */
@@ -459,9 +459,9 @@
 #define GAME_INFO_DOT_OFF_COLOR         PALETTE_TONE_2
 
 /** @brief Space between tab names in the header (widened by 1px if needed to centre exactly). */
-#define TAB_HEADER_GAP                  (14)
+#define TAB_HEADER_GAP                  (28)
 /** @brief Space between the outer tab names and the L / R pills. */
-#define TAB_BAR_TEXT_GAP                (12)
+#define TAB_BAR_TEXT_GAP                (20)
 /** @brief Top of the L / R pills (tab names sit on LIBRARY_HEADER_Y). */
 #define TAB_BAR_PILL_Y                  (LIBRARY_HEADER_Y - 7)
 /** @brief Width of the pill part of the tab bar's end sprites (the rest curves into the bar). */
@@ -509,7 +509,7 @@
 #define OPTION_LIST_VALUE_X             (310)
 
 /** @brief Space between button hints. */
-#define LIBRARY_HINT_GAP                (8)
+#define LIBRARY_HINT_GAP                (20)
 
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)

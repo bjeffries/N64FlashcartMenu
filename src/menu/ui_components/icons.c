@@ -10,7 +10,7 @@
 #include "../fonts.h"
 #include "constants.h"
 
-#define HINT_ICON_GAP   (4)
+#define HINT_ICON_GAP   (6)
 
 static const char *icon_paths[ICON_COUNT] = {
     [ICON_A] = "rom:/button_a.sprite",

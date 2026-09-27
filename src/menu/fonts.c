@@ -35,12 +35,21 @@ static void load_default_font (char *custom_font_path) {
 
 // Height of each font's capitals (the font is chosen at build time: MENU_FONT in the Makefile).
 static int cap_heights[FNT_LAST + 1];
+static int ascents[FNT_LAST + 1];
 
 static void measure_cap_height (menu_font_type_t id) {
+    // Capitals: the ink of "H" (the paragraph box below uses the font's ascent, which is taller).
+    rdpq_font_gmetrics_t metrics;
+    const rdpq_font_t *font = rdpq_text_get_font(id);
+    cap_heights[id] = rdpq_font_get_glyph_metrics(font, 'H', &metrics) ? -metrics.y0 : 0;
+
     int nbytes = 1;
     rdpq_paragraph_t *paragraph = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, id, "H", &nbytes);
-    cap_heights[id] = (int) (-paragraph->bbox.y0 + 0.5f);
+    ascents[id] = (int) (-paragraph->bbox.y0 + 0.5f);
     rdpq_paragraph_free(paragraph);
+    if (cap_heights[id] <= 0) {
+        cap_heights[id] = ascents[id];
+    }
 }
 
 static void load_font (menu_font_type_t id, const char *path) {
@@ -81,4 +90,8 @@ void fonts_init (char *custom_font_path) {
 
 int fonts_cap_height (menu_font_type_t id) {
     return cap_heights[id];
+}
+
+int fonts_ascent (menu_font_type_t id) {
+    return ascents[id];
 }

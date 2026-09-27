@@ -62,6 +62,11 @@ void fonts_apply_palette(void);
 int fonts_cap_height(menu_font_type_t id);
 
 /**
+ * @brief A font's ascent (line height above the baseline) in pixels; at least its cap height.
+ */
+int fonts_ascent(menu_font_type_t id);
+
+/**
  * @brief Set the STL_FADE colour of a font: 0 is the background colour, 255 the text colour.
  */
 void fonts_set_fade_level(uint8_t font_id, uint8_t level);
