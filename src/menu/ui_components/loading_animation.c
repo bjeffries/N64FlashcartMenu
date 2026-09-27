@@ -3,10 +3,14 @@
  * @brief Game loading animation: the boot animation's eclipse, driven by loading progress
  * @ingroup ui_components
  *
- * Uses the boot animation's frames (without the title): the sun and moon fade in, the moon's
+ * Plays the boot animation's eclipse (without the title): the sun and moon fade in, the moon's
  * approach follows the loading progress, and the corona appears once loading is done, holds, then
  * fades out so the game starts from black rather than cutting away from the ring. The eclipse
- * is centred in the Library's info panel, which is left black while a game loads.
+ * is centred in the Library's info panel, which is left blank while a game loads.
+ *
+ * The frames come in one set per palette background (scripts/make_loading_frames.py, in
+ * rom:/loading/<set>/), smoothed against that colour so their edges don't show a dark fringe;
+ * the set matching the current palette is used.
  *
  * On the SummerCart64 the game is loaded over the cartridge space the menu's own files (rom:/)
  * live in, so every frame is loaded into memory by ui_components_loading_animation_prepare()
@@ -14,7 +18,7 @@
  */
 
 #include "../ui_components.h"
-#include "../boot_animation_frames.h"
+#include "../loading_frames.h"
 #include "constants.h"
 #include "utils/utils.h"
 
@@ -23,7 +27,7 @@
 #define APPROACH_FIRST      (10)    // 10-54: moon moves over the sun
 #define APPROACH_LAST       (54)
 #define CORONA_LAST         (57)    // 55-57: corona fades in
-#define FRAME_MS            (1000 / BOOT_ANIMATION_FPS)
+#define FRAME_MS            (1000 / 30)         // the boot animation's 30fps
 #define DONE_HOLD_MS        (350)   // show the full corona this long,
 #define RING_FADE_MS        (550)   // then fade it out (after loading: 100% is still totality).
                                     // With the corona that's 1s: the length of the loading wind.
@@ -32,7 +36,8 @@
 #define SUN_X               (213)
 #define SUN_Y               (200)
 
-static sprite_t *sprites[BOOT_ANIMATION_IMAGES];
+static sprite_t *sprites[LOADING_MAX_IMAGES];
+static const loading_frame_set_t *set = &loading_frame_sets[0];
 static bool started;
 static uint32_t start_ms;
 static bool done;
@@ -50,11 +55,20 @@ static bool frame_used (int frame) {
  * @brief Load the frames into memory. Call before loading starts (rom:/ is overwritten after).
  */
 void ui_components_loading_animation_prepare (void) {
+    // The set rendered for the current palette's background (the first set is black).
+    ui_components_loading_animation_free();
+    set = &loading_frame_sets[0];
+    for (int i = 0; i < LOADING_FRAME_SETS; i++) {
+        color_t bg = PALETTE_BACKGROUND;
+        if (loading_frame_sets[i].r == bg.r && loading_frame_sets[i].g == bg.g && loading_frame_sets[i].b == bg.b) {
+            set = &loading_frame_sets[i];
+        }
+    }
     for (int frame = 1; frame <= CORONA_LAST; frame++) {
-        int image = boot_animation_frames[frame - 1].image;
+        int image = set->frames[frame - 1].image;
         if (frame_used(frame) && image >= 0 && !sprites[image]) {
-            char path[32];
-            snprintf(path, sizeof(path), "rom:/boot/%02d.sprite", image);
+            char path[48];
+            snprintf(path, sizeof(path), "rom:/loading/%s/%02d.sprite", set->dir, image);
             sprites[image] = sprite_load(path);
         }
     }
@@ -67,7 +81,7 @@ void ui_components_loading_animation_prepare (void) {
  */
 void ui_components_loading_animation_free (void) {
     rspq_wait();    // the RDP may still be drawing one
-    for (int i = 0; i < BOOT_ANIMATION_IMAGES; i++) {
+    for (int i = 0; i < LOADING_MAX_IMAGES; i++) {
         if (sprites[i]) {
             sprite_free(sprites[i]);
             sprites[i] = NULL;
@@ -132,14 +146,14 @@ static int current_frame (float progress) {
  */
 void ui_components_loading_animation_draw (float progress) {
     int frame = current_frame(progress);
-    int image = boot_animation_frames[frame - 1].image;
+    int image = set->frames[frame - 1].image;
     if (image < 0 || !sprites[image]) {
         return;     // an all-black frame (the moon exactly over the sun)
     }
-    int x = LOADING_ANIMATION_CENTER_X - SUN_X + boot_animation_frames[frame - 1].x;
-    int y = LOADING_ANIMATION_CENTER_Y - SUN_Y + boot_animation_frames[frame - 1].y;
+    int x = LOADING_ANIMATION_CENTER_X - SUN_X + set->frames[frame - 1].x;
+    int y = LOADING_ANIMATION_CENTER_Y - SUN_Y + set->frames[frame - 1].y;
     rdpq_mode_push();
-        rdpq_set_mode_copy(true);   // black is transparent
+        rdpq_set_mode_copy(true);   // the background colour is transparent
         rdpq_sprite_blit(sprites[image], x, y, NULL);
 
         // After the hold, fade the ring out (the screen around it is already black).
