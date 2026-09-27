@@ -522,7 +522,7 @@ static void draw_note_values (void) {
 }
 
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
 
     if (restoring) {
         ui_components_option_screen_draw(menu, "Restore a Backup", &backup_list);

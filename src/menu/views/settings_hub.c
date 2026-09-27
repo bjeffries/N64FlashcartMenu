@@ -45,7 +45,7 @@ static void process (menu_t *menu) {
 }
 
 static void draw (menu_t *menu, surface_t *display) {
-    rdpq_attach_clear(display, NULL);
+    ui_components_attach_clear(display);
 
     ui_components_tab_header_draw(TAB_SETTINGS);
 

@@ -55,6 +55,7 @@ SRCS = \
 	menu/ui_components/carousel.c \
 	menu/ui_components/carousel_scroll.c \
 	menu/ui_components/loading_animation.c \
+	menu/ui_components/palette.c \
 	menu/ui_components/common.c \
 	menu/ui_components/context_menu.c \
 	menu/ui_components/file_info.c \

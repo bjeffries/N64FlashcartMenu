@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include "../sound.h"
+#include "../fonts.h"
 #include "../settings.h"
 #include "../ui_components/constants.h"
 #include "views.h"
@@ -30,6 +31,30 @@ static void set_boot_animation (menu_t *menu, bool value) {
     menu->settings.boot_animation_enabled = value;
     settings_save(&menu->settings);
 }
+
+static void set_palette (menu_t *menu, void *arg) {
+    ui_palette_id_t id = (ui_palette_id_t) (intptr_t) arg;
+    ui_palette_set(id);
+    fonts_apply_palette();
+    free(menu->settings.palette);
+    menu->settings.palette = strdup(ui_palette_info(id)->key);
+    settings_save(&menu->settings);
+}
+
+static int get_palette_selection (menu_t *menu) {
+    return ui_palette_get();
+}
+
+static component_context_menu_t palette_picker = {
+    .get_default_selection = get_palette_selection,
+    .list = {
+        { .text = "Monochrome", .action = set_palette, .arg = (void *) (UI_PALETTE_MONOCHROME) },
+        { .text = "Galaxy", .action = set_palette, .arg = (void *) (UI_PALETTE_GALAXY) },
+        { .text = "Dusk", .action = set_palette, .arg = (void *) (UI_PALETTE_DUSK) },
+        { .text = "Dawn", .action = set_palette, .arg = (void *) (UI_PALETTE_DAWN) },
+        COMPONENT_CONTEXT_MENU_LIST_END,
+    }
+};
 
 static bool get_hidden_games (menu_t *menu) { return menu->settings.show_hidden_games; }
 static void set_hidden_games (menu_t *menu, bool value) {
@@ -120,6 +145,8 @@ static void ask_reset (menu_t *menu) {
 static option_t options[] = {
     { .label = "Boot Animation", .type = OPTION_TOGGLE, .get = get_boot_animation, .set = set_boot_animation,
       .description = "Play the Eclipse Cart animation when the console is switched on." },
+    { .label = "Palette", .type = OPTION_CHOICE, .picker = &palette_picker,
+      .description = "Colors of the menu. Button icons and cartridges keep their own colors." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,
@@ -182,7 +209,7 @@ static void process (menu_t *menu) {
 }
 
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
 
     ui_components_option_screen_draw(menu, "Menu Settings", &list);
 

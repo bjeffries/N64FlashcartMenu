@@ -1,14 +1,16 @@
 /**
  * @file palette.h
- * @brief The UI's colour palette: every colour the menu uses, in one place
+ * @brief The UI's colour palettes: five colours each, chosen in Menu Settings
  * @ingroup ui_components
  *
- * Screens don't use these directly: constants.h (and fonts.c) give each UI role a colour from
- * here (text, secondary text, dialogs, selection marker, ...), so changing a value below
- * changes it everywhere it is used.
+ * Every palette has a background, three tones (dark to light) and a highlight, which is also
+ * the main text colour. Screens don't use these directly: constants.h (and fonts.c) give each UI
+ * role a palette colour (text, secondary text, dialogs, selection marker, ...). The colours are
+ * read at draw time, so switching palettes recolours the whole UI at once.
  *
  * Not covered: the button icons and cartridge art, which keep their own colours whatever the
- * palette (sprite_colors.h), and the pre-rendered boot / loading animation (boot_animation/).
+ * palette (sprite_colors.h), and the boot / loading animation, which always plays on black.
+ * The palettes themselves are defined in palette.c.
  */
 
 #ifndef PALETTE_H__
@@ -16,15 +18,44 @@
 
 #include <libdragon.h>
 
-/* Black and white */
-#define PALETTE_BLACK           RGBA32(0x00, 0x00, 0x00, 0xFF)  /**< Background, text on light badges */
-#define PALETTE_WHITE           RGBA32(0xFF, 0xFF, 0xFF, 0xFF)  /**< Text, selection markers, edit underlines */
+/** @brief The palettes, in the order Menu Settings lists them. */
+typedef enum {
+    UI_PALETTE_MONOCHROME,
+    UI_PALETTE_GALAXY,
+    UI_PALETTE_DUSK,
+    UI_PALETTE_DAWN,
+    UI_PALETTE_COUNT,
+} ui_palette_id_t;
 
-/* Grays, dark to light: the only four gray tones in the UI */
-#define PALETTE_GRAY_1          RGBA32(0x1E, 0x1E, 0x1E, 0xFF)  /**< Dialog background, read-only rows, info badges */
-#define PALETTE_GRAY_2          RGBA32(0x40, 0x40, 0x40, 0xFF)  /**< Keyboard keys, bars, unlit page dots and player marks */
-#define PALETTE_GRAY_3          RGBA32(0x80, 0x80, 0x80, 0xFF)  /**< Secondary text, active keyboard key */
-#define PALETTE_GRAY_4          RGBA32(0xC8, 0xC8, 0xC8, 0xFF)  /**< Lightest gray (not used by a UI role yet) */
+/** @brief One palette: five colours. */
+typedef struct {
+    const char *name;       /**< Shown in Menu Settings */
+    const char *key;        /**< Saved in config.ini */
+    color_t background;     /**< Screen background */
+    color_t tone_1;         /**< Darkest tone: dialog background, read-only rows, info badges */
+    color_t tone_2;         /**< Keyboard keys, bars, unlit page dots and player marks */
+    color_t tone_3;         /**< Lightest tone: secondary text, active keyboard key */
+    color_t highlight;      /**< Main text, selection markers, lit dots, edit underlines */
+} ui_palette_t;
+
+/** @brief The palette in use. */
+extern const ui_palette_t *ui_palette;
+
+/** @brief Switch palettes (call fonts_apply_palette() afterwards to recolour text). */
+void ui_palette_set(ui_palette_id_t id);
+/** @brief The palette in use. */
+ui_palette_id_t ui_palette_get(void);
+/** @brief A palette's details. */
+const ui_palette_t *ui_palette_info(ui_palette_id_t id);
+/** @brief The palette saved under a config.ini key ("galaxy", ...); Monochrome if unknown. */
+ui_palette_id_t ui_palette_from_key(const char *key);
+
+/* The current palette's colours */
+#define PALETTE_BACKGROUND      (ui_palette->background)
+#define PALETTE_TONE_1          (ui_palette->tone_1)
+#define PALETTE_TONE_2          (ui_palette->tone_2)
+#define PALETTE_TONE_3          (ui_palette->tone_3)
+#define PALETTE_HIGHLIGHT       (ui_palette->highlight)
 
 /* Text colours of the upstream file list (file types); not used by the carousel screens */
 #define PALETTE_LEGACY_GREEN    RGBA32(0x70, 0xFF, 0x70, 0xFF)
@@ -33,7 +64,7 @@
 #define PALETTE_LEGACY_ORANGE   RGBA32(0xFF, 0x99, 0x00, 0xFF)
 #define PALETTE_LEGACY_RED      RGBA32(0xFF, 0x40, 0x40, 0xFF)
 
-/** @brief A palette colour with a different alpha (e.g. a fade to black). */
+/** @brief A colour with a different alpha (e.g. a fade to black). */
 #define PALETTE_WITH_ALPHA(color, alpha)    ((color_t) { .r = (color).r, .g = (color).g, .b = (color).b, .a = (alpha) })
 
 #endif /* PALETTE_H__ */

@@ -631,7 +631,7 @@ static void config_process (menu_t *menu) {
 }
 
 static void config_draw (menu_t *menu, surface_t *d) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Config");
 
@@ -658,7 +658,7 @@ static void config_draw (menu_t *menu, surface_t *d) {
 
 /** @brief The screen the game was started from, with the loading animation (and any warning) on top. */
 static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, bool animate) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
     if (menu->load.return_mode == MENU_MODE_BROWSER) {
         view_browser_draw_behind_loading(menu);
     } else {
@@ -683,7 +683,7 @@ static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, b
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, (uint8_t) (fade * 0xFF)));
+            rdpq_set_prim_color(PALETTE_WITH_ALPHA(FADE_COLOR, (uint8_t) (fade * 0xFF)));
             rdpq_fill_rectangle(0, 0, d->width, d->height);
         }
         ui_components_loading_animation_draw(progress);

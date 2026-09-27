@@ -75,7 +75,7 @@ static void draw_animation (menu_t *menu, surface_t *d) {
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, alpha));
+            rdpq_set_prim_color(PALETTE_WITH_ALPHA(FADE_COLOR, alpha));
             rdpq_fill_rectangle(0, 0, d->width, d->height);
         }
     }

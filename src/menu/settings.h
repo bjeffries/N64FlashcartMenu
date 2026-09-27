@@ -56,6 +56,9 @@ typedef struct {
     bool wrap_file_list_scrolling;
 
 
+    /** @brief UI palette, by its config.ini key ("monochrome", "galaxy", "dusk", "dawn") */
+    char *palette;
+
     /** @brief Play the boot animation at power-on */
     bool boot_animation_enabled;
 

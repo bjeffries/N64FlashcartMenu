@@ -83,7 +83,7 @@ static void process (menu_t *menu) {
 }
 
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
 
     ui_components_option_screen_draw(menu, "Properties", &list);
 

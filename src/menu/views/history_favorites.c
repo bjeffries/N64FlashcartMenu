@@ -168,7 +168,7 @@ static void draw_content (menu_t *menu, bool show_hints) {
 }
 
 static void draw (menu_t *menu, surface_t *display) {
-    rdpq_attach_clear(display, NULL);
+    ui_components_attach_clear(display);
     draw_content(menu, true);
     rdpq_detach_show();
 }

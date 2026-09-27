@@ -70,6 +70,11 @@ typedef struct {
 void ui_components_box_draw(int x0, int y0, int x1, int y1, color_t color);
 
 /**
+ * @brief Attach a display surface and clear it to the palette's background.
+ */
+void ui_components_attach_clear(surface_t *d);
+
+/**
  * @brief Draw text that may be truncated with an ellipsis (safe replacement for rdpq_text_printn).
  *
  * @param parms Text parameters.

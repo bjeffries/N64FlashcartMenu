@@ -50,6 +50,11 @@ typedef enum {
 void fonts_init(char *custom_font_path);
 
 /**
+ * @brief Recolour the text styles of every font after switching palettes.
+ */
+void fonts_apply_palette(void);
+
+/**
  * @brief Set the STL_FADE colour of a font: 0 is the background colour, 255 the text colour.
  */
 void fonts_set_fade_level(uint8_t font_id, uint8_t level);

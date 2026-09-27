@@ -16,6 +16,7 @@ static settings_t init = {
     .show_protected_entries = false,
     .show_hidden_games = false,
     .default_directory = "/",
+    .palette = "monochrome",
     .use_saves_folder = true,
     .show_saves_folder = false,
     .show_save_files = false,
@@ -61,6 +62,8 @@ void settings_load (settings_t *settings) {
     settings->show_hidden_games = ini_get_bool(ini, "menu", "show_hidden_games", init.show_hidden_games);
     free(settings->default_directory);
     settings->default_directory = strdup(ini_get_string(ini, "menu", "default_directory", init.default_directory));
+    free(settings->palette);
+    settings->palette = strdup(ini_get_string(ini, "menu", "palette", init.palette));
     settings->use_saves_folder = ini_get_bool(ini, "menu", "use_saves_folder", init.use_saves_folder);
     settings->show_saves_folder = ini_get_bool(ini, "menu", "show_saves_folder", init.show_saves_folder);
     settings->show_save_files = ini_get_bool(ini, "menu", "show_save_files", init.show_save_files);
@@ -98,6 +101,7 @@ void settings_save (settings_t *settings) {
     ini_set_bool(ini, "menu", "show_protected_entries", settings->show_protected_entries);
     ini_set_bool(ini, "menu", "show_hidden_games", settings->show_hidden_games);
     ini_set_string(ini, "menu", "default_directory", settings->default_directory);
+    ini_set_string(ini, "menu", "palette", settings->palette);
     ini_set_bool(ini, "menu", "use_saves_folder", settings->use_saves_folder);
     ini_set_bool(ini, "menu", "show_saves_folder", settings->show_saves_folder);
     ini_set_bool(ini, "menu", "show_save_files", settings->show_save_files);

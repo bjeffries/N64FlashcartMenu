@@ -19,6 +19,11 @@
  * @param y1 The y-coordinate of the bottom-right corner.
  * @param color The color of the box.
  */
+void ui_components_attach_clear (surface_t *d) {
+    rdpq_attach(d, NULL);
+    rdpq_clear(BACKGROUND_COLOR);
+}
+
 void ui_components_box_draw (int x0, int y0, int x1, int y1, color_t color) {
     rdpq_mode_push();
         rdpq_set_mode_fill(color);
@@ -55,7 +60,7 @@ void ui_components_text_draw (const rdpq_textparms_t *parms, menu_font_type_t fo
  * @param file_name File name of the game or disk; shown as a cleaned-up title.
  */
 void ui_components_loading_screen_draw (surface_t *d, float progress, const char *message, const char *file_name) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "%s", message);
 

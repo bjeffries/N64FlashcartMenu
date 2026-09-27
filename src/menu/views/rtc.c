@@ -148,7 +148,7 @@ static void draw_fields (struct tm *t, bool editing) {
 }
 
 static void draw (menu_t *menu, surface_t *d) {
-    rdpq_attach_clear(d, NULL);
+    ui_components_attach_clear(d);
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Time");
 

@@ -14,6 +14,7 @@
 #include "boot/boot.h"
 #include "flashcart/flashcart.h"
 #include "fonts.h"
+#include "ui_components/palette.h"
 #include "hdmi.h"
 #include "hidden.h"
 #include "labels.h"
@@ -118,6 +119,7 @@ static void menu_init (boot_params_t *boot_params) {
     
     display_set_fps_limit(FPS_LIMIT);
 
+    ui_palette_set(ui_palette_from_key(menu->settings.palette));    // before fonts_init: text styles use it
     path_push(path, MENU_CUSTOM_FONT_FILE);
     fonts_init(path_get(path));
     path_pop(path);
@@ -254,7 +256,7 @@ void menu_run (boot_params_t *boot_params) {
             if (view && view->show) {
                 view->show(menu, display);
             } else {
-                rdpq_attach_clear(display, NULL);
+                ui_components_attach_clear(display);
                 rdpq_detach_wait();
                 display_show(display);
             }

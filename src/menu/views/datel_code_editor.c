@@ -238,7 +238,7 @@ static void draw_list (void) {
 }
 
 static void draw (menu_t *menu, surface_t *display) {
-    rdpq_attach_clear(display, NULL);
+    ui_components_attach_clear(display);
 
     rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Cheat Codes");
 

@@ -40,6 +40,12 @@ static void load_font (menu_font_type_t id, const char *path) {
 }
 
 
+void fonts_apply_palette (void) {
+    for (int id = FNT_DEFAULT; id <= FNT_SMALL; id++) {
+        register_styles((rdpq_font_t *) rdpq_text_get_font(id));
+    }
+}
+
 void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
     // From the background (0) to the text colour (255).
     color_t from = BACKGROUND_COLOR;

@@ -66,7 +66,7 @@ static void draw (menu_t *menu, surface_t *d) {
 
         ui_components_loader_draw(png_decoder_get_progress(), "Loading image...");
     } else {
-        rdpq_attach_clear(d, NULL);
+        ui_components_attach_clear(d);
 
         /* Scale image to fit screen, preserving aspect ratio */
         float scale_x = (float)d->width / image->width;
