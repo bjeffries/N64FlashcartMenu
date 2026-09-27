@@ -21,7 +21,7 @@ WHITE = PALETTE['WHITE']
 GREEN = PALETTE['GREEN']                # A
 RED = PALETTE['RED']                    # B
 YELLOW = PALETTE['YELLOW']              # C buttons
-LIGHT_GREY = PALETTE['GRAY_13']         # L, R, Z (and the tab bar: TAB_BAR_COLOR)
+LIGHT_GREY = PALETTE['GRAY_4']         # L, R, Z (and the tab bar: TAB_BAR_COLOR)
 BLACK = PALETTE['BLACK']
 CLEAR = (0, 0, 0, 0)
 

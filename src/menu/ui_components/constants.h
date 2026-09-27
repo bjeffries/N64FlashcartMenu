@@ -297,7 +297,7 @@
  * @def PROGRESSBAR_BG_COLOR
  * @brief Background color of the progress bar (RGBA8888).
  */
-#define PROGRESSBAR_BG_COLOR            PALETTE_GRAY_3
+#define PROGRESSBAR_BG_COLOR            PALETTE_GRAY_2
 /**
  * @def PROGRESSBAR_DONE_COLOR
  * @brief Color of the completed portion of the progress bar (RGBA8888).
@@ -308,17 +308,17 @@
  * @def SCROLLBAR_BG_COLOR
  * @brief Background color of the scrollbar (RGBA8888).
  */
-#define SCROLLBAR_BG_COLOR              PALETTE_GRAY_4
+#define SCROLLBAR_BG_COLOR              PALETTE_GRAY_2
 /**
  * @def SCROLLBAR_INACTIVE_COLOR
  * @brief Inactive color of the scrollbar (RGBA8888).
  */
-#define SCROLLBAR_INACTIVE_COLOR        PALETTE_GRAY_6
+#define SCROLLBAR_INACTIVE_COLOR        PALETTE_GRAY_3
 /**
  * @def SCROLLBAR_POSITION_COLOR
  * @brief Color of the scrollbar position indicator (RGBA8888).
  */
-#define SCROLLBAR_POSITION_COLOR        PALETTE_GRAY_9
+#define SCROLLBAR_POSITION_COLOR        PALETTE_GRAY_3
 
 /**
  * @def DIALOG_BG_COLOR
@@ -329,7 +329,7 @@
 #define DIALOG_BORDER_COLOR             PALETTE_WHITE
 #define DIALOG_BORDER                   (2)
 /** @brief Thin line above the button hints on non-Library screens. */
-#define LAYOUT_SEPARATOR_COLOR          PALETTE_GRAY_3
+#define LAYOUT_SEPARATOR_COLOR          PALETTE_GRAY_2
 
 /**
  * @def BOXART_LOADING_COLOR
@@ -341,7 +341,7 @@
  * @def FILE_LIST_HIGHLIGHT_COLOR
  * @brief Highlight color for file list entries (RGBA8888).
  */
-#define FILE_LIST_HIGHLIGHT_COLOR       PALETTE_GRAY_9
+#define FILE_LIST_HIGHLIGHT_COLOR       PALETTE_GRAY_3
 
 /**
  * @def CONTEXT_MENU_HIGHLIGHT_COLOR
@@ -353,7 +353,7 @@
  * @def TAB_INACTIVE_BORDER_COLOR
  * @brief Border color for inactive tabs (RGBA8888).
  */
-#define TAB_INACTIVE_BORDER_COLOR       PALETTE_GRAY_6
+#define TAB_INACTIVE_BORDER_COLOR       PALETTE_GRAY_3
 /**
  * @def TAB_ACTIVE_BORDER_COLOR
  * @brief Border color for active tabs (RGBA8888).
@@ -363,12 +363,12 @@
  * @def TAB_INACTIVE_BACKGROUND_COLOR
  * @brief Background color for inactive tabs (RGBA8888).
  */
-#define TAB_INACTIVE_BACKGROUND_COLOR   PALETTE_GRAY_4
+#define TAB_INACTIVE_BACKGROUND_COLOR   PALETTE_GRAY_2
 /**
  * @def TAB_ACTIVE_BACKGROUND_COLOR
  * @brief Background color for active tabs (RGBA8888).
  */
-#define TAB_ACTIVE_BACKGROUND_COLOR     PALETTE_GRAY_8
+#define TAB_ACTIVE_BACKGROUND_COLOR     PALETTE_GRAY_3
 
 /*
  * Library (carousel) layout. Text Y values are baselines.
@@ -439,7 +439,7 @@
 #define GAME_INFO_BADGE_COLOR           OPTION_LIST_INFO_BAND_COLOR
 /** @brief Player icons: supported players, and unused player slots. */
 #define GAME_INFO_PLAYER_ON_COLOR       PALETTE_WHITE
-#define GAME_INFO_PLAYER_OFF_COLOR      PALETTE_GRAY_5
+#define GAME_INFO_PLAYER_OFF_COLOR      PALETTE_GRAY_2
 
 /** @brief About page: text line height (12px font), the first line's ascent, and the bottom of the text area. */
 #define GAME_INFO_ABOUT_LINE_HEIGHT     (14)
@@ -453,7 +453,7 @@
 /** @brief Current info page dot. */
 #define GAME_INFO_DOT_ON_COLOR          PALETTE_WHITE
 /** @brief Other info page dots. */
-#define GAME_INFO_DOT_OFF_COLOR         PALETTE_GRAY_5
+#define GAME_INFO_DOT_OFF_COLOR         PALETTE_GRAY_2
 
 /** @brief Space between tab names in the header (widened by 1px if needed to centre exactly). */
 #define TAB_HEADER_GAP                  (20)
@@ -468,7 +468,7 @@
 /** @brief Thickness of the bar joining L and R; its bottom lines up with the pills'. */
 #define TAB_BAR_HEIGHT                  (3)
 /** @brief Tab bar colour (same gray as the L / R pills, scripts/make_icons.py). */
-#define TAB_BAR_COLOR                   PALETTE_GRAY_13
+#define TAB_BAR_COLOR                   PALETTE_GRAY_4
 /** @brief Baseline of the first Settings tab row. */
 #define SETTINGS_HUB_Y                  (110)
 /** @brief Distance between Settings tab rows. */
@@ -489,8 +489,8 @@
 #define TIME_HELP_Y                     (240)
 
 /** @brief On-screen keyboard: key, SHIFT-on key and text field backgrounds. */
-#define KEYBOARD_KEY_COLOR              PALETTE_GRAY_3
-#define KEYBOARD_KEY_ACTIVE_COLOR       PALETTE_GRAY_8
+#define KEYBOARD_KEY_COLOR              PALETTE_GRAY_2
+#define KEYBOARD_KEY_ACTIVE_COLOR       PALETTE_GRAY_3
 #define KEYBOARD_FIELD_COLOR            PALETTE_BLACK
 
 /** @brief Cheat Codes screen: left edge of the On / Off column. */
@@ -501,7 +501,7 @@
 /** @brief Rows an option list shows before it scrolls. */
 #define OPTION_LIST_VISIBLE_ROWS        (13)
 /** @brief Background band behind read-only information rows. */
-#define OPTION_LIST_INFO_BAND_COLOR     PALETTE_GRAY_2
+#define OPTION_LIST_INFO_BAND_COLOR     PALETTE_GRAY_1
 /** @brief Left edge of option values (the label column is about 23 characters wide). */
 #define OPTION_LIST_VALUE_X             (310)
 
@@ -542,14 +542,14 @@
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)
 
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
-#define CAROUSEL_PLACEHOLDER_COLOR      PALETTE_GRAY_7
+#define CAROUSEL_PLACEHOLDER_COLOR      PALETTE_GRAY_3
 /** @brief Folder icon color. */
-#define CAROUSEL_FOLDER_COLOR           PALETTE_GRAY_12
+#define CAROUSEL_FOLDER_COLOR           PALETTE_GRAY_4
 
 /** @brief Text (STL_DEFAULT). */
 #define TEXT_COLOR                      PALETTE_WHITE
 /** @brief Secondary text: labels, unselected tabs and captions, values you can't change (STL_GRAY). */
-#define TEXT_SECONDARY_COLOR            PALETTE_GRAY_9
+#define TEXT_SECONDARY_COLOR            PALETTE_GRAY_3
 /** @brief Text on light backgrounds, e.g. the selected keyboard key (STL_BLACK). */
 #define TEXT_ON_LIGHT_COLOR             PALETTE_BLACK
 /** @brief Screen background (and what fades cover the screen with). */

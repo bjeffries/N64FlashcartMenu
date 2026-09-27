@@ -25,14 +25,14 @@ from PIL import Image
 
 from palette import PALETTE     # src/menu/ui_components/palette.h
 
-BODY = PALETTE['GRAY_12']           # same as folders (CAROUSEL_FOLDER_COLOR)
+BODY = PALETTE['GRAY_4']           # same as folders (CAROUSEL_FOLDER_COLOR)
 WHITE = PALETTE['WHITE']            # selection outline
 GOLD = PALETTE['GOLD']              # outline of a favorite
 LIGHT_RED = PALETTE['RED']          # outline of a hidden game (same as the B button icon)
-HIGHLIGHT = PALETTE['GRAY_14']
-SEAM = PALETTE['GRAY_10']
-OUTLINE = PALETTE['GRAY_11']
-RECESS = PALETTE['GRAY_7']
+HIGHLIGHT = PALETTE['GRAY_4']
+SEAM = PALETTE['GRAY_3']
+OUTLINE = PALETTE['GRAY_3']
+RECESS = PALETTE['GRAY_3']
 CLEAR = (0, 0, 0, 0)
 
 # Base (unselected) geometry; the large sprite scales these.
