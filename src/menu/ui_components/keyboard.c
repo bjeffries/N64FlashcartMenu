@@ -23,6 +23,7 @@
 #define KEY_HEIGHT      (26)
 #define KEY_GAP         (4)
 #define MAX_TEXT        (63)
+#define TEXT_CELL       (18)    // monospaced text field: every character gets a cell as wide as "W"
 
 static const char *letter_rows[LETTER_ROWS] = {
     "1234567890",
@@ -211,15 +212,14 @@ void ui_components_keyboard_draw (void) {
 
     // Text field with a cursor.
     ui_components_box_draw(x0, y0 + 20, x0 + keys_width, y0 + 50, KEYBOARD_FIELD_COLOR);
-    rdpq_text_printf(NULL, FNT_DEFAULT, x0 + 8, y0 + 42, "%s", keyboard.text);
-    // Measure the text before the cursor to place it.
-    int cursor_x = x0 + 8;
-    if (keyboard.cursor > 0) {
-        int nbytes = keyboard.cursor;
-        rdpq_paragraph_t *before = rdpq_paragraph_build(NULL, FNT_DEFAULT, keyboard.text, &nbytes);
-        cursor_x += (int) (before->advance_x) + 1;
-        rdpq_paragraph_free(before);
+    // Monospaced: each character centred in a fixed cell, so the cursor sits exactly between letters.
+    for (int i = 0; keyboard.text[i] != '\0'; i++) {
+        rdpq_text_printf(
+            &(rdpq_textparms_t) { .width = TEXT_CELL, .align = ALIGN_CENTER },
+            FNT_DEFAULT, x0 + 8 + (i * TEXT_CELL), y0 + 42, "%c", keyboard.text[i]
+        );
     }
+    int cursor_x = x0 + 8 + (keyboard.cursor * TEXT_CELL) - 1;
     ui_components_box_draw(cursor_x, y0 + 26, cursor_x + 2, y0 + 45, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
 
     int keys_y = y0 + 62;
