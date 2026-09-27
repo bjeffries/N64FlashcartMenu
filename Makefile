@@ -40,7 +40,6 @@ SRCS = \
 	menu/bookkeeping.c \
 	menu/cart_load.c \
 	menu/datel_codes.c \
-	menu/disk_info.c \
 	menu/fonts.c \
 	menu/hidden.c \
 	menu/labels.c \
@@ -73,7 +72,6 @@ SRCS = \
 	menu/views/history_favorites.c \
 	menu/views/image_viewer.c \
 	menu/views/text_viewer.c \
-	menu/views/load_disk.c \
 	menu/views/load_rom.c \
 	menu/views/startup.c \
 	menu/views/system_info.c \

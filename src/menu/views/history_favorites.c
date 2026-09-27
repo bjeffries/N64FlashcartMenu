@@ -47,12 +47,13 @@ static void entries_load (void) {
     entries_free();
     for (uint16_t i = 0; i < item_max; i++) {
         bookkeeping_item_t *item = &item_list[i];
-        if (item->bookkeeping_type == BOOKKEEPING_TYPE_EMPTY || !path_has_value(item->primary_path)) {
+        // Only ROMs; entries from older versions of the menu may still include 64DD disks.
+        if (item->bookkeeping_type != BOOKKEEPING_TYPE_ROM || !path_has_value(item->primary_path)) {
             continue;
         }
         entries[entry_count++] = (entry_t) {
             .name = strdup(path_get(item->primary_path)),
-            .type = (item->bookkeeping_type == BOOKKEEPING_TYPE_DISK) ? ENTRY_TYPE_DISK : ENTRY_TYPE_ROM,
+            .type = ENTRY_TYPE_ROM,
             .size = 0,
             .index = i,
         };
@@ -73,13 +74,9 @@ static void open_selected (menu_t *menu, bool configure) {
     menu->load.load_favorite_id = (tab == TAB_FAVORITES) ? entry->index : -1;
     menu->load.return_mode = (tab == TAB_HISTORY) ? MENU_MODE_HISTORY : MENU_MODE_FAVORITE;
 
-    if (entry->type == ENTRY_TYPE_DISK) {
-        menu->next_mode = MENU_MODE_LOAD_DISK;
-    } else {
-        menu->load.play_now = !configure;
-        menu->load.open_configure = configure;
-        menu->next_mode = MENU_MODE_LOAD_ROM;
-    }
+    menu->load.play_now = !configure;
+    menu->load.open_configure = configure;
+    menu->next_mode = MENU_MODE_LOAD_ROM;
 }
 
 static void process (menu_t *menu) {
@@ -118,8 +115,7 @@ static void process (menu_t *menu) {
         if (slot >= 0) {
             bookkeeping_favorite_remove(&menu->bookkeeping, slot);
         } else {
-            bookkeeping_item_types_t type = (entries[selected].type == ENTRY_TYPE_DISK) ? BOOKKEEPING_TYPE_DISK : BOOKKEEPING_TYPE_ROM;
-            bookkeeping_favorite_add(&menu->bookkeeping, path, NULL, type);
+            bookkeeping_favorite_add(&menu->bookkeeping, path, NULL, BOOKKEEPING_TYPE_ROM);
         }
         path_free(path);
         if (tab == TAB_FAVORITES) {

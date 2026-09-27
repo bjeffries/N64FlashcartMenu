@@ -29,10 +29,6 @@ static const char *expansion_value (menu_t *menu) {
     return is_memory_expanded() ? "Installed (8 MB)" : "Not installed (4 MB)";
 }
 
-static const char *disk_drive_value (menu_t *menu) {
-    return is_64dd_connected() ? "Connected" : "Not connected";
-}
-
 static const char *controller_value (int port) {
     if (!joypad[port]) {
         return "Not connected";
@@ -57,8 +53,6 @@ static option_t options[] = {
     { .label = "Region", .type = OPTION_INFO, .value = region_value },
     { .label = "Expansion Pak", .type = OPTION_INFO, .value = expansion_value,
       .description = "Some games, and cheat codes, need the Expansion Pak." },
-    { .label = "64DD Drive", .type = OPTION_INFO, .value = disk_drive_value,
-      .description = "A real 64DD disk drive attached under the console." },
     { .label = "Controller 1", .type = OPTION_INFO, .value = controller_1 },
     { .label = "Controller 2", .type = OPTION_INFO, .value = controller_2 },
     { .label = "Controller 3", .type = OPTION_INFO, .value = controller_3 },

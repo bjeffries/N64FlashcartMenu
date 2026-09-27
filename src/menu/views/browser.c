@@ -13,7 +13,6 @@
 #include "../sound.h"
 
 static const char *cheat_extensions[] = {"cht", "cheats", "datel", "gameshark", NULL};
-static const char *disk_extensions[] = { "ndd", NULL };
 static const char *image_extensions[] = { "png", NULL };
 static const char *n64_rom_extensions[] = { "z64", "n64", "v64", "rom", NULL };
 static const char *save_extensions[] = { "sav", "eep", "sra", "srm", "fla", NULL };
@@ -112,10 +111,6 @@ static int compare_entry (const void *pa, const void *pb) {
         if (a->type == ENTRY_TYPE_DIR) {
             return -1;
         } else if (b->type == ENTRY_TYPE_DIR) {
-            return 1;
-        } else if (a->type == ENTRY_TYPE_DISK) {
-            return -1;
-        } else if (b->type == ENTRY_TYPE_DISK) {
             return 1;
         } else if (a->type == ENTRY_TYPE_IMAGE) {
             return -1;
@@ -261,8 +256,6 @@ static bool load_directory (menu_t *menu) {
                 entry->type = ENTRY_TYPE_DIR;
             } else if (file_has_extensions(entry->name, n64_rom_extensions)) {
                 entry->type = ENTRY_TYPE_ROM;
-            } else if (file_has_extensions(entry->name, disk_extensions)) {
-                entry->type = ENTRY_TYPE_DISK;
             } else if (file_has_extensions(entry->name, cheat_extensions)) {
                 entry->type = ENTRY_TYPE_ROM_CHEAT;
             } else if (file_has_extensions(entry->name, save_extensions)) {
@@ -278,7 +271,7 @@ static bool load_directory (menu_t *menu) {
             }
 
             // The Library carousel only shows folders and things that can be played.
-            if (entry->type != ENTRY_TYPE_DIR && entry->type != ENTRY_TYPE_ROM && entry->type != ENTRY_TYPE_DISK) {
+            if (entry->type != ENTRY_TYPE_DIR && entry->type != ENTRY_TYPE_ROM) {
                 free(entry->name);
                 result = dir_findnext(path_get(path), &info);
                 continue;
@@ -491,10 +484,6 @@ static void process (menu_t *menu) {
                     );
                 }
                 break;
-            case ENTRY_TYPE_DISK:
-                menu->load.return_mode = MENU_MODE_BROWSER;
-                menu->next_mode = MENU_MODE_LOAD_DISK;
-                break;
             case ENTRY_TYPE_IMAGE:
                 menu->next_mode = MENU_MODE_IMAGE_VIEWER;
                 break;
@@ -539,8 +528,7 @@ static void process (menu_t *menu) {
         if (slot >= 0) {
             bookkeeping_favorite_remove(&menu->bookkeeping, slot);
         } else {
-            bookkeeping_item_types_t type = (menu->browser.entry->type == ENTRY_TYPE_DISK) ? BOOKKEEPING_TYPE_DISK : BOOKKEEPING_TYPE_ROM;
-            bookkeeping_favorite_add(&menu->bookkeeping, path, NULL, type);
+            bookkeeping_favorite_add(&menu->bookkeeping, path, NULL, BOOKKEEPING_TYPE_ROM);
         }
         path_free(path);
         sound_play_effect(SFX_SETTING);

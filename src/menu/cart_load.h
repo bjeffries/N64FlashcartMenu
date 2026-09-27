@@ -7,7 +7,6 @@
 #ifndef CART_LOAD_H__
 #define CART_LOAD_H__
 
-#include "disk_info.h"
 #include "flashcart/flashcart.h"
 #include "menu_state.h"
 #include "rom_info.h"
@@ -26,14 +25,6 @@ typedef enum {
     CART_LOAD_ERR_SAVE_LOAD_FAIL,
     /** @brief Failed to set the next boot mode. */
     CART_LOAD_ERR_BOOT_MODE_FAIL,
-    /** @brief The 64DD is available for use. */
-    CART_LOAD_ERR_64DD_PRESENT,
-    /** @brief Failed to find the 64DD IPL (BIOS) file. */
-    CART_LOAD_ERR_64DD_IPL_NOT_FOUND,
-    /** @brief Failed to load the 64DD IPL (BIOS) file. */
-    CART_LOAD_ERR_64DD_IPL_LOAD_FAIL,
-    /** @brief Failed to find the 64DD disk. */
-    CART_LOAD_ERR_64DD_DISK_LOAD_FAIL,
     /** @brief Failed to create the save sub-directory. */
     CART_LOAD_ERR_CREATE_SAVES_SUBDIR_FAIL,
     /** @brief There was not enough system memory available (expected an Expansion PAK). */
@@ -41,13 +32,6 @@ typedef enum {
     /** @brief An unexpected response. */
     CART_LOAD_ERR_FUNCTION_NOT_SUPPORTED,
 } cart_load_err_t;
-
-/**
- * @brief Check if the 64DD is connected.
- * 
- * @return true if the 64DD is connected, false otherwise.
- */
-bool is_64dd_connected (void);
 
 /**
  * @brief Convert a cart load error code to a human-readable error message.
@@ -66,14 +50,5 @@ char *cart_load_convert_error_message(cart_load_err_t err);
  * @return cart_load_err_t Error code.
  */
 cart_load_err_t cart_load_n64_rom_and_save(menu_t *menu, flashcart_progress_callback_t progress, flashcart_progress_callback_t save_progress);
-
-/**
- * @brief Load the 64DD IPL (BIOS) and disk.
- * 
- * @param menu Pointer to the menu structure.
- * @param progress Callback function for progress updates.
- * @return cart_load_err_t Error code.
- */
-cart_load_err_t cart_load_64dd_ipl_and_disks(menu_t *menu, flashcart_progress_callback_t progress);
 
 #endif /* CART_LOAD_H__ */

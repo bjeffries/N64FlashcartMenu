@@ -12,7 +12,6 @@
 #include <time.h>
 
 #include "boot/boot.h"
-#include "disk_info.h"
 #include "flashcart/flashcart.h"
 #include "path.h"
 #include "rom_info.h"
@@ -37,7 +36,6 @@ typedef enum {
     MENU_MODE_CONTROLLER_PAK_DUMP_NOTE_INFO,
     MENU_MODE_FLASHCART,
     MENU_MODE_LOAD_ROM,
-    MENU_MODE_LOAD_DISK,
     MENU_MODE_ERROR,
     MENU_MODE_FAULT,
     MENU_MODE_BOOT,
@@ -50,7 +48,6 @@ typedef enum {
 /** @brief File entry type enumeration */
 typedef enum {
     ENTRY_TYPE_DIR,
-    ENTRY_TYPE_DISK,
     ENTRY_TYPE_IMAGE,
     ENTRY_TYPE_OTHER,
     ENTRY_TYPE_ROM,
@@ -68,17 +65,6 @@ typedef struct {
     int32_t index;
     bool hidden;    // hidden from the Library, only listed when "Show Hidden Games" is on
 } entry_t;
-
-typedef struct {
-    path_t *disk_path;
-    disk_info_t disk_info;
-} disk_slot_entry_t;
-
-/** @brief Disk slot structure for multi-disk 64DD games. */
-typedef struct {
-    disk_slot_entry_t primary; // Primary disk slot
-    disk_slot_entry_t swap_slot[3]; // 3 swap slots
-} disk_slot_t;
 
 /** @brief Menu Structure */
 typedef struct {
@@ -131,18 +117,15 @@ typedef struct {
     struct {
         path_t *rom_path;
         rom_info_t rom_info;
-        disk_slot_t disk_slots;
         int32_t load_history_id;
         int32_t load_favorite_id;
-        bool combined_disk_rom;
         bool play_now;          // Library "Play Cartridge": boot without stopping on the ROM details screen
         bool open_configure;    // Library "Configure": open the per-game options straight away
-        menu_mode_t return_mode; // Tab to go back to from the ROM / disk screens (Library, Favorites, History)
+        menu_mode_t return_mode; // Tab to go back to from the ROM screens (Library, Favorites, History)
     } load;
 
     struct {
         bool rom_file;
-        bool disk_file;
     } load_pending;
 } menu_t;
 

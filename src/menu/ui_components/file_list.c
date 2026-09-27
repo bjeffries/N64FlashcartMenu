@@ -172,7 +172,6 @@ void ui_components_file_list_draw(entry_t *list, int entries, int selected) {
             switch (entry->type) {
                 case ENTRY_TYPE_DIR: style = STL_YELLOW; break;
                 case ENTRY_TYPE_ROM: style = STL_DEFAULT; break;
-                case ENTRY_TYPE_DISK: style = STL_DEFAULT; break;
                 case ENTRY_TYPE_SAVE: style = STL_GREEN; break;
                 case ENTRY_TYPE_IMAGE: style = STL_BLUE; break;
                 case ENTRY_TYPE_TEXT: style = STL_ORANGE; break;

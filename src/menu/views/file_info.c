@@ -22,7 +22,6 @@ static const char *type_value (menu_t *menu) {
     switch (menu->browser.entry->type) {
         case ENTRY_TYPE_DIR: return "Folder";
         case ENTRY_TYPE_ROM: return "N64 game";
-        case ENTRY_TYPE_DISK: return "64DD disk";
         default: return "File";
     }
 }

@@ -25,7 +25,6 @@ static const char *firmware_value (menu_t *menu) {
     return buffer;
 }
 
-static const char *feature_64dd (menu_t *menu) { return yes_no(flashcart_has_feature(FLASHCART_FEATURE_64DD)); }
 static const char *feature_rtc (menu_t *menu) { return yes_no(flashcart_has_feature(FLASHCART_FEATURE_RTC)); }
 static const char *feature_usb (menu_t *menu) { return yes_no(flashcart_has_feature(FLASHCART_FEATURE_USB)); }
 static const char *feature_cic (menu_t *menu) { return yes_no(flashcart_has_feature(FLASHCART_FEATURE_AUTO_CIC)); }
@@ -63,7 +62,6 @@ static option_t options[] = {
     { .label = "Flashcart", .type = OPTION_INFO, .value = cart_value },
     { .label = "Firmware", .type = OPTION_INFO, .value = firmware_value,
       .description = "SummerCart64 firmware 2.17.0 or newer is required." },
-    { .label = "64DD Emulation", .type = OPTION_INFO, .value = feature_64dd },
     { .label = "Real-Time Clock", .type = OPTION_INFO, .value = feature_rtc },
     { .label = "USB Debugging", .type = OPTION_INFO, .value = feature_usb },
     { .label = "Automatic CIC", .type = OPTION_INFO, .value = feature_cic },

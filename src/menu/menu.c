@@ -168,7 +168,6 @@ static void menu_deinit (menu_t *menu) {
 
     hdmi_send_game_id(menu->boot_params);
 
-    path_free(menu->load.disk_slots.primary.disk_path);
     path_free(menu->load.rom_path);
     for (int i = 0; i < menu->browser.entries; i++) {
         free(menu->browser.list[i].name);
@@ -213,7 +212,6 @@ static view_t menu_views[] = {
     { MENU_MODE_CONTROLLER_PAK_DUMP_NOTE_INFO, view_controller_pak_note_dump_info_init, view_controller_pak_note_dump_info_display },
     { MENU_MODE_FLASHCART, view_flashcart_info_init, view_flashcart_info_display },
     { MENU_MODE_LOAD_ROM, view_load_rom_init, view_load_rom_display },
-    { MENU_MODE_LOAD_DISK, view_load_disk_init, view_load_disk_display },
     { MENU_MODE_ERROR, view_error_init, view_error_display },
     { MENU_MODE_FAULT, view_fault_init, view_fault_display },
     { MENU_MODE_FAVORITE, view_favorite_init, view_favorite_display },

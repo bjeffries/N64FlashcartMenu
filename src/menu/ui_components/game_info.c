@@ -241,9 +241,7 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Accessories");
-    if (entry->type == ENTRY_TYPE_DISK) {
-        draw_badge(x, y, "64DD");
-    } else if (info) {
+    if (info) {
         draw_accessories(x, y, info);
     } else {
         draw_value(y, NULL);

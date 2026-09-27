@@ -53,7 +53,6 @@ void menu_show_error (menu_t *menu, char *error_message) {
     // failing load: those return to the tab the game was launched from.
     switch (menu->mode) {
         case MENU_MODE_LOAD_ROM:
-        case MENU_MODE_LOAD_DISK:
         case MENU_MODE_DATEL_CODE_EDITOR:
             menu->error_return_mode = menu->load.return_mode;
             break;
