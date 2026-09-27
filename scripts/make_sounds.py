@@ -62,26 +62,32 @@ WIND_RATE = 22050
 WIND_SECONDS = 1.0      # matches the corona + ring fade after a game finishes loading
 WIND_ATTACK = 0.15      # swell in
 WIND_END = 0.95         # silent from here
-WIND_VOLUME = 0.45
-WIND_WHISTLE = 0.06     # faint C5 / G5 resonance, in key with the boot music (C major)
+WIND_VOLUME = 0.30
+WIND_WHISTLE = 0.04     # faint C5 / G5 resonance, in key with the boot music (C major)
+WIND_LOWPASS_HZ = 900   # two gentle low-pass stages above the band: no hiss
 
 
 def wind():
-    """Band-passed noise whose centre drifts like a gust, with a smooth swell and a long fade."""
+    """Soft, smooth wind: brown noise through a narrow band-pass whose centre drifts like a gust,
+    then low-passed so no hiss is left, with a smooth swell and a long fade."""
     random.seed(64)
     count = int(WIND_RATE * WIND_SECONDS)
-    low = band = 0.0
+    brown = low = band = lp1 = lp2 = 0.0
+    lp_coeff = 1 - math.exp(-2 * math.pi * WIND_LOWPASS_HZ / WIND_RATE)
     samples = []
     for n in range(count):
         t = n / WIND_RATE
-        # State-variable filter: broad band-pass drifting 380 -> 700 -> 420 Hz.
-        centre = 380 + 320 * math.sin(math.pi * min(1.0, t / 0.8))
+        # Brown noise (leaky integral of white): most of its energy is low, unlike static.
+        brown = 0.995 * brown + 0.05 * random.uniform(-1.0, 1.0)
+        # State-variable filter: fairly narrow band-pass drifting 220 -> 420 -> 260 Hz.
+        centre = 220 + 200 * math.sin(math.pi * min(1.0, t / 0.8))
         f = 2 * math.sin(math.pi * centre / WIND_RATE)
-        q = 1.3
-        noise = random.uniform(-1.0, 1.0)
-        high = noise - low - q * band
+        q = 0.45
+        high = brown - low - q * band
         band += f * high
         low += f * band
+        lp1 += lp_coeff * (band - lp1)
+        lp2 += lp_coeff * (lp1 - lp2)
         whistle = math.sin(2 * math.pi * 523.25 * t) + 0.5 * math.sin(2 * math.pi * 783.99 * t)
         if t < WIND_ATTACK:
             envelope = math.sin((t / WIND_ATTACK) * math.pi / 2) ** 2
@@ -89,7 +95,7 @@ def wind():
             envelope = math.cos(((t - WIND_ATTACK) / (WIND_END - WIND_ATTACK)) * math.pi / 2) ** 2
         else:
             envelope = 0.0
-        samples.append(envelope * (band + WIND_WHISTLE * whistle * envelope))
+        samples.append(envelope * (lp2 + WIND_WHISTLE * whistle * envelope))
     peak = max(abs(s) for s in samples)
     return [int(s / peak * WIND_VOLUME * 32767) for s in samples]
 
