@@ -460,6 +460,9 @@
 #define TIME_VALUE_Y                    (150)
 #define TIME_HELP_Y                     (240)
 
+/** @brief Cheat Codes screen: left edge of the On / Off column. */
+#define CHEAT_STATE_X                   (VISIBLE_AREA_X1 - 40)
+
 /** @brief Distance between option list rows: a 22px row band plus a 2px black gap. */
 #define OPTION_LIST_ROW_PITCH           (24)
 /** @brief Rows an option list shows before it scrolls. */

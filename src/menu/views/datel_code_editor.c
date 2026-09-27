@@ -1,8 +1,11 @@
 /**
  * @file datel_code_editor.c
- * @brief Datel code editor implementation
+ * @brief Cheat Codes screen (Config > Cheat Codes): list, toggle and edit GameShark / Action Replay codes
  * @author Robin Jones (networkfusion)
  * @ingroup views
+ *
+ * A toggles a code (or starts entering one in an empty slot), C-Right edits it digit by digit,
+ * C-Up clears it. Leaving with B applies the codes and saves them next to the ROM (.datel).
  */
 
 #include "../ui_components/constants.h"
@@ -11,438 +14,218 @@
 #include "views.h"
 #include "utils/fs.h"
 
+#define CODE_DIGITS         (12)    // 8 address digits + 4 value digits
+#define ADDRESS_DIGITS      (8)
+#define DIGIT_WIDTH         (13)    // fixed cell per hex digit so codes line up
+#define VALUE_GAP           (10)    // space between the address and the value
+#define VISIBLE_ROWS        (10)
 
 static cheat_file_code_t *cheat_codes;
-static short item_selected = 0;
-static bool is_editing_mode_address = false;
-static bool is_editing_mode_value = false;
-static uint8_t editing_field_selected = 7; // 0-7 for 8 nibbles of the address or value (set to last nibble by default).
+static int selected = 0;
+static int first_visible = 0;
+static bool changed = false;
 
-static bool show_message_save_confirm = false;
+static bool editing = false;
+static int editing_digit = 0;
+static cheat_file_code_t editing_backup;
 
-/**
- * Draws the cheat editor UI component for address/value editing.
- * 
- * @param value The address or value to display (up to 32 bits).
- * @param selected_field The nibble currently selected for editing (0-7).
- */
-static void cheat_ui_component_edit_field_draw(uint32_t value, int selected_field) {
-    char nibbles[8][2];
 
-    // Format each nibble as a single hex digit
-    for (int i = 0; i < 8; ++i) {
-        snprintf(nibbles[i], sizeof(nibbles[i]), "%lX", (value >> (28 - i * 4)) & 0xF);
+static bool is_empty (cheat_file_code_t *code) {
+    return code->address == 0 && code->value == 0 && code->description[0] == '\0';
+}
+
+static int get_digit (cheat_file_code_t *code, int digit) {
+    if (digit < ADDRESS_DIGITS) {
+        return (code->address >> ((ADDRESS_DIGITS - 1 - digit) * 4)) & 0xF;
     }
+    return (code->value >> ((CODE_DIGITS - 1 - digit) * 4)) & 0xF;
+}
 
-    static const char *labels[8] = { "*", "*", "*", "*", "*", "*", "*", "*" };
-
-    const char *nibble_ptrs[8];
-    for (int i = 0; i < 8; ++i) {
-        nibble_ptrs[i] = nibbles[i];
+static void set_digit (cheat_file_code_t *code, int digit, int nibble) {
+    if (digit < ADDRESS_DIGITS) {
+        int shift = (ADDRESS_DIGITS - 1 - digit) * 4;
+        code->address = (code->address & ~(0xFu << shift)) | ((uint32_t) (nibble & 0xF) << shift);
+    } else {
+        int shift = (CODE_DIGITS - 1 - digit) * 4;
+        code->value = (code->value & ~(0xFu << shift)) | ((uint16_t) (nibble & 0xF) << shift);
     }
-
-    ui_component_value_editor(
-        labels,
-        nibble_ptrs,
-        8,
-        selected_field,
-        20.0f
-    );
 }
 
+static void start_editing (void) {
+    editing_backup = cheat_codes[selected];
+    editing_digit = 0;
+    editing = true;
+}
 
-static void toggle_enable_selected_cheat (menu_t *menu, void *arg) {
-    debugf("Cheat Editor: Edit Selected Cheat toggle.\n");
-    cheat_codes[item_selected].enabled = !cheat_codes[item_selected].enabled;
+static void save_codes (menu_t *menu) {
     set_cheat_codes(cheat_codes);
-    sound_play_effect(SFX_SETTING);
+    if (changed) {
+        path_t *path = path_clone(menu->load.rom_path);
+        path_ext_replace(path, "datel");
+        save_cheats_to_file(path_get(path));
+        path_free(path);
+        changed = false;
+    }
 }
 
-static void edit_selected_cheat_address (menu_t *menu, void *arg) {
-    debugf("Cheat Editor: Edit Selected Cheat address %08lX.\n", cheat_codes[item_selected].address);
-    editing_field_selected = 0; // Reset to the first nibble of the address.
-    is_editing_mode_address = true;
+static void process_editing (menu_t *menu) {
+    cheat_file_code_t *code = &cheat_codes[selected];
+
+    if (menu->actions.go_left) {
+        editing_digit = (editing_digit + CODE_DIGITS - 1) % CODE_DIGITS;
+        sound_play_effect(SFX_CURSOR);
+    } else if (menu->actions.go_right) {
+        editing_digit = (editing_digit + 1) % CODE_DIGITS;
+        sound_play_effect(SFX_CURSOR);
+    } else if (menu->actions.go_up || menu->actions.go_down) {
+        set_digit(code, editing_digit, get_digit(code, editing_digit) + (menu->actions.go_up ? 1 : -1));
+        sound_play_effect(SFX_CURSOR);
+    } else if (menu->actions.enter) {
+        code->enabled = true;
+        editing = false;
+        changed = true;
+        sound_play_effect(SFX_SETTING);
+    } else if (menu->actions.back) {
+        *code = editing_backup;
+        editing = false;
+        sound_play_effect(SFX_EXIT);
+    }
 }
 
-static void edit_selected_cheat_value (menu_t *menu, void *arg) {
-    debugf("Cheat Editor: Edit Selected Cheat value: %04X.\n", cheat_codes[item_selected].value);
-    editing_field_selected = 4; // Reset to the first nibble of the value.
-    is_editing_mode_value = true;
-}
-
-static void reset_selected_cheat (menu_t *menu, void *arg) {
-    debugf("Cheat Editor: Reset Selected Cheat.\n");
-    cheat_codes[item_selected].address = 0; // Reset the cheat address.
-    cheat_codes[item_selected].value = 0; // Reset the cheat value.
-    strncpy(cheat_codes[item_selected].description, "\0", sizeof(cheat_codes[item_selected].description));
-    cheat_codes[item_selected].enabled = false;// Mark the cheat as disabled instead of deleting it.
-    set_cheat_codes(cheat_codes);
-}
-
-static component_context_menu_t cm_edit_selected_cheat = { .list = {
-    { .text = "Toggle Enabled", .action = toggle_enable_selected_cheat },
-    { .text = "Edit Address", .action = edit_selected_cheat_address },
-    { .text = "Edit Value", .action = edit_selected_cheat_value },
-    COMPONENT_CONTEXT_MENU_LIST_END
-}};
-
-static component_context_menu_t options_context_menu = { .list = {
-    { .text = "Edit Selected Item", .submenu = &cm_edit_selected_cheat },
-    { .text = "Reset Selected Item", .action = reset_selected_cheat },
-    COMPONENT_CONTEXT_MENU_LIST_END
-}};
-
-
-
-
-static void process(menu_t *menu) {
-
-    if (ui_components_context_menu_process(menu, &options_context_menu)) {
+static void process (menu_t *menu) {
+    if (editing) {
+        process_editing(menu);
         return;
     }
 
-    if (is_editing_mode_address || is_editing_mode_value) {
-        if (menu->actions.go_left) {
-            if ( editing_field_selected <= 0 ) { editing_field_selected = 7; }
-            else { editing_field_selected = editing_field_selected - 1; }
-        }
-        else if (menu->actions.go_right) {
-            if ( editing_field_selected >= 7 ) { editing_field_selected = 0; }
-            else { editing_field_selected = editing_field_selected + 1; }
-       
-        }
-        else if (menu->actions.go_up) {
-            // Increment the selected nibble
-            if (is_editing_mode_address) {
-                // Edit the address field, one nibble at a time.
-                uint32_t *addr = &cheat_codes[item_selected].address;
-                // Calculate the bit position for the selected nibble (0 = leftmost/highest nibble)
-                int shift = (7 - editing_field_selected) * 4;
-                // Extract the current nibble value
-                uint32_t nibble = (*addr >> shift) & 0xF;
-                // Increment the nibble, wrapping around from 0xF to 0x0
-                nibble = (nibble + 1) & 0xF;
-                // Clear the old nibble and set the new value
-                *addr = (*addr & ~(0xFu << shift)) | (nibble << shift);
-            } else if (is_editing_mode_value) {
-                // Edit the value field, one nibble at a time (only lower 4 nibbles for 16-bit value)
-                uint16_t *val = &cheat_codes[item_selected].value;
-                int shift = (7 - editing_field_selected) * 4;
-                if (shift < 16) { // Only modify valid nibbles in the 16-bit value
-                    // Extract the current nibble value
-                    uint16_t nibble = (*val >> shift) & 0xF;
-                    // Increment the nibble, wrapping around from 0xF to 0x0
-                    nibble = (nibble + 1) & 0xF;
-                    // Clear the old nibble and set the new value
-                    *val = (*val & ~(0xFu << shift)) | (nibble << shift);
-                }
-            }
-            sound_play_effect(SFX_CURSOR);
-        }
-        else if (menu->actions.go_down) {
-            // Decrement the selected nibble
-            if (is_editing_mode_address) {
-                // Edit the address field, one nibble at a time.
-                uint32_t *addr = &cheat_codes[item_selected].address;
-                // Calculate the bit position for the selected nibble (0 = leftmost/highest nibble)
-                int shift = (7 - editing_field_selected) * 4;
-                // Extract the current nibble value
-                uint32_t nibble = (*addr >> shift) & 0xF;
-                // Decrement the nibble, wrapping around from 0x0 to 0xF
-                nibble = (nibble - 1) & 0xF;
-                // Clear the old nibble and set the new value
-                *addr = (*addr & ~(0xFu << shift)) | (nibble << shift);
-            } else if (is_editing_mode_value) {
-                // Edit the value field, one nibble at a time (only lower 4 nibbles for 16-bit value)
-                uint16_t *val = &cheat_codes[item_selected].value;
-                int shift = (7 - editing_field_selected) * 4;
-                if (shift < 16) { // Only modify valid nibbles in the 16-bit value
-                    // Extract the current nibble value
-                    uint16_t nibble = (*val >> shift) & 0xF;
-                    // Decrement the nibble, wrapping around from 0x0 to 0xF
-                    nibble = (nibble - 1) & 0xF;
-                    // Clear the old nibble and set the new value
-                    *val = (*val & ~(0xFu << shift)) | (nibble << shift);
-                }
-            }
-            sound_play_effect(SFX_CURSOR);
-        }
-        else if (menu->actions.enter) { // finish editing and ensure enabled
-            is_editing_mode_address = false;
-            is_editing_mode_value = false;
-            cheat_codes[item_selected].enabled = true;
-            debugf("Cheat Editor: Edited and enabled selected Cheat %08lX %04X.\n", cheat_codes[item_selected].address, cheat_codes[item_selected].value);
-        }
-        else if (menu->actions.back) { // finish editing
-            is_editing_mode_address = false;
-            is_editing_mode_value = false;
-            debugf("Cheat Editor: Edited selected Cheat %08lX %04X.\n", cheat_codes[item_selected].address, cheat_codes[item_selected].value);
-        }
-    } 
-    else {
-        if(menu->actions.go_down) {
-            item_selected++;
-            if (item_selected >= MAX_CHEAT_CODES) {
-                item_selected = 0;
-            }
-            sound_play_effect(SFX_CURSOR);
-        } else if(menu->actions.go_up) {
-            item_selected--;
-            if (item_selected < 0) {
-                item_selected = MAX_CHEAT_CODES - 1;
-            }
-            sound_play_effect(SFX_CURSOR);
-        } else if(menu->actions.enter) {
-            if (show_message_save_confirm) {
+    cheat_file_code_t *code = &cheat_codes[selected];
 
-                path_t *rom_datel_filepath = path_clone(menu->load.rom_path);
-                path_ext_replace(rom_datel_filepath, "datel");
-                save_cheats_to_file(path_get(rom_datel_filepath));
-                path_free(rom_datel_filepath);
-                sound_play_effect(SFX_SETTING);
-                show_message_save_confirm = false;
-            }
-            else {
-                set_cheat_codes(cheat_codes);
-                menu->next_mode = MENU_MODE_LOAD_ROM;
-                debugf("Cheat Editor: Applying cheats.\n");
-                sound_play_effect(SFX_ENTER);
-            }
-        } else if (menu->actions.back) {
-            if (show_message_save_confirm) {
-                show_message_save_confirm = false;
-            }
-            else {
-                debugf("Cheat Editor: Cheats not saved or applied.\n");
-                menu->next_mode = MENU_MODE_LOAD_ROM;
-            }
-            sound_play_effect(SFX_EXIT);
-        } else if (menu->actions.options) {
-            ui_components_context_menu_show(&options_context_menu);
-            sound_play_effect(SFX_SETTING);
-        } else if (menu->actions.lz_context) {
-            debugf("Cheat Editor: Saving cheats to file.\n");
-            show_message_save_confirm = true;
+    if (menu->actions.go_up) {
+        selected = (selected + MAX_CHEAT_CODES - 1) % MAX_CHEAT_CODES;
+        sound_play_effect(SFX_CURSOR);
+    } else if (menu->actions.go_down) {
+        selected = (selected + 1) % MAX_CHEAT_CODES;
+        sound_play_effect(SFX_CURSOR);
+    } else if (menu->actions.enter) {
+        if (is_empty(code)) {
+            start_editing();
+            sound_play_effect(SFX_ENTER);
+        } else {
+            code->enabled = !code->enabled;
+            changed = true;
             sound_play_effect(SFX_SETTING);
         }
+    } else if (menu->actions.configure) {
+        start_editing();
+        sound_play_effect(SFX_ENTER);
+    } else if (menu->actions.remove && !is_empty(code)) {
+        *code = (cheat_file_code_t) { 0 };
+        changed = true;
+        sound_play_effect(SFX_SETTING);
+    } else if (menu->actions.back) {
+        save_codes(menu);
+        menu->next_mode = MENU_MODE_LOAD_ROM;
+        sound_play_effect(SFX_EXIT);
     }
 }
 
-/**
- * @brief Draw the cheat list.
- * 
- * @param list Pointer to the list of entries.
- * @param entries Number of entries in the list.
- * @param selected Index of the currently selected entry.
- */
-void cheat_code_list_draw (cheat_file_code_t *list, int entries, int selected) {
-    int starting_position = 0;
-
-    if (entries > LIST_ENTRIES && selected >= (LIST_ENTRIES / 2)) {
-        starting_position = selected - (LIST_ENTRIES / 2);
-        if (starting_position >= entries - LIST_ENTRIES) {
-            starting_position = entries - LIST_ENTRIES;
+/** @brief Draw a code as 8 + 4 hex digits in fixed cells; returns the x just after it. */
+static int draw_code (cheat_file_code_t *code, int x, int y, bool row_selected, bool editing_row) {
+    for (int digit = 0; digit < CODE_DIGITS; digit++) {
+        int cx = x + (digit * DIGIT_WIDTH) + ((digit >= ADDRESS_DIGITS) ? VALUE_GAP : 0);
+        bool digit_selected = editing_row && (digit == editing_digit);
+        menu_font_style_t style = (editing_row ? digit_selected : row_selected) ? STL_DEFAULT : STL_GRAY;
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = style }, FNT_DEFAULT, cx, y, "%X", get_digit(code, digit));
+        if (digit_selected) {
+            ui_components_box_draw(cx - 1, y + 3, cx + DIGIT_WIDTH - 2, y + 5, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
         }
     }
+    return x + (CODE_DIGITS * DIGIT_WIDTH) + VALUE_GAP;
+}
 
-    ui_components_list_scrollbar_draw(selected, entries, LIST_ENTRIES);
+static void draw_list (void) {
+    if (selected < first_visible) {
+        first_visible = selected;
+    } else if (selected >= first_visible + VISIBLE_ROWS) {
+        first_visible = selected - VISIBLE_ROWS + 1;
+    }
 
-    if (entries == 0) {
-        ui_components_main_text_draw(
-            STL_RED,
-            ALIGN_LEFT, VALIGN_TOP,
-            "\n"
-            "^%02X** no cheats found **"
-        );
-    } else {
-        rdpq_paragraph_t *cheat_list_layout;
-        rdpq_paragraph_t *layout;
+    for (int row = 0; row < VISIBLE_ROWS && first_visible + row < MAX_CHEAT_CODES; row++) {
+        int i = first_visible + row;
+        cheat_file_code_t *code = &cheat_codes[i];
+        int y = CONFIG_LIST_Y + (row * OPTION_LIST_ROW_PITCH);
+        bool is_selected = (i == selected);
+        bool editing_row = editing && is_selected;
 
-        size_t cheat_string_lengths[LIST_ENTRIES];
-        size_t total_length = 1;
+        if (is_selected) {
+            ui_components_box_draw(CAROUSEL_SELECTED_X, y - 16, CAROUSEL_SELECTED_X + 4, y + 4, RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
+        }
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, CAROUSEL_SELECTED_X + 16, y - 2, "%02d", i + 1);
 
-        for (int i = 0; i < LIST_ENTRIES; i++) {
-            int entry_index = starting_position + i;
-
-            if (entry_index >= entries) {
-                cheat_string_lengths[i] = 0;
-            } else {
-                cheat_string_lengths[i] = 64; //length;
-                total_length += cheat_string_lengths[i];
-            }
+        int x = CAROUSEL_SELECTED_X + 44;
+        if (is_empty(code) && !editing_row) {
+            rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_DEFAULT, x, y, "Empty");
+            continue;
         }
 
-        cheat_list_layout = malloc(sizeof(rdpq_paragraph_t) + (sizeof(rdpq_paragraph_char_t) * total_length));
-        memset(cheat_list_layout, 0, sizeof(rdpq_paragraph_t));
-        cheat_list_layout->capacity = total_length;
+        x = draw_code(code, x, y, is_selected, editing_row);
 
-        rdpq_paragraph_builder_begin(
-            &(rdpq_textparms_t) {
-                .width = FILE_LIST_MAX_WIDTH + 40 - (TEXT_MARGIN_HORIZONTAL * 2),
-                .height = LAYOUT_ACTIONS_SEPARATOR_Y - VISIBLE_AREA_Y0  - (TEXT_MARGIN_VERTICAL * 2),
-                .wrap = WRAP_ELLIPSES,
-                .line_spacing = TEXT_LINE_SPACING_ADJUST,
-            },
-            FNT_DEFAULT,
-            cheat_list_layout
-        );
-
-        for (int i = 0; i < LIST_ENTRIES; i++) {
-            int entry_index = starting_position + i;
-
-            cheat_file_code_t *entry = &list[entry_index];
-
-            menu_font_style_t style;
-
-            style = entry->enabled ? STL_GREEN : STL_RED;
-
-            rdpq_paragraph_builder_style(style);
-
-            char str_buffer[64];
-            if (entry->description[0] != '\0') {
-                snprintf(str_buffer, sizeof(str_buffer), "%02d: %08lX %04X - %s",
-                    entry_index + 1, entry->address, entry->value, entry->description
-                );
-            } else {
-                snprintf(str_buffer, sizeof(str_buffer), "%02d: %08lX %04X",
-                    entry_index + 1, entry->address, entry->value
-                );
-            }
-
-            rdpq_paragraph_builder_span(str_buffer, strlen(str_buffer));
-
-            if ((entry_index + 1) >= entries) {
-                break;
-            }
-
-            rdpq_paragraph_builder_newline();
-        }
-
-        layout = rdpq_paragraph_builder_end();
-
-        int highlight_height = (layout->bbox.y1 - layout->bbox.y0) / layout->nlines;
-        int highlight_y = VISIBLE_AREA_Y0 + TEXT_MARGIN_VERTICAL + TAB_HEIGHT + TEXT_OFFSET_VERTICAL + ((selected - starting_position) * highlight_height);
-
-        ui_components_box_draw(
-            FILE_LIST_HIGHLIGHT_X,
-            highlight_y,
-            FILE_LIST_HIGHLIGHT_X + FILE_LIST_HIGHLIGHT_WIDTH,
-            highlight_y + highlight_height,
-            FILE_LIST_HIGHLIGHT_COLOR
-        );
-
-        rdpq_paragraph_render(
-            layout,
-            VISIBLE_AREA_X0 + TEXT_MARGIN_HORIZONTAL,
-            VISIBLE_AREA_Y0 + TEXT_MARGIN_VERTICAL + TAB_HEIGHT + TEXT_OFFSET_VERTICAL
-        );
-
-        rdpq_paragraph_free(layout);
-
-        rdpq_paragraph_builder_begin(
-            &(rdpq_textparms_t) {
-                .width = VISIBLE_AREA_WIDTH - LIST_SCROLLBAR_WIDTH - (TEXT_MARGIN_HORIZONTAL * 2),
-                .height = LAYOUT_ACTIONS_SEPARATOR_Y - VISIBLE_AREA_Y0  - (TEXT_MARGIN_VERTICAL * 2),
-                .align = ALIGN_RIGHT,
-                .wrap = WRAP_NONE,
-                .line_spacing = TEXT_LINE_SPACING_ADJUST,
-            },
-            FNT_DEFAULT,
-            NULL
-        );
-
-        for (int i = starting_position; i < entries; i++) {
-            cheat_file_code_t *entry = &list[i];
-
-            menu_font_style_t style;
-
-            style = entry->enabled ? STL_GREEN : STL_RED;
-
-            rdpq_paragraph_builder_style(style);
-
-            char str_enabled_buffer[4];
-            snprintf(str_enabled_buffer, sizeof(str_enabled_buffer), "%s",
-                entry->enabled ? "ON" : "OFF"
+        if (code->description[0] != '\0') {
+            ui_components_text_draw(
+                &(rdpq_textparms_t) { .style_id = is_selected ? STL_DEFAULT : STL_GRAY, .width = CHEAT_STATE_X - x - 12, .wrap = WRAP_ELLIPSES },
+                FNT_SMALL, x, y - 2, code->description
             );
-
-            rdpq_paragraph_builder_span(str_enabled_buffer, strlen(str_enabled_buffer));
-
-            if ((i + 1) == (starting_position + LIST_ENTRIES)) {
-                break;
-            }
-
-            rdpq_paragraph_builder_newline();
         }
 
-        layout = rdpq_paragraph_builder_end();
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = code->enabled ? STL_DEFAULT : STL_GRAY },
+            FNT_DEFAULT, CHEAT_STATE_X, y, "%s", code->enabled ? "On" : "Off");
+    }
 
-        rdpq_paragraph_render(
-            layout,
-            VISIBLE_AREA_X0 + TEXT_MARGIN_HORIZONTAL,
-            VISIBLE_AREA_Y0 + TEXT_MARGIN_VERTICAL + TAB_HEIGHT + TEXT_OFFSET_VERTICAL
-        );
-
-        rdpq_paragraph_free(layout);
+    // Scroll hints.
+    if (first_visible > 0) {
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, CONFIG_LIST_Y - 22, "...");
+    }
+    if (first_visible + VISIBLE_ROWS < MAX_CHEAT_CODES) {
+        rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, FNT_SMALL, VISIBLE_AREA_X1 - 12, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) - 10, "...");
     }
 }
 
 static void draw (menu_t *menu, surface_t *display) {
-    rdpq_attach(display, NULL);
+    rdpq_attach_clear(display, NULL);
 
-    ui_components_background_draw();
+    rdpq_text_printf(NULL, FNT_DEFAULT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Cheat Codes");
 
-    ui_components_layout_draw();
-
-    ui_components_main_text_draw(
-        STL_DEFAULT,
-        ALIGN_CENTER, VALIGN_TOP,
-        "DATEL CODE EDITOR\n"
+    char title[128];
+    ui_components_carousel_title(path_last_get(menu->load.rom_path), false, title, sizeof(title));
+    ui_components_text_draw(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_ELLIPSES },
+        FNT_TITLE, CAROUSEL_SELECTED_X, CONFIG_TITLE_Y, title
     );
 
-    // ui_components_main_text_draw(
-    //     STL_DEFAULT,
-    //     ALIGN_LEFT, VALIGN_TOP,
-    //     "\n"
-    //     "ID  Address  Value  Description\n"
-    // );
+    draw_list();
 
-    cheat_code_list_draw(cheat_codes, MAX_CHEAT_CODES, item_selected);
-
-    ui_components_actions_bar_text_draw(
-        STL_DEFAULT,
-        ALIGN_LEFT, VALIGN_TOP,
-        "A: Apply to ROM\n"
-        "B: Back"
-    );
-
-    ui_components_actions_bar_text_draw(
-        STL_DEFAULT,
-        ALIGN_RIGHT, VALIGN_TOP,
-        "L|Z: Save changes\n"
-        "  R: Item options\n"
-    );
-
-    ui_components_context_menu_draw(&options_context_menu);
-
-    if (is_editing_mode_address) {
-        cheat_ui_component_edit_field_draw(
-            cheat_codes[item_selected].address,
-            editing_field_selected
+    int x = GAME_INFO_VALUE_X;
+    if (editing) {
+        ui_components_text_draw(
+            &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
+            FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
+            "Left / Right: choose a digit. Up / Down: change it."
         );
-    }
-
-    if (is_editing_mode_value) {
-        cheat_ui_component_edit_field_draw(
-            cheat_codes[item_selected].value,
-            editing_field_selected
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, "Done") + LIBRARY_HINT_GAP;
+        ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Cancel");
+    } else {
+        ui_components_text_draw(
+            &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X - 16 },
+            FNT_SMALL, CAROUSEL_SELECTED_X + 16, CONFIG_LIST_Y + (VISIBLE_ROWS * OPTION_LIST_ROW_PITCH) + 8,
+            "Codes are applied when Cheats is On in Config. Changes are saved when you go back."
         );
-    }
-
-    if (show_message_save_confirm) {
-        ui_components_messagebox_draw(
-            "Overwrite file?\n\n"
-            "A: Yes, B: No"
-        );
+        bool empty = is_empty(&cheat_codes[selected]);
+        x += ui_components_button_hint_draw(ICON_A, x, LIBRARY_BUTTONS_Y, empty ? "Add" : "Toggle") + LIBRARY_HINT_GAP;
+        if (!empty) {
+            x += ui_components_button_hint_draw(ICON_C_RIGHT, x, LIBRARY_BUTTONS_Y, "Edit") + LIBRARY_HINT_GAP;
+            x += ui_components_button_hint_draw(ICON_C_UP, x, LIBRARY_BUTTONS_Y, "Clear") + LIBRARY_HINT_GAP;
+        }
+        ui_components_button_hint_draw(ICON_B, x, LIBRARY_BUTTONS_Y, "Back");
     }
 
     rdpq_detach_show();
@@ -450,16 +233,14 @@ static void draw (menu_t *menu, surface_t *display) {
 
 void view_datel_code_editor_init (menu_t *menu) {
     if (!is_memory_expanded()) {
-        menu_show_error(menu, "Datel Cheats require an Expansion Pak");
-        menu->next_mode = MENU_MODE_LOAD_ROM;
+        menu_show_error(menu, "Cheat codes need an Expansion Pak");
         return;
     }
 
-    is_editing_mode_address = false;
-    is_editing_mode_value = false;
-
-    ui_components_context_menu_init(&options_context_menu);
-    ui_components_context_menu_init(&cm_edit_selected_cheat);
+    editing = false;
+    changed = false;
+    selected = 0;
+    first_visible = 0;
 
     cheat_codes = get_cheat_codes();
     path_t *rom_datel_filepath = path_clone(menu->load.rom_path);
@@ -480,7 +261,6 @@ void view_datel_code_editor_init (menu_t *menu) {
 
     path_free(rom_datel_filepath);
     path_free(rom_datel_txt_filepath);
-
 }
 
 void view_datel_code_editor_display (menu_t *menu, surface_t *display) {
