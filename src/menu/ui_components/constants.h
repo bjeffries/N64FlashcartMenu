@@ -425,7 +425,7 @@
 /** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
 #define GAME_INFO_LABEL_X               (CAROUSEL_SELECTED_X)
 /** @brief Left edge of the info panel's values. */
-#define GAME_INFO_VALUE_X               (200)
+#define GAME_INFO_VALUE_X               (212)
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
@@ -459,9 +459,9 @@
 #define GAME_INFO_DOT_OFF_COLOR         PALETTE_TONE_2
 
 /** @brief Space between tab names in the header (widened by 1px if needed to centre exactly). */
-#define TAB_HEADER_GAP                  (20)
+#define TAB_HEADER_GAP                  (14)
 /** @brief Space between the outer tab names and the L / R pills. */
-#define TAB_BAR_TEXT_GAP                (43)
+#define TAB_BAR_TEXT_GAP                (12)
 /** @brief Top of the L / R pills (tab names sit on LIBRARY_HEADER_Y). */
 #define TAB_BAR_PILL_Y                  (LIBRARY_HEADER_Y - 7)
 /** @brief Width of the pill part of the tab bar's end sprites (the rest curves into the bar). */
@@ -509,7 +509,7 @@
 #define OPTION_LIST_VALUE_X             (310)
 
 /** @brief Space between button hints. */
-#define LIBRARY_HINT_GAP                (14)
+#define LIBRARY_HINT_GAP                (8)
 
 /** @brief Baseline of the button hints at the bottom of the screen. */
 #define LIBRARY_BUTTONS_Y               (VISIBLE_AREA_Y1 - 10)
