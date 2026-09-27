@@ -102,11 +102,12 @@ FONT_TITLE = 40 --monochrome
 FONT_SMALL = 12 --char-spacing 1
 else
 # Silkscreen is drawn on an 8-unit pixel grid, so only multiples of 8 are crisp; at 8px its strokes
-# are 1px, which flickers on an interlaced CRT, so small text is 16px too.
+# are 1px, which flickers on an interlaced CRT, so small text is 16px too. Its letter gap is one
+# font pixel; the negative spacing halves it (16px: 2px -> 1px, 32px: 4px -> 2px).
 FONT_TTF = $(ASSETS_DIR)/fonts/Silkscreen-Regular.ttf
-FONT_DEFAULT = 16 --monochrome
-FONT_TITLE = 32 --monochrome
-FONT_SMALL = 16 --monochrome
+FONT_DEFAULT = 16 --monochrome --char-spacing -1
+FONT_TITLE = 32 --monochrome --char-spacing -2
+FONT_SMALL = 16 --monochrome --char-spacing -1
 endif
 
 SOUNDS_WAV = \
@@ -181,7 +182,7 @@ $(BUILD_DIR)/font-$(MENU_FONT).stamp:
 $(FILESYSTEM_DIR)/font-default.font64: FONT_SPEC=$(FONT_DEFAULT)
 $(FILESYSTEM_DIR)/font-title.font64: FONT_SPEC=$(FONT_TITLE)
 $(FILESYSTEM_DIR)/font-small.font64: FONT_SPEC=$(FONT_SMALL)
-$(FILESYSTEM_DIR)/font-%.font64: $(FONT_TTF) $(BUILD_DIR)/font-$(MENU_FONT).stamp
+$(FILESYSTEM_DIR)/font-%.font64: $(FONT_TTF) $(BUILD_DIR)/font-$(MENU_FONT).stamp Makefile
 	@echo "    [FONT] $@ ($(MENU_FONT) $(firstword $(FONT_SPEC))px)"
 	@mkdir -p $(BUILD_DIR)/fonts/$*
 	@$(N64_MKFONT) --compress 1 $(wordlist 2,9,$(FONT_SPEC)) --size $(firstword $(FONT_SPEC)) --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$<"
