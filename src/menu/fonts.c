@@ -19,6 +19,7 @@ static void register_styles (rdpq_font_t *font) {
     rdpq_font_style(font, STL_SHADOW_DARK, &((rdpq_fontstyle_t) { .color = TEXT_SHADOW_DARK_COLOR }));
     rdpq_font_style(font, STL_SOFT, &((rdpq_fontstyle_t) { .color = TEXT_SOFT_COLOR }));
     rdpq_font_style(font, STL_SHADOW_SOFT, &((rdpq_fontstyle_t) { .color = TEXT_SHADOW_SOFT_COLOR }));
+    rdpq_font_style(font, STL_FADE_SHADOW, &((rdpq_fontstyle_t) { .color = TEXT_SHADOW_COLOR }));
 }
 
 static void load_default_font (char *custom_font_path) {
@@ -71,15 +72,9 @@ void fonts_apply_palette (void) {
 
 void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
     // From the background (0) to the text colour (255).
-    color_t from = BACKGROUND_COLOR;
-    color_t to = TEXT_COLOR;
-    color_t color = RGBA32(
-        from.r + (((to.r - from.r) * level) / 0xFF),
-        from.g + (((to.g - from.g) * level) / 0xFF),
-        from.b + (((to.b - from.b) * level) / 0xFF),
-        0xFF
-    );
-    rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(font_id), STL_FADE, &((rdpq_fontstyle_t) { .color = color }));
+    rdpq_font_t *font = (rdpq_font_t *) rdpq_text_get_font(font_id);
+    rdpq_font_style(font, STL_FADE, &((rdpq_fontstyle_t) { .color = palette_mix(BACKGROUND_COLOR, TEXT_COLOR, level) }));
+    rdpq_font_style(font, STL_FADE_SHADOW, &((rdpq_fontstyle_t) { .color = palette_mix(BACKGROUND_COLOR, TEXT_SHADOW_COLOR, level) }));
 }
 
 void fonts_init (char *custom_font_path) {

@@ -209,9 +209,9 @@ void ui_components_letter_indicator_draw (void) {
 }
 
 /**
- * @brief Draw the position counter ("12/87") in the top-right corner, mirroring the letter
- *        indicator: it fades in on every selection change and out after a pause. Drawn over a
- *        background-coloured backing, since the tab bar's R end sits under it.
+ * @brief Draw the position counter in the top-right corner, mirroring the letter indicator: a
+ *        vertical fraction (index over total) in body text, narrow enough to sit clear of the
+ *        tab bar's R end. It fades in on every selection change and out after a pause.
  *
  * @param index 1-based position of the selection, or 0 to draw nothing (e.g. a folder).
  * @param total Number of entries counted.
@@ -221,27 +221,35 @@ void ui_components_position_indicator_draw (int index, int total) {
     if (level < 0 || index <= 0 || total <= 0) {
         return;
     }
-    char text[16];
-    snprintf(text, sizeof(text), "%d/%d", index, total);
+    char numerator[12], denominator[12];
+    snprintf(numerator, sizeof(numerator), "%d", index);
+    snprintf(denominator, sizeof(denominator), "%d", total);
 
-    // Right edge of the ink mirrors the letter indicator's left edge.
-    int nbytes = strlen(text);
-    rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, TITLE_FONT, text, &nbytes);
-    int ink_x0 = (int) layout->bbox.x0;
-    int ink_x1 = (int) layout->bbox.x1;
-    rdpq_paragraph_free(layout);
-    int x = (DISPLAY_WIDTH - LETTER_INDICATOR_X) - ink_x1;
+    // Both numbers centred on one column whose right edge mirrors the letter indicator's left edge.
+    int width = 0;
+    int ink_x0[2], ink_x1[2];
+    const char *lines[2] = { numerator, denominator };
+    for (int i = 0; i < 2; i++) {
+        int nbytes = strlen(lines[i]);
+        rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { 0 }, BODY_FONT, lines[i], &nbytes);
+        ink_x0[i] = (int) layout->bbox.x0;
+        ink_x1[i] = (int) layout->bbox.x1;
+        rdpq_paragraph_free(layout);
+        width = MAX(width, ink_x1[i] - ink_x0[i]);
+    }
+    int right = DISPLAY_WIDTH - LETTER_INDICATOR_X;
+    int centre = right - (width / 2);
 
-    int cap = fonts_cap_height(TITLE_FONT);
-    rdpq_mode_push();
-        rdpq_set_mode_standard();
-        rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
-        rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-        rdpq_set_prim_color(PALETTE_WITH_ALPHA(BACKGROUND_COLOR, (uint8_t) level));
-        rdpq_fill_rectangle(x + ink_x0 - POSITION_INDICATOR_PADDING, LETTER_INDICATOR_Y - cap - POSITION_INDICATOR_PADDING,
-            x + ink_x1 + POSITION_INDICATOR_PADDING, TAB_BAR_PILL_Y + TAB_BAR_PILL_HEIGHT + 1);
-    rdpq_mode_pop();
+    // Top of the numerator level with the top of the letter indicator's capitals.
+    int cap = fonts_cap_height(BODY_FONT);
+    int top = LETTER_INDICATOR_Y - fonts_cap_height(TITLE_FONT);
+    int baselines[2] = { top + cap, top + cap + POSITION_FRACTION_GAP + POSITION_FRACTION_BAR + POSITION_FRACTION_GAP + cap };
 
-    fonts_set_fade_level(TITLE_FONT, (uint8_t) level);
-    rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_FADE }, TITLE_FONT, x, LETTER_INDICATOR_Y, "%s", text);
+    fonts_set_fade_level(BODY_FONT, (uint8_t) level);
+    for (int i = 0; i < 2; i++) {
+        int x = centre - ((ink_x1[i] - ink_x0[i]) / 2) - ink_x0[i];
+        ui_components_body_text_draw_shadowed(&(rdpq_textparms_t) { .style_id = STL_FADE }, x, baselines[i], lines[i], STL_FADE_SHADOW);
+    }
+    int bar_y = baselines[0] + POSITION_FRACTION_GAP;
+    ui_components_box_draw(right - width, bar_y, right, bar_y + POSITION_FRACTION_BAR, palette_mix(BACKGROUND_COLOR, TEXT_COLOR, level));
 }
