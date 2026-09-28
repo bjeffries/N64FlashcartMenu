@@ -117,11 +117,12 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
 
     cm = get_current_submenu(cm);
 
+    bool extra = (cm->draw_extra != NULL);
     rdpq_paragraph_builder_begin(
         &(rdpq_textparms_t) {
             .width = VISIBLE_AREA_WIDTH,
             .height = VISIBLE_AREA_HEIGHT,
-            .align = ALIGN_CENTER,
+            .align = extra ? ALIGN_LEFT : ALIGN_CENTER,
             .valign = VALIGN_CENTER,
             .line_spacing = TEXT_LINE_SPACING_ADJUST,
         },
@@ -141,7 +142,9 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
 
     rdpq_paragraph_t *layout = rdpq_paragraph_builder_end();
 
-    int width = layout->bbox.x1 - layout->bbox.x0 + MESSAGEBOX_MARGIN;
+    int text_width = layout->bbox.x1 - layout->bbox.x0;
+    int content_width = text_width + (extra ? CONTEXT_MENU_EXTRA_GAP + cm->extra_width : 0);
+    int width = content_width + MESSAGEBOX_MARGIN;
     int height = layout->bbox.y1 - layout->bbox.y0 + MESSAGEBOX_MARGIN;
 
     ui_components_dialog_draw(width, height);
@@ -159,7 +162,19 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
         CONTEXT_MENU_HIGHLIGHT_COLOR
     );
 
-    rdpq_paragraph_render(layout, VISIBLE_AREA_X0, VISIBLE_AREA_Y0);
+    if (extra) {
+        // Left-aligned names, then the extra column after the longest one.
+        int text_x = DISPLAY_CENTER_X - (content_width / 2);
+        rdpq_paragraph_render(layout, text_x - layout->bbox.x0, VISIBLE_AREA_Y0);
+        int extra_x = text_x + text_width + CONTEXT_MENU_EXTRA_GAP;
+        int baseline = VISIBLE_AREA_Y0 + layout->bbox.y0 + fonts_ascent(TITLE_FONT);
+        for (int i = 0; i < cm->row_count; i++) {
+            int y_centre = baseline + (i * highlight_height) - (fonts_cap_height(TITLE_FONT) / 2);
+            cm->draw_extra(i, extra_x, y_centre, i == cm->row_selected);
+        }
+    } else {
+        rdpq_paragraph_render(layout, VISIBLE_AREA_X0, VISIBLE_AREA_Y0);
+    }
 
     rdpq_paragraph_free(layout);
 

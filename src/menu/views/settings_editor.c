@@ -45,8 +45,22 @@ static int get_palette_selection (menu_t *menu) {
     return ui_palette_get();
 }
 
+/** @brief The palette's five colours as squares after its name in the picker. */
+static void draw_palette_swatches (int row, int x, int y_centre, bool selected) {
+    const ui_palette_t *palette = ui_palette_info((ui_palette_id_t) row);
+    color_t colours[5] = { palette->background, palette->tone_1, palette->tone_2, palette->tone_3, palette->highlight };
+    int y = y_centre - (PALETTE_SWATCH_SIZE / 2);
+    for (int i = 0; i < 5; i++) {
+        int sx = x + (i * (PALETTE_SWATCH_SIZE + PALETTE_SWATCH_GAP));
+        ui_components_box_draw(sx, y, sx + PALETTE_SWATCH_SIZE, y + PALETTE_SWATCH_SIZE, PALETTE_SWATCH_OUTLINE_COLOR);
+        ui_components_box_draw(sx + 1, y + 1, sx + PALETTE_SWATCH_SIZE - 1, y + PALETTE_SWATCH_SIZE - 1, colours[i]);
+    }
+}
+
 static component_context_menu_t palette_picker = {
     .get_default_selection = get_palette_selection,
+    .draw_extra = draw_palette_swatches,
+    .extra_width = (5 * PALETTE_SWATCH_SIZE) + (4 * PALETTE_SWATCH_GAP),
     .list = {
         { .text = "Monochrome", .action = set_palette, .arg = (void *) (UI_PALETTE_MONOCHROME) },
         { .text = "Galaxy", .action = set_palette, .arg = (void *) (UI_PALETTE_GALAXY) },

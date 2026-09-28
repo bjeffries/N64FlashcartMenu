@@ -474,6 +474,12 @@ typedef struct component_context_menu {
     struct component_context_menu *parent; /**< Pointer to the parent context menu */
     struct component_context_menu *submenu; /**< Pointer to the submenu */
     int (*get_default_selection)(menu_t *menu); /**< Optional function to get the default selected row */
+    /**
+     * @brief Optional: something drawn after each row's text (e.g. palette colour squares),
+     *        extra_width pixels wide. The rows are then left-aligned so it lines up in a column.
+     */
+    void (*draw_extra)(int row, int x, int y_centre, bool selected);
+    int extra_width;
     struct {
         const char *text; /**< Text of the menu item */
         void (*action)(menu_t *menu, void *arg); /**< Action function for the menu item */

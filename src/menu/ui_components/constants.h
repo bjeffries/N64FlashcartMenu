@@ -606,6 +606,13 @@
 #define TEXT_ON_LIGHT_COLOR             PALETTE_BACKGROUND
 /** @brief What the boot and game-loading animations fade to: always black, whatever the palette. */
 #define FADE_COLOR                      RGBA32(0x00, 0x00, 0x00, 0xFF)
+/** @brief Pop-up pickers: space between the names and an extra column (palette colour squares). */
+#define CONTEXT_MENU_EXTRA_GAP          (16)
+/** @brief Palette picker colour squares: size, spacing and their outline (fixed grey, so the dark
+ *         backgrounds show on the pop-up). */
+#define PALETTE_SWATCH_SIZE             (16)
+#define PALETTE_SWATCH_GAP              (4)
+#define PALETTE_SWATCH_OUTLINE_COLOR    RGBA32(0x80, 0x80, 0x80, 0xFF)
 /** @brief Screen background. */
 #define BACKGROUND_COLOR                PALETTE_BACKGROUND
 /** @brief Outline around the selected folder (cartridges use sprites drawn in the same white). */
