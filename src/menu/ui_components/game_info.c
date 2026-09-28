@@ -11,8 +11,10 @@
 
 #include "../ui_components.h"
 #include "../fonts.h"
+#include "../png_decoder.h"
 #include "../sound.h"
 #include "constants.h"
+#include "utils/fs.h"
 #include "utils/utils.h"
 
 #define MAX_PLAYERS         (4)
@@ -38,8 +40,117 @@ static int value_right = VISIBLE_AREA_X1;   // values stop here (short of the sc
 static int about_scroll = 0;
 static int about_max_scroll = 0;
 
+/*
+ * Screenshots on the Overview page: menu/metadata/A/B/C/D/screenshot_N.png (make_screenshots.py),
+ * decoded in the background by the PNG decoder. The first is decoded once the selection has
+ * settled; with several, the next is decoded every SCREENSHOT_CYCLE_MS and swapped in.
+ */
+#define SCREENSHOT_MAX          (9)
+#define SCREENSHOT_SETTLE_MS    (250)   // don't decode while scrolling past games
+#define SCREENSHOT_CYCLE_MS     (2500)
+static struct {
+    char base[256];             // ".../screenshot_" (the number and ".png" follow)
+    bool counted;               // count is known (looked up once the selection settles)
+    int count;                  // screenshots this game has
+    int shown_index;            // 1-based number of the one shown (0: none yet)
+    surface_t *shown;
+    uint32_t selected_ms;       // when this game was selected
+    uint32_t shown_ms;          // when the shown one appeared
+    bool decoding;
+    int generation;             // bumped on every game change, to drop stale decodes
+} shots;
+
+
+static void screenshots_reset (void) {
+    if (shots.decoding) {
+        png_decoder_abort();
+    }
+    if (shots.shown) {
+        rspq_wait();    // the RDP may still be drawing it
+        surface_free(shots.shown);
+        free(shots.shown);
+    }
+    int generation = shots.generation + 1;
+    memset(&shots, 0, sizeof(shots));
+    shots.generation = generation;
+}
+
+/** @brief Note where the selected game's screenshots would be (call once its ROM info is loaded). */
+static void screenshots_select (const char *rom_path, const char game_code[4]) {
+    rom_info_metadata_path(rom_path, game_code, shots.base, sizeof(shots.base));
+    char *name = strrchr(shots.base, '/');
+    if (name) {
+        snprintf(name + 1, sizeof(shots.base) - (size_t) (name + 1 - shots.base), "screenshot_");
+    } else {
+        shots.base[0] = '\0';
+    }
+    shots.selected_ms = get_ticks_ms();
+}
+
+/** @brief How many screenshots the game has: screenshot_1.png, screenshot_2.png, ... */
+static void screenshots_count (void) {
+    shots.counted = true;
+    for (shots.count = 0; shots.base[0] != '\0' && shots.count < SCREENSHOT_MAX; shots.count++) {
+        char path[280];
+        snprintf(path, sizeof(path), "%s%d.png", shots.base, shots.count + 1);
+        if (!file_exists(path)) {
+            break;
+        }
+    }
+}
+
+static void screenshot_decoded (png_err_t err, surface_t *image, void *data) {
+    int generation = (int) (intptr_t) data;
+    shots.decoding = false;
+    if (err != PNG_OK || !image) {
+        return;
+    }
+    if (generation != shots.generation) {
+        surface_free(image);
+        free(image);
+        return;
+    }
+    if (shots.shown) {
+        rspq_wait();
+        surface_free(shots.shown);
+        free(shots.shown);
+    }
+    shots.shown = image;
+    shots.shown_index = (shots.shown_index % shots.count) + 1;
+    shots.shown_ms = get_ticks_ms();
+}
+
+/** @brief Once the selection settles, count the screenshots and decode the first; then one per cycle. */
+static void screenshots_update (void) {
+    uint32_t now = get_ticks_ms();
+    if (!shots.counted) {
+        if ((now - shots.selected_ms) < SCREENSHOT_SETTLE_MS) {
+            return;
+        }
+        screenshots_count();    // reads the SD card, so not while scrolling past games
+    }
+    if (shots.count == 0 || shots.decoding) {
+        return;
+    }
+    bool due = shots.shown
+        ? (shots.count > 1 && (now - shots.shown_ms) >= SCREENSHOT_CYCLE_MS)
+        : ((now - shots.selected_ms) >= SCREENSHOT_SETTLE_MS);
+    if (!due) {
+        return;
+    }
+    char path[280];
+    snprintf(path, sizeof(path), "%s%d.png", shots.base, (shots.shown_index % shots.count) + 1);
+    if (png_decoder_start(path, GAME_INFO_SCREENSHOT_WIDTH, GAME_INFO_SCREENSHOT_HEIGHT,
+            screenshot_decoded, (void *) (intptr_t) shots.generation) == PNG_OK) {
+        shots.decoding = true;
+    } else if (!shots.shown) {
+        shots.count = 0;    // can't be read: leave the space empty
+    }
+}
+
 
 static void current_free (void) {
+    screenshots_reset();
     if (current.is_rom) {
         rom_info_free_meta(&current.rom_info);
     }
@@ -67,6 +178,9 @@ static void current_load (path_t *path, entry_t *entry, bookkeeping_t *bookkeepi
     if (entry->type == ENTRY_TYPE_ROM) {
         current.is_rom = (rom_config_load(path, &current.rom_info) == ROM_OK);
         sound_poll();
+        if (current.is_rom) {
+            screenshots_select(path_get(path), current.rom_info.game_code);
+        }
     }
 }
 
@@ -269,12 +383,18 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     int y = GAME_INFO_Y;
     char date[32];
 
-    // Right half: the game's screenshot (a placeholder for now); values stop short of it.
+    // Right half: the game's screenshots, if it has any; values stop short of them.
     if (entry && entry->type == ENTRY_TYPE_ROM) {
+        screenshots_update();
+    }
+    if (entry && entry->type == ENTRY_TYPE_ROM && shots.count > 0) {
         value_right = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_GAP;
-        ui_components_box_draw(GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y,
-            GAME_INFO_SCREENSHOT_X + GAME_INFO_SCREENSHOT_WIDTH, GAME_INFO_SCREENSHOT_Y + GAME_INFO_SCREENSHOT_HEIGHT,
-            GAME_INFO_SCREENSHOT_PLACEHOLDER_COLOR);
+        if (shots.shown) {
+            rdpq_mode_push();
+                rdpq_set_mode_copy(false);
+                rdpq_tex_blit(shots.shown, GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y, NULL);
+            rdpq_mode_pop();
+        }
     }
 
     draw_row(y, "Player Count");

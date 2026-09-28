@@ -435,8 +435,6 @@
 #define GAME_INFO_SCREENSHOT_X          (((DISPLAY_WIDTH * 3) / 4) - (GAME_INFO_SCREENSHOT_WIDTH / 2))
 #define GAME_INFO_SCREENSHOT_Y          (GAME_INFO_Y - fonts_cap_height(GAME_INFO_FONT) - 8)
 #define GAME_INFO_SCREENSHOT_GAP        (12)
-/** @brief Screenshot placeholder, until screenshots are loaded. */
-#define GAME_INFO_SCREENSHOT_PLACEHOLDER_COLOR  PALETTE_TONE_1
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
