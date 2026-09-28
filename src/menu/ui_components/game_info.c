@@ -378,32 +378,41 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
 }
 
 /** @brief Page 1: players, accessories, region, credits and dates (the mockup layout). */
+/**
+ * @brief The game's screenshots in the right half of the info area (Overview and Details pages),
+ *        if it has any; values then stop short of them.
+ */
+static void draw_screenshots (entry_t *entry) {
+    if (!entry || entry->type != ENTRY_TYPE_ROM) {
+        return;
+    }
+    screenshots_update();
+    if (shots.count == 0) {
+        return;
+    }
+    value_right = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_GAP;
+    if (shots.shown) {
+        // Drop shadow, then a white outline, then the screenshot.
+        int x0 = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_OUTLINE;
+        int y0 = GAME_INFO_SCREENSHOT_Y - GAME_INFO_SCREENSHOT_OUTLINE;
+        int x1 = GAME_INFO_SCREENSHOT_X + GAME_INFO_SCREENSHOT_WIDTH + GAME_INFO_SCREENSHOT_OUTLINE;
+        int y1 = GAME_INFO_SCREENSHOT_Y + GAME_INFO_SCREENSHOT_HEIGHT + GAME_INFO_SCREENSHOT_OUTLINE;
+        int s = GAME_INFO_SCREENSHOT_SHADOW;
+        ui_components_box_draw(x0 + s, y0 + s, x1 + s, y1 + s, GAME_INFO_SCREENSHOT_SHADOW_COLOR);
+        ui_components_box_draw(x0, y0, x1, y1, GAME_INFO_SCREENSHOT_OUTLINE_COLOR);
+        rdpq_mode_push();
+            rdpq_set_mode_copy(false);
+            rdpq_tex_blit(shots.shown, GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y, NULL);
+        rdpq_mode_pop();
+    }
+}
+
 static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     int x = GAME_INFO_VALUE_X;
     int y = GAME_INFO_Y;
     char date[32];
 
-    // Right half: the game's screenshots, if it has any; values stop short of them.
-    if (entry && entry->type == ENTRY_TYPE_ROM) {
-        screenshots_update();
-    }
-    if (entry && entry->type == ENTRY_TYPE_ROM && shots.count > 0) {
-        value_right = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_GAP;
-        if (shots.shown) {
-            // Drop shadow, then a white outline, then the screenshot.
-            int x0 = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_OUTLINE;
-            int y0 = GAME_INFO_SCREENSHOT_Y - GAME_INFO_SCREENSHOT_OUTLINE;
-            int x1 = GAME_INFO_SCREENSHOT_X + GAME_INFO_SCREENSHOT_WIDTH + GAME_INFO_SCREENSHOT_OUTLINE;
-            int y1 = GAME_INFO_SCREENSHOT_Y + GAME_INFO_SCREENSHOT_HEIGHT + GAME_INFO_SCREENSHOT_OUTLINE;
-            int s = GAME_INFO_SCREENSHOT_SHADOW;
-            ui_components_box_draw(x0 + s, y0 + s, x1 + s, y1 + s, GAME_INFO_SCREENSHOT_SHADOW_COLOR);
-            ui_components_box_draw(x0, y0, x1, y1, GAME_INFO_SCREENSHOT_OUTLINE_COLOR);
-            rdpq_mode_push();
-                rdpq_set_mode_copy(false);
-                rdpq_tex_blit(shots.shown, GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y, NULL);
-            rdpq_mode_pop();
-        }
-    }
+    draw_screenshots(entry);
 
     draw_row(y, "Player Count");
     draw_player_count(x, y, info ? info->meta.num_players : 0);
@@ -450,6 +459,8 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
 static void draw_details_page (entry_t *entry, rom_info_t *info) {
     int y = GAME_INFO_Y;
     char buffer[32];
+
+    draw_screenshots(entry);
 
     draw_row(y, "Game Code");
     snprintf(buffer, sizeof(buffer), "%.4s", info->game_code);
