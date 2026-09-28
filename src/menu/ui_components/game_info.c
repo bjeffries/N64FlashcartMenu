@@ -390,6 +390,14 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     if (entry && entry->type == ENTRY_TYPE_ROM && shots.count > 0) {
         value_right = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_GAP;
         if (shots.shown) {
+            // Drop shadow, then a white outline, then the screenshot.
+            int x0 = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_OUTLINE;
+            int y0 = GAME_INFO_SCREENSHOT_Y - GAME_INFO_SCREENSHOT_OUTLINE;
+            int x1 = GAME_INFO_SCREENSHOT_X + GAME_INFO_SCREENSHOT_WIDTH + GAME_INFO_SCREENSHOT_OUTLINE;
+            int y1 = GAME_INFO_SCREENSHOT_Y + GAME_INFO_SCREENSHOT_HEIGHT + GAME_INFO_SCREENSHOT_OUTLINE;
+            int s = GAME_INFO_SCREENSHOT_SHADOW;
+            ui_components_box_draw(x0 + s, y0 + s, x1 + s, y1 + s, GAME_INFO_SCREENSHOT_SHADOW_COLOR);
+            ui_components_box_draw(x0, y0, x1, y1, GAME_INFO_SCREENSHOT_OUTLINE_COLOR);
             rdpq_mode_push();
                 rdpq_set_mode_copy(false);
                 rdpq_tex_blit(shots.shown, GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y, NULL);

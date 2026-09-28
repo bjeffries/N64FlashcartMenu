@@ -435,6 +435,11 @@
 #define GAME_INFO_SCREENSHOT_X          (((DISPLAY_WIDTH * 3) / 4) - (GAME_INFO_SCREENSHOT_WIDTH / 2))
 #define GAME_INFO_SCREENSHOT_Y          (GAME_INFO_Y - fonts_cap_height(GAME_INFO_FONT) - 8)
 #define GAME_INFO_SCREENSHOT_GAP        (12)
+/** @brief Screenshot frame: a white outline (like the selected cartridge's) and a drop shadow. */
+#define GAME_INFO_SCREENSHOT_OUTLINE    (2)
+#define GAME_INFO_SCREENSHOT_OUTLINE_COLOR  SPRITE_OUTLINE_SELECTED
+#define GAME_INFO_SCREENSHOT_SHADOW     (4)
+#define GAME_INFO_SCREENSHOT_SHADOW_COLOR   TEXT_SHADOW_COLOR
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
