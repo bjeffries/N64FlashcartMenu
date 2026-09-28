@@ -59,6 +59,7 @@ static struct {
     bool decoding;
     int generation;             // bumped on every game change, to drop stale decodes
 } shots;
+static bool screenshots_enabled = true;
 
 
 static void screenshots_reset (void) {
@@ -73,6 +74,24 @@ static void screenshots_reset (void) {
     int generation = shots.generation + 1;
     memset(&shots, 0, sizeof(shots));
     shots.generation = generation;
+}
+
+/** @brief Drop the loaded / loading screenshot but keep the selected game, so it can load again. */
+static void screenshots_release (void) {
+    if (shots.decoding) {
+        png_decoder_abort();
+        shots.decoding = false;
+    }
+    if (shots.shown) {
+        rspq_wait();
+        surface_free(shots.shown);
+        free(shots.shown);
+        shots.shown = NULL;
+    }
+    shots.shown_index = 0;
+    shots.counted = false;
+    shots.count = 0;
+    shots.generation++;
 }
 
 /** @brief Note where the selected game's screenshots would be (call once its ROM info is loaded). */
@@ -383,7 +402,7 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
  *        if it has any; values then stop short of them.
  */
 static void draw_screenshots (entry_t *entry) {
-    if (!entry || entry->type != ENTRY_TYPE_ROM) {
+    if (!screenshots_enabled || !entry || entry->type != ENTRY_TYPE_ROM) {
         return;
     }
     screenshots_update();
@@ -563,6 +582,16 @@ bool ui_components_game_info_scroll (int direction) {
 /**
  * @brief Forget the cached info (e.g. after a game's settings changed).
  */
+/**
+ * @brief Turn the screenshot gallery on or off (off: none are loaded or shown).
+ */
+void ui_components_game_info_screenshots_enable (bool enabled) {
+    if (!enabled && screenshots_enabled) {
+        screenshots_release();
+    }
+    screenshots_enabled = enabled;
+}
+
 void ui_components_game_info_invalidate (void) {
     current_free();
 }

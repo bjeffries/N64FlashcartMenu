@@ -56,6 +56,13 @@ static component_context_menu_t palette_picker = {
     }
 };
 
+static bool get_screenshot_gallery (menu_t *menu) { return menu->settings.screenshot_gallery_enabled; }
+static void set_screenshot_gallery (menu_t *menu, bool value) {
+    menu->settings.screenshot_gallery_enabled = value;
+    ui_components_game_info_screenshots_enable(value);
+    settings_save(&menu->settings);
+}
+
 static bool get_hidden_games (menu_t *menu) { return menu->settings.show_hidden_games; }
 static void set_hidden_games (menu_t *menu, bool value) {
     menu->settings.show_hidden_games = value;
@@ -145,6 +152,8 @@ static void ask_reset (menu_t *menu) {
 static option_t options[] = {
     { .label = "Boot Animation", .type = OPTION_TOGGLE, .get = get_boot_animation, .set = set_boot_animation,
       .description = "Play the Eclipse Cart animation when the console is switched on." },
+    { .label = "Screenshot Gallery", .type = OPTION_TOGGLE, .get = get_screenshot_gallery, .set = set_screenshot_gallery,
+      .description = "Show game screenshots in the Library's info panel, changing every few seconds." },
     { .label = "Palette", .type = OPTION_CHOICE, .picker = &palette_picker,
       .description = "Colors of the menu. Button icons and cartridges keep their own colors." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,

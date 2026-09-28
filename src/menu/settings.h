@@ -62,6 +62,9 @@ typedef struct {
     /** @brief Play the boot animation at power-on */
     bool boot_animation_enabled;
 
+    /** @brief Show game screenshots in the Library's info panel */
+    bool screenshot_gallery_enabled;
+
     /** @brief Enable Sound effects within the menu */
     bool soundfx_enabled;
 

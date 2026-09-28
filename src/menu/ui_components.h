@@ -441,6 +441,9 @@ void ui_components_game_info_dots_draw(int page, int count);
  */
 void ui_components_game_info_invalidate(void);
 
+/** @brief Turn the screenshot gallery (Menu Settings > Screenshot Gallery) on or off. */
+void ui_components_game_info_screenshots_enable(bool enabled);
+
 /**
  * @brief Turn a file name into a display title (drops extension and region tags, fixes ", The").
  *
