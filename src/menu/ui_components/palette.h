@@ -18,12 +18,12 @@
 
 #include <libdragon.h>
 
-/** @brief The palettes, in the order Menu Settings lists them. */
+/** @brief The palettes, in the order Menu Settings lists them: Dusk (the default), then A-Z. */
 typedef enum {
-    UI_PALETTE_MONOCHROME,
-    UI_PALETTE_GALAXY,
     UI_PALETTE_DUSK,
     UI_PALETTE_DAWN,
+    UI_PALETTE_GALAXY,
+    UI_PALETTE_MONOCHROME,
     UI_PALETTE_COUNT,
     UI_PALETTE_DEFAULT = UI_PALETTE_DUSK,       /**< Before settings load, and for unknown keys */
 } ui_palette_id_t;

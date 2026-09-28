@@ -62,10 +62,11 @@ static component_context_menu_t palette_picker = {
     .draw_extra = draw_palette_swatches,
     .extra_width = (5 * PALETTE_SWATCH_SIZE) + (4 * PALETTE_SWATCH_GAP),
     .list = {
-        { .text = "Monochrome", .action = set_palette, .arg = (void *) (UI_PALETTE_MONOCHROME) },
-        { .text = "Galaxy", .action = set_palette, .arg = (void *) (UI_PALETTE_GALAXY) },
+        // Same order as ui_palette_id_t (the colour squares are drawn by row).
         { .text = "Dusk", .action = set_palette, .arg = (void *) (UI_PALETTE_DUSK) },
         { .text = "Dawn", .action = set_palette, .arg = (void *) (UI_PALETTE_DAWN) },
+        { .text = "Galaxy", .action = set_palette, .arg = (void *) (UI_PALETTE_GALAXY) },
+        { .text = "Monochrome", .action = set_palette, .arg = (void *) (UI_PALETTE_MONOCHROME) },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
