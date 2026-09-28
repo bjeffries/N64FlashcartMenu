@@ -33,6 +33,7 @@ This builds the menu without the emulator test data and copies:
 | `/sc64menu.n64` | the menu |
 | `/menu/labels.db` | cartridge label art |
 | `/menu/metadata/…/metadata.ini` | titles, developer, publisher, year, players, descriptions |
+| `/menu/metadata/…/screenshot_N.png` | game screenshots (224×168), from `mockups/game_screenshots/<Game Name>_<n>.png` |
 
 It lists any games it couldn't find metadata for. Run it again whenever you add games or change
 the metadata JSON.
