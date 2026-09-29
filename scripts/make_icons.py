@@ -17,8 +17,9 @@ from PIL import Image, ImageDraw
 
 from sprite_colors import SPRITE_COLORS    # src/menu/ui_components/sprite_colors.h
 
-GREEN = SPRITE_COLORS['BUTTON_A']
-RED = SPRITE_COLORS['BUTTON_B']
+BLUE = SPRITE_COLORS['BUTTON_A']
+GREEN = SPRITE_COLORS['BUTTON_B']
+RED = SPRITE_COLORS['BUTTON_START']
 YELLOW = SPRITE_COLORS['BUTTON_C']
 LIGHT_GREY = SPRITE_COLORS['BUTTON_GRAY']   # L, R, Z (and the tab bar: TAB_BAR_COLOR)
 BLACK = SPRITE_COLORS['BUTTON_GLYPH']
@@ -128,14 +129,14 @@ def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else 'assets/images'
 
     icons = {
-        'button_a': letter(circle(ROUND_SIZE, GREEN), 'A'),
-        'button_b': letter(circle(ROUND_SIZE, RED), 'B'),
+        'button_a': letter(circle(ROUND_SIZE, BLUE), 'A'),
+        'button_b': letter(circle(ROUND_SIZE, GREEN), 'B'),
         'button_c_right': triangle(circle(ROUND_SIZE, YELLOW), 'right'),
         'button_c_up': triangle(circle(ROUND_SIZE, YELLOW), 'up'),
         'button_c_down': triangle(circle(ROUND_SIZE, YELLOW), 'down'),
         'button_c_left': triangle(circle(ROUND_SIZE, YELLOW), 'left'),
         'button_z': letter(circle(ROUND_SIZE, LIGHT_GREY), 'Z'),
-        'button_start': letter(circle(ROUND_SIZE, RED), 'S'),     # Start: the B button's red
+        'button_start': letter(circle(ROUND_SIZE, RED), 'S'),
         'tab_l': letter(tab_end_l(), 'L', TAB_LETTER_INSET, PILL_W),
         'tab_r': letter(tab_end_l().transpose(Image.FLIP_LEFT_RIGHT), 'R', TAB_END_W - TAB_PILL_W, PILL_W),
     }

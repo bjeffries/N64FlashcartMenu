@@ -20,8 +20,9 @@
 #include <libdragon.h>
 
 /* Button icons */
-#define SPRITE_BUTTON_A             RGBA32(0x8F, 0xD6, 0x94, 0xFF)  /**< A */
-#define SPRITE_BUTTON_B             RGBA32(0xF2, 0x9A, 0x9A, 0xFF)  /**< B */
+#define SPRITE_BUTTON_A             RGBA32(0x8F, 0xB4, 0xF0, 0xFF)  /**< A: blue, as on the N64 controller */
+#define SPRITE_BUTTON_B             RGBA32(0x8F, 0xD6, 0x94, 0xFF)  /**< B: green */
+#define SPRITE_BUTTON_START         RGBA32(0xF2, 0x9A, 0x9A, 0xFF)  /**< Start: red */
 #define SPRITE_BUTTON_C             RGBA32(0xF5, 0xD7, 0x6E, 0xFF)  /**< C-buttons */
 #define SPRITE_BUTTON_GRAY          RGBA32(0xC8, 0xC8, 0xC8, 0xFF)  /**< L, R, Z, and the tab bar joining L and R */
 #define SPRITE_BUTTON_GLYPH         RGBA32(0x00, 0x00, 0x00, 0xFF)  /**< Letters and arrows on the buttons */
