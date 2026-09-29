@@ -11,7 +11,8 @@
 #include "constants.h"
 
 #define HINT_ICON_GAP   (6)
-#define HINT_STACK_OFFSET   (5)     // a stacked second icon sits this far right and down
+#define HINT_STACK_DROP     (5)     // the second icon of a pair sits this far lower
+#define HINT_SLASH_GAP      (4)     // space either side of the "/" between a pair of icons
 
 static const char *icon_paths[ICON_COUNT] = {
     [ICON_A] = "rom:/button_a.sprite",
@@ -66,6 +67,11 @@ static float text_advance (const char *text, bool ink_only) {
     return width;
 }
 
+/** @brief Extra width of a "(A) / (Start)" pair over a single icon: the slash and the second icon. */
+static int pair_extra_width (ui_icon_t second) {
+    return HINT_SLASH_GAP + (int) (text_advance("/", false) + 0.5f) + HINT_SLASH_GAP + icon_get(second)->width;
+}
+
 /**
  * @brief Draw a row of button hints centred at the bottom of the screen.
  *
@@ -80,7 +86,7 @@ void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
         bool last = (i == count - 1);
         width += icon_get(hints[i].icon)->width + HINT_ICON_GAP + (int) (text_advance(hints[i].text, last) + 0.5f);
         if (hints[i].stacked) {
-            width += HINT_STACK_OFFSET;
+            width += pair_extra_width(hints[i].behind);
         }
         if (!last) {
             width += LIBRARY_HINT_GAP;
@@ -97,16 +103,20 @@ void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
 }
 
 /**
- * @brief A hint for two buttons that do the same thing: the second icon peeks out from behind the
- *        first (offset right and down, like stacked coins), then the label.
+ * @brief A hint for two buttons that do the same thing: "(A) / (Start) Label", the second icon a
+ *        little lower than the first (staggered).
  */
 int ui_components_button_hint_draw_stacked (ui_icon_t icon, ui_icon_t behind, int x, int baseline, const char *text) {
     sprite_t *sprite = icon_get(icon);
     int y = baseline - (fonts_cap_height(TITLE_FONT) / 2) - (sprite->height / 2);
-    ui_components_icon_draw(behind, x + HINT_STACK_OFFSET, y + HINT_STACK_OFFSET);
     ui_components_icon_draw(icon, x, y);
 
-    int text_x = x + sprite->width + HINT_STACK_OFFSET + HINT_ICON_GAP;
+    int slash_x = x + sprite->width + HINT_SLASH_GAP;
+    rdpq_textmetrics_t slash = rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, TITLE_FONT, slash_x, baseline, "/");
+    int second_x = slash_x + (int) (slash.advance_x) + HINT_SLASH_GAP;
+    ui_components_icon_draw(behind, second_x, y + HINT_STACK_DROP);
+
+    int text_x = second_x + icon_get(behind)->width + HINT_ICON_GAP;
     rdpq_textmetrics_t metrics = rdpq_text_printf(
         &(rdpq_textparms_t) { .style_id = STL_DEFAULT },
         TITLE_FONT, text_x, baseline, "%s", text
