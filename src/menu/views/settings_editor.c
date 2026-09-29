@@ -204,7 +204,7 @@ static option_t options[] = {
     { .label = "Start Folder", .type = OPTION_ACTION, .value = start_folder_value,
       .action = reset_start_folder, .action_name = "Reset",
       .description = "Folder the Library opens in. Set it with C-Left on a folder; A resets it to the top." },
-    { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset,
+    { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset, .action_name = "Reset",
       .description = "Put every menu setting back to its default." },
 };
 
