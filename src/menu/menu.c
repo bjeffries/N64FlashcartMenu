@@ -119,6 +119,13 @@ static void menu_init (boot_params_t *boot_params) {
     
     display_set_fps_limit(FPS_LIMIT);
 
+    for (int i = 0; i < 2; i++) {
+        color_t colours[UI_PALETTE_COLOURS];
+        for (int c = 0; c < UI_PALETTE_COLOURS; c++) {
+            colours[c] = ui_palette_from_rgb(menu->settings.custom_palettes[i][c]);
+        }
+        ui_palette_set_colours(UI_PALETTE_CUSTOM_1 + i, colours);
+    }
     ui_palette_set(ui_palette_from_key(menu->settings.palette));    // before fonts_init: text styles use it
     path_push(path, MENU_CUSTOM_FONT_FILE);
     fonts_init(path_get(path));

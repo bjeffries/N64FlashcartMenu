@@ -8,6 +8,7 @@
 #define FONTS_H__
 
 #include <stdint.h>
+#include <graphics.h>
 
 /**
  * @brief Font type enumeration.
@@ -42,6 +43,9 @@ typedef enum {
     STL_SOFT,        /**< Mid-tone text on a highlight-coloured surface (selected keyboard key) */
     STL_SHADOW_SOFT, /**< Shadow for STL_SOFT: between it and the highlight */
     STL_FADE_SHADOW, /**< Shadow for STL_FADE text, faded by the same level */
+    STL_PREVIEW_TEXT,      /**< Palette editor preview: set per frame with fonts_set_style_colour() */
+    STL_PREVIEW_SECONDARY,
+    STL_PREVIEW_SHADOW,
 } menu_font_style_t;
 
 /**
@@ -58,6 +62,11 @@ void fonts_init(char *custom_font_path);
  * @brief Recolour the text styles of every font after switching palettes.
  */
 void fonts_apply_palette(void);
+
+/**
+ * @brief Set one style's colour on every font (for STL_PREVIEW_*, which aren't palette colours).
+ */
+void fonts_set_style_colour(menu_font_style_t style, color_t colour);
 
 /**
  * @brief Height of a font's capital letters in pixels (measured when the fonts load).

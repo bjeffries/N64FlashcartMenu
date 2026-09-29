@@ -34,6 +34,10 @@ static void set_boot_animation (menu_t *menu, bool value) {
 
 static void set_palette (menu_t *menu, void *arg) {
     ui_palette_id_t id = (ui_palette_id_t) (intptr_t) arg;
+    if (ui_palette_is_custom(id)) {
+        ui_components_palette_editor_open(id);     // applied when saved (see process())
+        return;
+    }
     ui_palette_set(id);
     fonts_apply_palette();
     free(menu->settings.palette);
@@ -67,6 +71,8 @@ static component_context_menu_t palette_picker = {
         { .text = "Dawn", .action = set_palette, .arg = (void *) (UI_PALETTE_DAWN) },
         { .text = "Galaxy", .action = set_palette, .arg = (void *) (UI_PALETTE_GALAXY) },
         { .text = "Monochrome", .action = set_palette, .arg = (void *) (UI_PALETTE_MONOCHROME) },
+        { .text = "Custom 1", .action = set_palette, .arg = (void *) (UI_PALETTE_CUSTOM_1) },
+        { .text = "Custom 2", .action = set_palette, .arg = (void *) (UI_PALETTE_CUSTOM_2) },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
@@ -208,7 +214,31 @@ static option_list_t list = {
 };
 
 
+/** @brief Keep and use a custom palette saved in the palette editor. */
+static void apply_custom_palette (menu_t *menu) {
+    ui_palette_id_t id = ui_components_palette_editor_palette();
+    color_t colours[UI_PALETTE_COLOURS];
+    ui_components_palette_editor_colours(colours);
+    int slot = id - UI_PALETTE_CUSTOM_1;
+    for (int i = 0; i < UI_PALETTE_COLOURS; i++) {
+        menu->settings.custom_palettes[slot][i] = ui_palette_to_rgb(colours[i]);
+    }
+    ui_palette_set_colours(id, colours);
+    ui_palette_set(id);
+    fonts_apply_palette();
+    free(menu->settings.palette);
+    menu->settings.palette = strdup(ui_palette_info(id)->key);
+    settings_save(&menu->settings);
+}
+
 static void process (menu_t *menu) {
+    if (ui_components_palette_editor_is_open()) {
+        if (ui_components_palette_editor_process(menu) == PALETTE_EDITOR_DONE) {
+            apply_custom_palette(menu);
+        }
+        return;
+    }
+
     if (confirm_reset) {
         if (menu->actions.enter) {
             settings_reset_to_defaults();
@@ -235,7 +265,14 @@ static void process (menu_t *menu) {
 static void draw (menu_t *menu, surface_t *d) {
     ui_components_attach_clear(d);
 
-    ui_components_option_screen_draw(menu, "Menu Settings", &list);
+    if (ui_components_palette_editor_is_open()) {
+        // The editor draws its own button hints.
+        rdpq_text_printf(NULL, TITLE_FONT, CAROUSEL_SELECTED_X, LIBRARY_HEADER_Y, "Menu Settings");
+        ui_components_option_list_draw(menu, &list, SETTINGS_LIST_Y, SETTINGS_LIST_Y + (OPTION_LIST_ROW_PITCH * (OPTION_LIST_VISIBLE_ROWS - 1)));
+        ui_components_palette_editor_draw();
+    } else {
+        ui_components_option_screen_draw(menu, "Menu Settings", &list);
+    }
 
     if (confirm_reset) {
         ui_components_messagebox_draw(

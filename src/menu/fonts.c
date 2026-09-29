@@ -70,6 +70,12 @@ void fonts_apply_palette (void) {
     }
 }
 
+void fonts_set_style_colour (menu_font_style_t style, color_t colour) {
+    for (int id = FNT_DEFAULT; id <= FNT_LAST; id++) {
+        rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(id), style, &((rdpq_fontstyle_t) { .color = colour }));
+    }
+}
+
 void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
     // From the background (0) to the text colour (255).
     rdpq_font_t *font = (rdpq_font_t *) rdpq_text_get_font(font_id);

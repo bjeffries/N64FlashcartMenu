@@ -7,6 +7,29 @@
 
 static char *settings_path = NULL;
 
+static void load_colours (ini_t *ini, const char *key, const uint32_t defaults[5], uint32_t out[5]) {
+    const char *text = ini_get_string(ini, "menu", key, "");
+    for (int i = 0; i < 5; i++) {
+        out[i] = defaults[i];
+    }
+    for (int i = 0; i < 5 && text && *text; i++) {
+        char *end;
+        unsigned long value = strtoul(text, &end, 16);
+        if (end == text) {
+            break;
+        }
+        out[i] = (uint32_t) (value & 0xFFFFFF);
+        text = (*end == ',') ? end + 1 : end;
+    }
+}
+
+static void save_colours (ini_t *ini, const char *key, const uint32_t colours[5]) {
+    char text[64];
+    snprintf(text, sizeof(text), "%06lX,%06lX,%06lX,%06lX,%06lX",
+        (unsigned long) colours[0], (unsigned long) colours[1], (unsigned long) colours[2], (unsigned long) colours[3], (unsigned long) colours[4]);
+    ini_set_string(ini, "menu", key, text);
+}
+
 
 static settings_t init = {
     .schema_revision = 1,
@@ -17,6 +40,10 @@ static settings_t init = {
     .show_hidden_games = false,
     .default_directory = "/",
     .palette = "dusk",
+    .custom_palettes = {
+        { 0x000000, 0x1E1E1E, 0x404040, 0x808080, 0xFFFFFF },   // Monochrome
+        { 0x000000, 0x1E1E1E, 0x404040, 0x808080, 0xFFFFFF },
+    },
     .use_saves_folder = true,
     .show_saves_folder = false,
     .show_save_files = false,
@@ -65,6 +92,8 @@ void settings_load (settings_t *settings) {
     settings->default_directory = strdup(ini_get_string(ini, "menu", "default_directory", init.default_directory));
     free(settings->palette);
     settings->palette = strdup(ini_get_string(ini, "menu", "palette", init.palette));
+    load_colours(ini, "custom1_colors", init.custom_palettes[0], settings->custom_palettes[0]);
+    load_colours(ini, "custom2_colors", init.custom_palettes[1], settings->custom_palettes[1]);
     settings->use_saves_folder = ini_get_bool(ini, "menu", "use_saves_folder", init.use_saves_folder);
     settings->show_saves_folder = ini_get_bool(ini, "menu", "show_saves_folder", init.show_saves_folder);
     settings->show_save_files = ini_get_bool(ini, "menu", "show_save_files", init.show_save_files);
@@ -104,6 +133,8 @@ void settings_save (settings_t *settings) {
     ini_set_bool(ini, "menu", "show_hidden_games", settings->show_hidden_games);
     ini_set_string(ini, "menu", "default_directory", settings->default_directory);
     ini_set_string(ini, "menu", "palette", settings->palette);
+    save_colours(ini, "custom1_colors", settings->custom_palettes[0]);
+    save_colours(ini, "custom2_colors", settings->custom_palettes[1]);
     ini_set_bool(ini, "menu", "use_saves_folder", settings->use_saves_folder);
     ini_set_bool(ini, "menu", "show_saves_folder", settings->show_saves_folder);
     ini_set_bool(ini, "menu", "show_save_files", settings->show_save_files);

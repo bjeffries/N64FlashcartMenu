@@ -24,6 +24,8 @@ typedef enum {
     UI_PALETTE_DAWN,
     UI_PALETTE_GALAXY,
     UI_PALETTE_MONOCHROME,
+    UI_PALETTE_CUSTOM_1,        /**< Edited in the palette editor (starts as Monochrome) */
+    UI_PALETTE_CUSTOM_2,
     UI_PALETTE_COUNT,
     UI_PALETTE_DEFAULT = UI_PALETTE_DUSK,       /**< Before settings load, and for unknown keys */
 } ui_palette_id_t;
@@ -41,6 +43,27 @@ typedef struct {
 
 /** @brief The palette in use. */
 extern const ui_palette_t *ui_palette;
+
+/** @brief Number of colours in a palette (background, three tones, highlight). */
+#define UI_PALETTE_COLOURS  (5)
+
+/** @brief 0xRRGGBB to a colour, and back. */
+static inline color_t ui_palette_from_rgb (uint32_t rgb) {
+    return (color_t) { .r = (rgb >> 16) & 0xFF, .g = (rgb >> 8) & 0xFF, .b = rgb & 0xFF, .a = 0xFF };
+}
+static inline uint32_t ui_palette_to_rgb (color_t c) {
+    return ((uint32_t) c.r << 16) | ((uint32_t) c.g << 8) | c.b;
+}
+
+/** @brief Whether a palette is one of the user's custom ones. */
+static inline bool ui_palette_is_custom (ui_palette_id_t id) {
+    return id == UI_PALETTE_CUSTOM_1 || id == UI_PALETTE_CUSTOM_2;
+}
+
+/** @brief A palette's five colours, in order: background, tone 1-3, highlight. */
+void ui_palette_colours(ui_palette_id_t id, color_t out[UI_PALETTE_COLOURS]);
+/** @brief Set a custom palette's colours (call fonts_apply_palette() if it is in use). */
+void ui_palette_set_colours(ui_palette_id_t id, const color_t colours[UI_PALETTE_COLOURS]);
 
 /** @brief Switch palettes (call fonts_apply_palette() afterwards to recolour text). */
 void ui_palette_set(ui_palette_id_t id);

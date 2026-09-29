@@ -7,6 +7,8 @@
 #ifndef SETTINGS_H__
 #define SETTINGS_H__
 
+#include <stdint.h>
+
 
 /** @brief Settings Structure */
 typedef struct {
@@ -58,6 +60,9 @@ typedef struct {
 
     /** @brief UI palette, by its config.ini key ("monochrome", "galaxy", "dusk", "dawn") */
     char *palette;
+
+    /** @brief Custom palettes' colours, 0xRRGGBB: background, tone 1-3, highlight */
+    uint32_t custom_palettes[2][5];
 
     /** @brief Play the boot animation at power-on */
     bool boot_animation_enabled;

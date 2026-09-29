@@ -10,6 +10,7 @@
 #include <libdragon.h>
 #include "menu_state.h"
 #include "fonts.h"
+#include "ui_components/palette.h"
 
 
 /** 
@@ -573,6 +574,26 @@ const char *ui_components_keyboard_text(void);
 
 /** @brief Draw the keyboard dialog and its button hints (nothing when closed). */
 void ui_components_keyboard_draw(void);
+
+/** @brief What the palette editor did this frame. */
+typedef enum {
+    PALETTE_EDITOR_EDITING,     /**< Still open */
+    PALETTE_EDITOR_DONE,        /**< Saved: use ui_components_palette_editor_colours() */
+    PALETTE_EDITOR_CANCELLED,   /**< Closed without saving */
+} palette_editor_result_t;
+
+/** @brief Open the palette editor on a custom palette, starting from its colours. */
+void ui_components_palette_editor_open(ui_palette_id_t id);
+/** @brief Whether the palette editor is showing (the view should hand it all input). */
+bool ui_components_palette_editor_is_open(void);
+/** @brief Handle input for the open palette editor. */
+palette_editor_result_t ui_components_palette_editor_process(menu_t *menu);
+/** @brief The palette being edited. */
+ui_palette_id_t ui_components_palette_editor_palette(void);
+/** @brief The edited colours (valid after PALETTE_EDITOR_DONE). */
+void ui_components_palette_editor_colours(color_t out[UI_PALETTE_COLOURS]);
+/** @brief Draw the palette editor and its button hints (nothing when closed). */
+void ui_components_palette_editor_draw(void);
 
 /**
  * @brief Initialize the context menu component.

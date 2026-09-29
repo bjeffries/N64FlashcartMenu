@@ -57,10 +57,16 @@ static bool frame_used (int frame) {
 void ui_components_loading_animation_prepare (void) {
     // The set rendered for the current palette's background (the first set is black).
     ui_components_loading_animation_free();
+    // The set rendered for the nearest background (exact for the built-in palettes; custom ones
+    // get the closest, so their edges may show a slight fringe).
     set = &loading_frame_sets[0];
+    int best = -1;
+    color_t bg = PALETTE_BACKGROUND;
     for (int i = 0; i < LOADING_FRAME_SETS; i++) {
-        color_t bg = PALETTE_BACKGROUND;
-        if (loading_frame_sets[i].r == bg.r && loading_frame_sets[i].g == bg.g && loading_frame_sets[i].b == bg.b) {
+        int dr = loading_frame_sets[i].r - bg.r, dg = loading_frame_sets[i].g - bg.g, db = loading_frame_sets[i].b - bg.b;
+        int distance = (dr * dr) + (dg * dg) + (db * db);
+        if (best < 0 || distance < best) {
+            best = distance;
             set = &loading_frame_sets[i];
         }
     }

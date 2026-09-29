@@ -8,7 +8,7 @@
 
 #include "palette.h"
 
-static const ui_palette_t palettes[UI_PALETTE_COUNT] = {
+static ui_palette_t palettes[UI_PALETTE_COUNT] = {
     [UI_PALETTE_MONOCHROME] = {
         .name = "Monochrome", .key = "monochrome",
         .background = { 0x00, 0x00, 0x00, 0xFF },
@@ -44,6 +44,23 @@ static const ui_palette_t palettes[UI_PALETTE_COUNT] = {
         .tone_3 = { 0x8C, 0x7B, 0x6B, 0xFF },
         .highlight = { 0xE0, 0xA4, 0x6B, 0xFF },
     },
+    // Edited in the palette editor; they start as Monochrome (settings load the saved colours).
+    [UI_PALETTE_CUSTOM_1] = {
+        .name = "Custom 1", .key = "custom1",
+        .background = { 0x00, 0x00, 0x00, 0xFF },
+        .tone_1 = { 0x1E, 0x1E, 0x1E, 0xFF },
+        .tone_2 = { 0x40, 0x40, 0x40, 0xFF },
+        .tone_3 = { 0x80, 0x80, 0x80, 0xFF },
+        .highlight = { 0xFF, 0xFF, 0xFF, 0xFF },
+    },
+    [UI_PALETTE_CUSTOM_2] = {
+        .name = "Custom 2", .key = "custom2",
+        .background = { 0x00, 0x00, 0x00, 0xFF },
+        .tone_1 = { 0x1E, 0x1E, 0x1E, 0xFF },
+        .tone_2 = { 0x40, 0x40, 0x40, 0xFF },
+        .tone_3 = { 0x80, 0x80, 0x80, 0xFF },
+        .highlight = { 0xFF, 0xFF, 0xFF, 0xFF },
+    },
 };
 
 static ui_palette_id_t current = UI_PALETTE_DEFAULT;
@@ -70,4 +87,25 @@ ui_palette_id_t ui_palette_from_key (const char *key) {
         }
     }
     return UI_PALETTE_DEFAULT;
+}
+
+void ui_palette_colours (ui_palette_id_t id, color_t out[UI_PALETTE_COLOURS]) {
+    const ui_palette_t *p = ui_palette_info(id);
+    out[0] = p->background;
+    out[1] = p->tone_1;
+    out[2] = p->tone_2;
+    out[3] = p->tone_3;
+    out[4] = p->highlight;
+}
+
+void ui_palette_set_colours (ui_palette_id_t id, const color_t colours[UI_PALETTE_COLOURS]) {
+    if (!ui_palette_is_custom(id)) {
+        return;
+    }
+    ui_palette_t *p = &palettes[id];
+    p->background = colours[0];
+    p->tone_1 = colours[1];
+    p->tone_2 = colours[2];
+    p->tone_3 = colours[3];
+    p->highlight = colours[4];
 }
