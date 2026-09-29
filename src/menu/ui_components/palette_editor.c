@@ -382,7 +382,9 @@ void ui_components_palette_editor_draw (void) {
     } else {
         draw_grid(middle_x, top_y);
     }
-    draw_preview(x0 + DIALOG_WIDTH - 32 - PREVIEW_WIDTH, top_y, shown);
+    int preview_x = x0 + DIALOG_WIDTH - 32 - PREVIEW_WIDTH;
+    ui_components_body_text_draw(&(rdpq_textparms_t) { .style_id = STL_GRAY }, preview_x, top_y - 10, "Preview");
+    draw_preview(preview_x, top_y, shown);
 
     const char *help[3] = {
         "Choose a colour to change. Start saves.",
