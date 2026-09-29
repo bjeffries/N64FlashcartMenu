@@ -83,6 +83,10 @@ void ui_components_button_hints_enable (bool enabled) {
     hints_enabled = enabled;
 }
 
+bool ui_components_button_hints_enabled (void) {
+    return hints_enabled;
+}
+
 void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
     if (count <= 0 || !hints_enabled) {
         return;

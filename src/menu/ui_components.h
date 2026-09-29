@@ -376,6 +376,8 @@ typedef struct {
 
 /** @brief Show or hide every button hint row (Menu Settings > Controller Hints). */
 void ui_components_button_hints_enable(bool enabled);
+/** @brief Whether button hint rows are shown (layouts can use the space when they aren't). */
+bool ui_components_button_hints_enabled(void);
 
 /** @brief Most hints a hint row can hold. */
 #define BUTTON_HINTS_MAX    (6)

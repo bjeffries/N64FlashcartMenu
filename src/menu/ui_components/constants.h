@@ -443,7 +443,9 @@
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */
-#define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30)
+#define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30 + (ui_components_button_hints_enabled() ? 0 : GAME_INFO_NO_HINTS_SHIFT))
+/** @brief With Controller Hints off, the info rows and screenshot move down by half the freed space. */
+#define GAME_INFO_NO_HINTS_SHIFT        (18)
 /**
  * @brief The UI's two text styles: 32px titles (TITLE_FONT, also the top and bottom bars) and
  *        16px body text drawn with a shadow (BODY_FONT, ui_components_body_text_draw()).
@@ -467,7 +469,7 @@
  *         and the bottom of the text area. */
 #define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_ascent(GAME_INFO_FONT) + 3))
 #define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_ascent(GAME_INFO_FONT)))
-#define GAME_INFO_ABOUT_BOTTOM          (LIBRARY_BUTTONS_Y - 34)
+#define GAME_INFO_ABOUT_BOTTOM          (ui_components_button_hints_enabled() ? (LIBRARY_BUTTONS_Y - 34) : (VISIBLE_AREA_Y1 - 12))
 
 /** @brief Size of an info page dot. */
 #define GAME_INFO_DOT_SIZE              (6)
