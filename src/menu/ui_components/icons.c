@@ -12,7 +12,7 @@
 
 #define HINT_ICON_GAP   (6)
 #define HINT_STACK_DROP     (5)     // the second icon of a pair sits this far lower
-#define HINT_SLASH_GAP      (4)     // space either side of the "/" between a pair of icons
+#define HINT_SLASH_GAP      (2)     // space either side of the "/" between a pair of icons
 
 static const char *icon_paths[ICON_COUNT] = {
     [ICON_A] = "rom:/button_a.sprite",
