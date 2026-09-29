@@ -10,7 +10,7 @@
  *   - fine-tune: red, green and blue in the screen's 32 steps. Up / Down choose the channel,
  *     Left / Right change it, A is done, B goes back to the grid.
  * A small preview window shows the palette being edited (the menu itself doesn't change until
- * it is saved).
+ * it is saved). Leaving with unsaved changes asks first: A leaves without saving, B keeps editing.
  */
 
 #include <math.h>
@@ -44,6 +44,8 @@ static struct {
     ui_palette_id_t id;
     stage_t stage;
     color_t colours[SLOTS];
+    color_t original[SLOTS];    // as opened, to tell whether anything changed
+    bool confirm_exit;          // "Exit without saving?" is showing
     int row;                    // colour list row (SAVE_ROW = Save)
     int grid_x, grid_y;
     int channel;                // fine-tune: 0 red, 1 green, 2 blue
@@ -123,7 +125,18 @@ void ui_components_palette_editor_open (ui_palette_id_t id) {
     editor.stage = STAGE_LIST;
     editor.row = 0;
     editor.channel = 0;
+    editor.confirm_exit = false;
     ui_palette_colours(id, editor.colours);
+    memcpy(editor.original, editor.colours, sizeof(editor.colours));
+}
+
+static bool changed (void) {
+    for (int i = 0; i < SLOTS; i++) {
+        if (ui_palette_to_rgb(editor.colours[i]) != ui_palette_to_rgb(editor.original[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /** @brief Whether the editor is showing (the view should hand it all input). */
@@ -155,6 +168,19 @@ palette_editor_result_t ui_components_palette_editor_process (menu_t *menu) {
     bool left = menu->actions.go_left && !menu->actions.go_fast;
     bool right = menu->actions.go_right && !menu->actions.go_fast;
 
+    if (editor.confirm_exit) {
+        if (menu->actions.enter) {          // exit without saving
+            editor.confirm_exit = false;
+            editor.open = false;
+            sound_play_effect(SFX_EXIT);
+            return PALETTE_EDITOR_CANCELLED;
+        } else if (menu->actions.back) {    // keep editing
+            editor.confirm_exit = false;
+            sound_play_effect(SFX_SETTING);
+        }
+        return PALETTE_EDITOR_EDITING;
+    }
+
     if (menu->actions.settings) {       // Start saves from anywhere
         editor.open = false;
         sound_play_effect(SFX_ENTER);
@@ -179,9 +205,14 @@ palette_editor_result_t ui_components_palette_editor_process (menu_t *menu) {
                 editor.colours[editor.row] = ui_palette_from_rgb(monochrome[editor.row]);
                 sound_play_effect(SFX_SETTING);
             } else if (menu->actions.back) {
-                editor.open = false;
-                sound_play_effect(SFX_EXIT);
-                return PALETTE_EDITOR_CANCELLED;
+                if (changed()) {
+                    editor.confirm_exit = true;     // ask before losing the changes
+                    sound_play_effect(SFX_SETTING);
+                } else {
+                    editor.open = false;
+                    sound_play_effect(SFX_EXIT);
+                    return PALETTE_EDITOR_CANCELLED;
+                }
             }
             break;
 
@@ -359,6 +390,12 @@ void ui_components_palette_editor_draw (void) {
         "Up / Down: channel. Left / Right: change it.",
     };
     ui_components_body_text_draw(&(rdpq_textparms_t) { .style_id = STL_GRAY }, x0, y0 + DIALOG_HEIGHT - 16, help[editor.stage]);
+
+    if (editor.confirm_exit) {
+        ui_components_messagebox_draw("Exit without saving?\n\nYour changes to %s will be lost.", ui_palette_info(editor.id)->name);
+        ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Exit" }, { ICON_B, "Keep Editing" } }, 2);
+        return;
+    }
 
     switch (editor.stage) {
         case STAGE_LIST:
