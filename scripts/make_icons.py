@@ -77,8 +77,9 @@ def letter(img, char, area_x=0, area_w=None):
 def tab_end_l():
     """Left end of the tab bar: an L pill whose right side curves down into the bar.
 
-    Anti-aliased against black (the header's background) with opaque darker greys, since
-    RGBA16 sprites only have 1-bit alpha. The right end is this shape mirrored.
+    Solid gray on a transparent background: RGBA16 sprites only have 1-bit alpha, so a pixel is
+    gray if the shape covers at least half of it (darker edge pixels showed as a dark border on
+    coloured palettes). The right end is this shape mirrored.
     """
     w, h, ss = TAB_END_W, PILL_H, SUPERSAMPLE
     bar_top = h - TAB_BAR_H
@@ -100,8 +101,8 @@ def tab_end_l():
         for x in range(w):
             hits = sum(inside(x + (i + 0.5) / ss, y + (j + 0.5) / ss) for i in range(ss) for j in range(ss))
             coverage = hits / (ss * ss)
-            if coverage >= 0.125:
-                px[x, y] = tuple(round(c * coverage) for c in LIGHT_GREY[:3]) + (0xFF,)
+            if coverage >= 0.5:
+                px[x, y] = LIGHT_GREY
     return img
 
 
