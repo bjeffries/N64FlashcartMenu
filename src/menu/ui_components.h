@@ -374,6 +374,9 @@ typedef struct {
     bool stacked;
 } button_hint_t;
 
+/** @brief Show or hide every button hint row (Menu Settings > Controller Hints). */
+void ui_components_button_hints_enable(bool enabled);
+
 /** @brief Most hints a hint row can hold. */
 #define BUTTON_HINTS_MAX    (6)
 

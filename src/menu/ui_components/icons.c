@@ -77,8 +77,14 @@ static int pair_extra_width (ui_icon_t second) {
  *
  * Centred on what is drawn: from the first icon's left edge to the last label's last pixel.
  */
+static bool hints_enabled = true;
+
+void ui_components_button_hints_enable (bool enabled) {
+    hints_enabled = enabled;
+}
+
 void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
-    if (count <= 0) {
+    if (count <= 0 || !hints_enabled) {
         return;
     }
     int width = 0;

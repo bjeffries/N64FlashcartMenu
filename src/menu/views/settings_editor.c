@@ -84,6 +84,13 @@ static void set_screenshot_gallery (menu_t *menu, bool value) {
     settings_save(&menu->settings);
 }
 
+static bool get_controller_hints (menu_t *menu) { return menu->settings.controller_hints_enabled; }
+static void set_controller_hints (menu_t *menu, bool value) {
+    menu->settings.controller_hints_enabled = value;
+    ui_components_button_hints_enable(value);
+    settings_save(&menu->settings);
+}
+
 static bool get_hidden_games (menu_t *menu) { return menu->settings.show_hidden_games; }
 static void set_hidden_games (menu_t *menu, bool value) {
     menu->settings.show_hidden_games = value;
@@ -175,6 +182,8 @@ static option_t options[] = {
       .description = "Play the Eclipse Cart animation when the console is switched on." },
     { .label = "Screenshot Gallery", .type = OPTION_TOGGLE, .get = get_screenshot_gallery, .set = set_screenshot_gallery,
       .description = "Show game screenshots in the Library's info panel, changing every few seconds." },
+    { .label = "Controller Hints", .type = OPTION_TOGGLE, .get = get_controller_hints, .set = set_controller_hints,
+      .description = "Show which buttons do what along the bottom of the screen." },
     { .label = "Palette", .type = OPTION_CHOICE, .picker = &palette_picker,
       .description = "Colors of the menu. Button icons and cartridges keep their own colors." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,

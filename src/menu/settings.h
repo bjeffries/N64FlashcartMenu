@@ -67,6 +67,9 @@ typedef struct {
     /** @brief Play the boot animation at power-on */
     bool boot_animation_enabled;
 
+    /** @brief Show the controller button hints along the bottom of the screen */
+    bool controller_hints_enabled;
+
     /** @brief Show game screenshots in the Library's info panel */
     bool screenshot_gallery_enabled;
 
