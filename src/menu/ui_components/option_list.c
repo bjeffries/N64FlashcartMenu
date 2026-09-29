@@ -130,7 +130,7 @@ const char *ui_components_option_list_action_name (option_list_t *list) {
     }
     switch (list->options[list->selected].type) {
         case OPTION_TOGGLE: return "Toggle";
-        case OPTION_CHOICE: return "Change";
+        case OPTION_CHOICE: return open_picker(list) ? "Select" : "Change";     // in the pop-up: pick a choice
         default: return list->options[list->selected].action_name ? list->options[list->selected].action_name : "Open";
     }
 }
