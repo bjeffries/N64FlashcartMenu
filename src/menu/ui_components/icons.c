@@ -11,8 +11,8 @@
 #include "constants.h"
 
 #define HINT_ICON_GAP   (6)
-#define HINT_STACK_DROP     (5)     // the second icon of a pair sits this far lower
-#define HINT_SLASH_GAP      (2)     // space either side of the "/" between a pair of icons
+#define HINT_PAIR_GAP       (4)     // space either side of the square between a pair of icons
+#define HINT_PAIR_SQUARE    (3)     // the square, like the one between accessories in the game info
 
 static const char *icon_paths[ICON_COUNT] = {
     [ICON_A] = "rom:/button_a.sprite",
@@ -67,9 +67,9 @@ static float text_advance (const char *text, bool ink_only) {
     return width;
 }
 
-/** @brief Extra width of a "(A) / (Start)" pair over a single icon: the slash and the second icon. */
+/** @brief Extra width of an "(A) ▪ (Start)" pair over a single icon: the square and the second icon. */
 static int pair_extra_width (ui_icon_t second) {
-    return HINT_SLASH_GAP + (int) (text_advance("/", false) + 0.5f) + HINT_SLASH_GAP + icon_get(second)->width;
+    return HINT_PAIR_GAP + HINT_PAIR_SQUARE + HINT_PAIR_GAP + icon_get(second)->width;
 }
 
 /**
@@ -103,18 +103,19 @@ void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
 }
 
 /**
- * @brief A hint for two buttons that do the same thing: "(A) / (Start) Label", the second icon a
- *        little lower than the first (staggered).
+ * @brief A hint for two buttons that do the same thing: "(A) ▪ (Start) Label", both icons level
+ *        with the other hints, separated by a small square as accessories are in the game info.
  */
 int ui_components_button_hint_draw_stacked (ui_icon_t icon, ui_icon_t behind, int x, int baseline, const char *text) {
     sprite_t *sprite = icon_get(icon);
     int y = baseline - (fonts_cap_height(TITLE_FONT) / 2) - (sprite->height / 2);
     ui_components_icon_draw(icon, x, y);
 
-    int slash_x = x + sprite->width + HINT_SLASH_GAP;
-    rdpq_textmetrics_t slash = rdpq_text_printf(&(rdpq_textparms_t) { .style_id = STL_GRAY }, TITLE_FONT, slash_x, baseline, "/");
-    int second_x = slash_x + (int) (slash.advance_x) + HINT_SLASH_GAP;
-    ui_components_icon_draw(behind, second_x, y + HINT_STACK_DROP);
+    int square_x = x + sprite->width + HINT_PAIR_GAP;
+    int square_y = y + (sprite->height / 2) - (HINT_PAIR_SQUARE / 2);
+    ui_components_box_draw(square_x, square_y, square_x + HINT_PAIR_SQUARE, square_y + HINT_PAIR_SQUARE, TEXT_SECONDARY_COLOR);
+    int second_x = square_x + HINT_PAIR_SQUARE + HINT_PAIR_GAP;
+    ui_components_icon_draw(behind, second_x, y);
 
     int text_x = second_x + icon_get(behind)->width + HINT_ICON_GAP;
     rdpq_textmetrics_t metrics = rdpq_text_printf(
