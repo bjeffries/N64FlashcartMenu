@@ -399,17 +399,21 @@ void ui_components_palette_editor_draw (void) {
 
     switch (editor.stage) {
         case STAGE_LIST:
-            ui_components_button_hints_draw((button_hint_t[]) {
-                { ICON_A, (editor.row == SAVE_ROW) ? "Save" : "Edit" }, { ICON_B, "Cancel" }, { ICON_Z, "Reset" },
-            }, (editor.row == SAVE_ROW) ? 2 : 3);
+            if (editor.row == SAVE_ROW) {
+                ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Save" }, { ICON_B, "Cancel" } }, 2);
+            } else {
+                ui_components_button_hints_draw((button_hint_t[]) {
+                    { ICON_A, "Edit" }, { ICON_B, "Cancel" }, { ICON_START, "Save" }, { ICON_Z, "Reset" },
+                }, 4);
+            }
             break;
         case STAGE_GRID:
             ui_components_button_hints_draw((button_hint_t[]) {
-                { ICON_A, "Choose" }, { ICON_B, "Back" }, { ICON_C_RIGHT, "Fine-tune" },
-            }, 3);
+                { ICON_A, "Choose" }, { ICON_B, "Back" }, { ICON_C_RIGHT, "Fine-tune" }, { ICON_START, "Save" },
+            }, 4);
             break;
         case STAGE_FINE:
-            ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Done" }, { ICON_B, "Back" } }, 2);
+            ui_components_button_hints_draw((button_hint_t[]) { { ICON_A, "Done" }, { ICON_B, "Back" }, { ICON_START, "Save" } }, 3);
             break;
     }
 }

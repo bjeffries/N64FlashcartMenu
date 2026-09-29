@@ -20,6 +20,7 @@ static const char *icon_paths[ICON_COUNT] = {
     [ICON_C_LEFT] = "rom:/button_c_left.sprite",
     [ICON_C_DOWN] = "rom:/button_c_down.sprite",
     [ICON_Z] = "rom:/button_z.sprite",
+    [ICON_START] = "rom:/button_start.sprite",
     [ICON_L] = "rom:/tab_l.sprite",     // tab bar ends: pill + curve into the bar
     [ICON_R] = "rom:/tab_r.sprite",
 };

@@ -39,6 +39,7 @@ GLYPHS = {
     'L': ['##.....', '##.....', '##.....', '##.....', '##.....', '##.....', '##.....', '##.....', '######.'],
     'R': ['######.', '##...##', '##...##', '##...##', '######.', '##.##..', '##..##.', '##...##', '##...##'],
     'Z': ['#######', '.....##', '....##.', '...##..', '..##...', '.##....', '##.....', '##.....', '#######'],
+    'S': ['.#####.', '##...##', '##.....', '##.....', '.#####.', '.....##', '.....##', '##...##', '.#####.'],
 }
 
 
@@ -134,6 +135,7 @@ def main():
         'button_c_down': triangle(circle(ROUND_SIZE, YELLOW), 'down'),
         'button_c_left': triangle(circle(ROUND_SIZE, YELLOW), 'left'),
         'button_z': letter(circle(ROUND_SIZE, LIGHT_GREY), 'Z'),
+        'button_start': letter(circle(ROUND_SIZE, RED), 'S'),     # Start: the B button's red
         'tab_l': letter(tab_end_l(), 'L', TAB_LETTER_INSET, PILL_W),
         'tab_r': letter(tab_end_l().transpose(Image.FLIP_LEFT_RIGHT), 'R', TAB_END_W - TAB_PILL_W, PILL_W),
     }

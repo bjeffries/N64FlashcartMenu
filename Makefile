@@ -131,6 +131,7 @@ IMAGES = \
 	button_c_down.png \
 	button_c_left.png \
 	button_z.png \
+	button_start.png \
 	tab_l.png \
 	tab_r.png
 

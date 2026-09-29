@@ -336,6 +336,7 @@ typedef enum {
     ICON_C_LEFT,
     ICON_C_DOWN,
     ICON_Z,
+    ICON_START,
     ICON_L,         /**< Left end of the tab bar (L pill curving into the bar) */
     ICON_R,         /**< Right end of the tab bar (mirror of ICON_L) */
     ICON_COUNT,

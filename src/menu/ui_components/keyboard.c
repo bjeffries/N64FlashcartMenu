@@ -234,6 +234,7 @@ void ui_components_keyboard_draw (void) {
     ui_components_button_hints_draw((button_hint_t[]) {
         { ICON_A, "Type" },
         { ICON_B, "Delete" },
+        { ICON_START, "Done" },
         { ICON_Z, "Cancel" },
-    }, 3);
+    }, 4);
 }
