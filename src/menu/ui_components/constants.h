@@ -467,8 +467,6 @@
  *         and the bottom of the text area. */
 #define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_ascent(GAME_INFO_FONT) + 3))
 #define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_ascent(GAME_INFO_FONT)))
-/** @brief Info value badges: from 2px above the info font's ascent to 3px below the baseline. */
-#define GAME_INFO_BADGE_TOP(y)          ((y) - fonts_ascent(GAME_INFO_FONT) - 2)
 #define GAME_INFO_ABOUT_BOTTOM          (LIBRARY_BUTTONS_Y - 34)
 
 /** @brief Size of an info page dot. */

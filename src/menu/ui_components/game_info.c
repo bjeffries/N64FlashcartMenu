@@ -301,8 +301,14 @@ static void draw_player_count (int x, int y, uint32_t players) {
         draw_text(x, y, STL_DEFAULT, "-");
         return;
     }
+    // The icons are 7px tall (rows y-8 to y-2, centred on the text's capitals); the badge fits
+    // them with BADGE_PADDING all round, its corners rounded by a 2px step.
     int width = (BADGE_PADDING * 2) + (MAX_PLAYERS * 7) - 2;
-    ui_components_box_draw(x, GAME_INFO_BADGE_TOP(y), x + width, y + 3, GAME_INFO_BADGE_COLOR);
+    int top = y - 8 - BADGE_PADDING;
+    int bottom = y - 1 + BADGE_PADDING;
+    ui_components_box_draw(x + 2, top, x + width - 2, bottom, GAME_INFO_BADGE_COLOR);
+    ui_components_box_draw(x + 1, top + 1, x + width - 1, bottom - 1, GAME_INFO_BADGE_COLOR);
+    ui_components_box_draw(x, top + 2, x + width, bottom - 2, GAME_INFO_BADGE_COLOR);
     for (uint32_t i = 0; i < MAX_PLAYERS; i++) {
         draw_player_icon(x + BADGE_PADDING + (i * 7), y - 8, (i < players) ? GAME_INFO_PLAYER_ON_COLOR : GAME_INFO_PLAYER_OFF_COLOR);
     }
