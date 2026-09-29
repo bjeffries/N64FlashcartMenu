@@ -457,7 +457,9 @@ static void process (menu_t *menu) {
         menu->browser.entry = &menu->browser.list[selected];
     }
 
-    if (menu->actions.enter && menu->browser.entry) {
+    // A opens / plays; Start plays too (games only).
+    bool start_play = menu->actions.settings && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_ROM;
+    if ((menu->actions.enter || start_play) && menu->browser.entry) {
         sound_play_effect(SFX_ENTER);
         switch (menu->browser.entry->type) {
             case ENTRY_TYPE_DIR:
@@ -592,7 +594,9 @@ static void draw_content (menu_t *menu, bool show_hints) {
     entry_t *entry = menu->browser.entry;
     bool is_game = entry && entry->type != ENTRY_TYPE_DIR;
     if (entry) {
-        hints[count++] = (button_hint_t) { ICON_A, is_game ? "Play" : "Open Folder" };
+        hints[count++] = is_game
+            ? (button_hint_t) { ICON_A, "Play", ICON_START, true }     // A or Start
+            : (button_hint_t) { ICON_A, "Open Folder" };
     }
     if (!path_is_root(menu->browser.directory)) {
         hints[count++] = (button_hint_t) { ICON_B, "Back" };

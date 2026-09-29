@@ -363,10 +363,15 @@ int ui_components_icon_width(ui_icon_t icon);
  */
 int ui_components_button_hint_draw(ui_icon_t icon, int x, int baseline, const char *text);
 
+/** @brief A hint for two buttons with the same action, the second icon stacked behind the first. */
+int ui_components_button_hint_draw_stacked(ui_icon_t icon, ui_icon_t behind, int x, int baseline, const char *text);
+
 /** @brief One button hint in a hint row. */
 typedef struct {
     ui_icon_t icon;
     const char *text;
+    ui_icon_t behind;       /**< With stacked: a second button that does the same, drawn behind the icon */
+    bool stacked;
 } button_hint_t;
 
 /** @brief Most hints a hint row can hold. */

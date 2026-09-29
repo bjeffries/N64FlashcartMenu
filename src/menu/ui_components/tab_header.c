@@ -82,7 +82,7 @@ void ui_components_tab_header_draw (menu_tab_t current) {
 }
 
 /**
- * @brief Handle L / R (previous / next tab) and Start (Settings tab).
+ * @brief Handle L / R (previous / next tab). (Start plays the selected game on the game tabs.)
  *
  * @return true if a tab switch was requested (menu->next_mode is set).
  */
@@ -93,8 +93,6 @@ bool ui_components_tab_process (menu_t *menu, menu_tab_t current) {
         next = (current + TAB_COUNT - 1) % TAB_COUNT;
     } else if (menu->actions.tab_next) {
         next = (current + 1) % TAB_COUNT;
-    } else if (menu->actions.settings) {
-        next = TAB_SETTINGS;
     }
 
     if (next == current) {

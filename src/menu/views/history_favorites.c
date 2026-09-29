@@ -90,7 +90,8 @@ static void process (menu_t *menu) {
         return;
     }
 
-    if (menu->actions.enter) {
+    // A or Start plays.
+    if (menu->actions.enter || (menu->actions.settings && entries[selected].type == ENTRY_TYPE_ROM)) {
         sound_play_effect(SFX_ENTER);
         open_selected(menu, false);
     } else if (menu->actions.c_up && entries[selected].type == ENTRY_TYPE_ROM) {    // Config
@@ -162,7 +163,7 @@ static void draw_content (menu_t *menu, bool show_hints) {
 
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;
-    hints[count++] = (button_hint_t) { ICON_A, "Play" };
+    hints[count++] = (button_hint_t) { ICON_A, "Play", ICON_START, true };     // A or Start
     hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfave" : "Fave" };
     if (entries[selected].type == ENTRY_TYPE_ROM) {
         hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };

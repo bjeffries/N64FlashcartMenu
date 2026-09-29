@@ -11,6 +11,7 @@
 #include "constants.h"
 
 #define HINT_ICON_GAP   (6)
+#define HINT_STACK_OFFSET   (5)     // a stacked second icon sits this far right and down
 
 static const char *icon_paths[ICON_COUNT] = {
     [ICON_A] = "rom:/button_a.sprite",
@@ -78,14 +79,39 @@ void ui_components_button_hints_draw (const button_hint_t *hints, int count) {
     for (int i = 0; i < count; i++) {
         bool last = (i == count - 1);
         width += icon_get(hints[i].icon)->width + HINT_ICON_GAP + (int) (text_advance(hints[i].text, last) + 0.5f);
+        if (hints[i].stacked) {
+            width += HINT_STACK_OFFSET;
+        }
         if (!last) {
             width += LIBRARY_HINT_GAP;
         }
     }
     int x = DISPLAY_CENTER_X - (width / 2);
     for (int i = 0; i < count; i++) {
-        x += ui_components_button_hint_draw(hints[i].icon, x, LIBRARY_BUTTONS_Y, hints[i].text) + LIBRARY_HINT_GAP;
+        if (hints[i].stacked) {
+            x += ui_components_button_hint_draw_stacked(hints[i].icon, hints[i].behind, x, LIBRARY_BUTTONS_Y, hints[i].text) + LIBRARY_HINT_GAP;
+        } else {
+            x += ui_components_button_hint_draw(hints[i].icon, x, LIBRARY_BUTTONS_Y, hints[i].text) + LIBRARY_HINT_GAP;
+        }
     }
+}
+
+/**
+ * @brief A hint for two buttons that do the same thing: the second icon peeks out from behind the
+ *        first (offset right and down, like stacked coins), then the label.
+ */
+int ui_components_button_hint_draw_stacked (ui_icon_t icon, ui_icon_t behind, int x, int baseline, const char *text) {
+    sprite_t *sprite = icon_get(icon);
+    int y = baseline - (fonts_cap_height(TITLE_FONT) / 2) - (sprite->height / 2);
+    ui_components_icon_draw(behind, x + HINT_STACK_OFFSET, y + HINT_STACK_OFFSET);
+    ui_components_icon_draw(icon, x, y);
+
+    int text_x = x + sprite->width + HINT_STACK_OFFSET + HINT_ICON_GAP;
+    rdpq_textmetrics_t metrics = rdpq_text_printf(
+        &(rdpq_textparms_t) { .style_id = STL_DEFAULT },
+        TITLE_FONT, text_x, baseline, "%s", text
+    );
+    return (text_x - x) + (int) (metrics.advance_x);
 }
 
 int ui_components_button_hint_draw (ui_icon_t icon, int x, int baseline, const char *text) {
