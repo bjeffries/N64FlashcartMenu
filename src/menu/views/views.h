@@ -51,6 +51,9 @@ void view_browser_display(menu_t *menu, surface_t *display);
 /** @brief Draw the Library behind the game loading animation (surface already attached). */
 void view_browser_draw_behind_loading(menu_t *menu);
 
+/** @brief Fade the Library in from its background colour the next time it is shown (after the boot animation). */
+void view_browser_fade_in(void);
+
 /** @brief Draw Favorites / History behind the game loading animation (surface already attached). */
 void view_history_favorites_draw_behind_loading(menu_t *menu);
 

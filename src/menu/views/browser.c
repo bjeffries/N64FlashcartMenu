@@ -613,6 +613,41 @@ static void draw_content (menu_t *menu, bool show_hints) {
     ui_components_button_hints_draw(hints, count);
 }
 
+#define FADE_IN_MS  (300)     // Library fade-in from its background after the boot animation
+
+static struct {
+    bool pending;           // fade in on the next draws
+    uint32_t start_ms;      // first drawn frame (0: not started), so loading can't eat into it
+} fade_in;
+
+void view_browser_fade_in (void) {
+    fade_in.pending = true;
+    fade_in.start_ms = 0;
+}
+
+/** @brief Cover the screen with the background colour, fading out over FADE_IN_MS. */
+static void draw_fade_in (surface_t *d) {
+    if (!fade_in.pending) {
+        return;
+    }
+    uint32_t now = get_ticks_ms();
+    if (fade_in.start_ms == 0) {
+        fade_in.start_ms = now;
+    }
+    uint32_t elapsed = now - fade_in.start_ms;
+    if (elapsed >= FADE_IN_MS) {
+        fade_in.pending = false;
+        return;
+    }
+    color_t cover = PALETTE_BACKGROUND;
+    cover.a = (uint8_t) (0xFF - (elapsed * 0xFF) / FADE_IN_MS);
+    rdpq_set_mode_standard();
+    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+    rdpq_set_prim_color(cover);
+    rdpq_fill_rectangle(0, 0, d->width, d->height);
+}
+
 static void draw (menu_t *menu, surface_t *d) {
     ui_components_attach_clear(d);
 
@@ -629,6 +664,8 @@ static void draw (menu_t *menu, surface_t *d) {
             title
         );
     }
+
+    draw_fade_in(d);
 
     rdpq_detach_show();
 }

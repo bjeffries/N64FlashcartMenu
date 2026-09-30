@@ -17,7 +17,9 @@
 #include "../ui_components/constants.h"
 
 #define HOLD_MS     (700)   // show the finished title this long after the last frame
-#define FADE_MS     (300)   // then fade to black over this long (only if the Library's background differs)
+#define FADE_MS     (300)   // then fade out over this long: to black if the Library's background
+                            // differs; otherwise just the title, into the background, and the
+                            // Library fades in from it (view_browser_fade_in)
 
 static struct {
     bool playing;
@@ -50,7 +52,7 @@ static void draw_animation (menu_t *menu, surface_t *d) {
     }
     uint32_t elapsed = get_ticks_ms() - animation.start_ms;
     uint32_t frames_ms = (BOOT_ANIMATION_FRAMES * 1000) / BOOT_ANIMATION_FPS;
-    uint32_t fade_ms = fade_needed() ? FADE_MS : 0;     // same background: go straight to the Library
+    bool to_black = fade_needed();
     int frame = (int) ((elapsed * BOOT_ANIMATION_FPS) / 1000);
     if (frame >= BOOT_ANIMATION_FRAMES) {
         frame = BOOT_ANIMATION_FRAMES - 1;
@@ -78,19 +80,25 @@ static void draw_animation (menu_t *menu, surface_t *d) {
         rdpq_set_mode_copy(false);
         rdpq_sprite_blit(animation.sprite, boot_animation_frames[frame].x, boot_animation_frames[frame].y, NULL);
 
-        if (fade_ms > 0 && elapsed > frames_ms + HOLD_MS) {
+        if (elapsed > frames_ms + HOLD_MS) {
             uint32_t fade = elapsed - frames_ms - HOLD_MS;
-            uint8_t alpha = (fade >= fade_ms) ? 0xFF : (uint8_t) ((fade * 0xFF) / fade_ms);
+            uint8_t alpha = (fade >= FADE_MS) ? 0xFF : (uint8_t) ((fade * 0xFF) / FADE_MS);
+            color_t cover = to_black
+                ? FADE_COLOR
+                : RGBA32(BOOT_ANIMATION_BG_R, BOOT_ANIMATION_BG_G, BOOT_ANIMATION_BG_B, 0xFF);
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(PALETTE_WITH_ALPHA(FADE_COLOR, alpha));
+            rdpq_set_prim_color(PALETTE_WITH_ALPHA(cover, alpha));
             rdpq_fill_rectangle(0, 0, d->width, d->height);
         }
     }
     rdpq_detach_show();
 
-    if (elapsed >= frames_ms + HOLD_MS + fade_ms) {
+    if (elapsed >= frames_ms + HOLD_MS + FADE_MS) {
+        if (!to_black) {
+            view_browser_fade_in();
+        }
         animation_finish(menu);
     }
 }
