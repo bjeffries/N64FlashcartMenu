@@ -6,8 +6,9 @@ Library. Frames smoothed against black leave dark fringes on a coloured backgrou
 renders the frames against each distinct palette background (from palette.c), with the same
 geometry and timing as boot_animation/make_eclipse_intro.py:
 
-  - the colours are the boot animation's in every set (the moon still goes from grey to
-    black); only the smoothing of the edges differs;
+  - the geometry is exactly the boot animation's (title_mask() places the sun, as it does for
+    the boot frames) and the colours are the boot animation's in every set (the moon goes from
+    grey to the Eclipse background, #231A2E); only the smoothing of the edges differs;
   - in the last 20% of loading the menu fades the screen to black (LOADING_FADE_START), so each
     of those frames is smoothed against the background it will be drawn on, and the corona
     frames (after loading) against black.
@@ -16,8 +17,8 @@ Only the frames the menu uses are written (it skips every other approach frame; 
 loading_animation.c). Output, per set (named after the first palette with that background):
 
   assets/loading/<set>/NN.png          cropped, paletted, background colour transparent
-  src/menu/loading_frames.h            per set: background colour, and per frame the image to
-                                       draw and where
+  src/menu/loading_frames.h            the sun's centre in the frames, and per set: background
+                                       colour, and per frame the image to draw and where
 
 Usage: scripts/make_loading_frames.py
 """
@@ -88,7 +89,7 @@ def render(E, frame, background, sun_mask, corona_mask):
     if frame <= APPROACH_LAST:
         image.paste(mix(background, E.colour_lerp(E.SUN_START_COLOUR, E.SUN_END_COLOUR, p), fade), (0, 0), sun_mask)
     moon_mask = sun_mask if centre == E.SUN_CENTRE else E.disc_mask(centre, E.MOON_RADIUS)
-    moon = E.colour_lerp(E.MOON_START_COLOUR, E.MOON_END_COLOUR, p)     # grey to black, as on the boot animation
+    moon = E.colour_lerp(E.MOON_START_COLOUR, E.MOON_END_COLOUR, p)     # grey to #231A2E, as on the boot animation
     image.paste(mix(background, moon, fade), (0, 0), moon_mask)
     if corona > 0:
         image.paste(mix(background, E.CORONA_COLOUR, corona * fade), (0, 0), corona_mask)
@@ -112,6 +113,7 @@ def paletted(image, background):
 
 def main():
     E = load_intro()
+    E.title_mask()      # places the sun exactly as on the boot animation (sets E.SUN_CENTRE)
     sun_mask = E.disc_mask(E.SUN_CENTRE, E.SUN_RADIUS)
     corona_mask = E.disc_mask(E.SUN_CENTRE, E.CORONA_OUTER_RADIUS)
     corona_mask.paste(0, (0, 0), E.disc_mask(E.SUN_CENTRE, E.CORONA_INNER_RADIUS))
@@ -158,6 +160,10 @@ def main():
         f'#define LOADING_FRAME_COUNT     ({FRAMES})',
         f'#define LOADING_FRAME_SETS      ({len(sets)})',
         f'#define LOADING_MAX_IMAGES      ({max(s[2] for s in sets)})',
+        '',
+        '/** @brief The sun\'s centre in the frames\' coordinates (the boot animation\'s, rounded). */',
+        f'#define LOADING_SUN_X           ({round(E.SUN_CENTRE[0])})',
+        f'#define LOADING_SUN_Y           ({round(E.SUN_CENTRE[1])})',
         '',
         '/** @brief One set of loading frames, smoothed against a palette background (rom:/loading/<dir>/NN.sprite). */',
         'typedef struct {',

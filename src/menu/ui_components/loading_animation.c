@@ -32,9 +32,6 @@
 #define RING_FADE_MS        (550)   // then fade it out (after loading: 100% is still totality).
                                     // With the corona that's 1s: the length of the loading wind.
 
-// The sun's centre in the boot animation (make_eclipse_intro.py: SUN_CENTRE = 213.5, 200).
-#define SUN_X               (213)
-#define SUN_Y               (200)
 
 static sprite_t *sprites[LOADING_MAX_IMAGES];
 static const loading_frame_set_t *set = &loading_frame_sets[0];
@@ -156,8 +153,8 @@ void ui_components_loading_animation_draw (float progress) {
     if (image < 0 || !sprites[image]) {
         return;     // an all-black frame (the moon exactly over the sun)
     }
-    int x = LOADING_ANIMATION_CENTER_X - SUN_X + set->frames[frame - 1].x;
-    int y = LOADING_ANIMATION_CENTER_Y - SUN_Y + set->frames[frame - 1].y;
+    int x = LOADING_ANIMATION_CENTER_X - LOADING_SUN_X + set->frames[frame - 1].x;
+    int y = LOADING_ANIMATION_CENTER_Y - LOADING_SUN_Y + set->frames[frame - 1].y;
     rdpq_mode_push();
         rdpq_set_mode_copy(true);   // the background colour is transparent
         rdpq_sprite_blit(sprites[image], x, y, NULL);

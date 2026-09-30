@@ -1,10 +1,10 @@
 /**
  * @file startup.c
- * @brief Startup view: plays the Eclipse Cart boot animation at power-on, then opens the Library
+ * @brief Startup view: plays the Eclipse boot animation at power-on, then opens the Library
  * @ingroup view
  *
  * The frames (boot_animation/, converted by scripts/make_boot_animation.py) are cropped CI8
- * sprites in rom:/boot/, loaded one at a time as they're needed so the animation doesn't hold
+ * sprites in rom:/boot/, drawn over the animation's background colour (BOOT_ANIMATION_BG_*), loaded one at a time as they're needed so the animation doesn't hold
  * ~700 KiB of memory. Timing follows the clock, so a slow frame never slows the animation down.
  * It only plays on a cold boot (not when Reset brings you back from a game) and can't be skipped;
  * Menu Settings > Boot Animation turns it off (and its sound, which ignores Sound Effects).
@@ -64,7 +64,9 @@ static void draw_animation (menu_t *menu, surface_t *d) {
         animation.image = image;
     }
 
-    rdpq_attach_clear(d, NULL);
+    rdpq_attach(d, NULL);
+    rdpq_set_mode_fill(RGBA32(BOOT_ANIMATION_BG_R, BOOT_ANIMATION_BG_G, BOOT_ANIMATION_BG_B, 0xFF));
+    rdpq_fill_rectangle(0, 0, d->width, d->height);
     if (animation.sprite) {
         rdpq_set_mode_copy(false);
         rdpq_sprite_blit(animation.sprite, boot_animation_frames[frame].x, boot_animation_frames[frame].y, NULL);

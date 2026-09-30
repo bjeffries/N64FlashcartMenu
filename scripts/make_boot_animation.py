@@ -4,11 +4,15 @@
 Reads boot_animation/eclipse_intro/intro_NNNN.png (640x480, see boot_animation/README.txt)
 and writes
 
-  assets/boot/NN.png                 one image per distinct frame, cropped to its content and
-                                     stored with an exact palette, black transparent (CI8 sprites)
-  src/menu/boot_animation_frames.h   per frame: which image to draw, and where
+  assets/boot/NN.png                 one image per distinct frame, cropped to what differs from
+                                     the background and stored with an exact palette, background
+                                     first and transparent (CI8 sprites)
+  src/menu/boot_animation_frames.h   the background colour, and per frame which image to draw
+                                     and where
 
-Blank (all-black) frames get no image; identical frames share one.
+The background is the colour of frame 1, which must be uniform (#231A2E for the Eclipse intro);
+the menu fills the screen with it. Blank (background-only) frames get no image; identical frames
+share one.
 
 Usage: scripts/make_boot_animation.py [frames_dir=boot_animation/eclipse_intro]
 """
@@ -17,27 +21,26 @@ import glob
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 OUT_IMAGES = 'assets/boot'
 OUT_HEADER = 'src/menu/boot_animation_frames.h'
 FPS = 30
 
 
-def paletted(image):
+def paletted(image, background):
     """Convert an RGB image with <= 256 colours to 'P' mode without changing any pixel."""
     colours = image.getcolors(256)
     if colours is None:
         sys.exit('A frame has more than 256 colours')
-    # Black first, so padding and index 0 are the background.
-    palette = sorted((c for _, c in colours), key=lambda c: c != (0, 0, 0))
+    # Background first, so padding and index 0 are the background.
+    palette = sorted((c for _, c in colours), key=lambda c: c != background)
     index = {c: i for i, c in enumerate(palette)}
     rgb = image.tobytes()
     pixels = bytes(index[tuple(rgb[i:i + 3])] for i in range(0, len(rgb), 3))
     out = Image.frombytes('P', image.size, pixels)
     out.putpalette([v for c in palette for v in c])
-    # Black is transparent, so the frames can also be drawn over the Library (loading animation).
-    if palette[0] == (0, 0, 0):
+    if palette[0] == background:
         out.info['transparency'] = 0
     return out
 
@@ -55,9 +58,13 @@ def main():
     images = {}         # (x, y, crop bytes) -> image number
     table = []          # per frame: (image number or -1, x, y)
     total_bytes = 0
+    first = Image.open(paths[0]).convert('RGB')
+    background = first.getpixel((0, 0))
+    if first.getcolors(1) is None:
+        sys.exit('Frame 1 must be a uniform background colour')
     for path in paths:
         frame = Image.open(path).convert('RGB')
-        bbox = frame.getbbox()
+        bbox = ImageChops.difference(frame, Image.new('RGB', frame.size, background)).getbbox()
         if bbox is None:
             table.append((-1, 0, 0))
             continue
@@ -70,7 +77,7 @@ def main():
         if key not in images:
             number = len(images)
             images[key] = number
-            image = paletted(crop)
+            image = paletted(crop, background)
             image.save(os.path.join(OUT_IMAGES, f'{number:02d}.png'), transparency=image.info.get('transparency'))
             total_bytes += crop.width * crop.height
         table.append((images[key], x0, y0))
@@ -85,7 +92,12 @@ def main():
         f'#define BOOT_ANIMATION_IMAGES       ({len(images)})',
         f'#define BOOT_ANIMATION_FRAMES       ({len(table)})',
         '',
-        '/** @brief Per frame: image to draw (-1 = black frame) and its top-left position. */',
+        '/** @brief Background colour of the animation; the screen is filled with it behind the frames. */',
+        f'#define BOOT_ANIMATION_BG_R         (0x{background[0]:02X})',
+        f'#define BOOT_ANIMATION_BG_G         (0x{background[1]:02X})',
+        f'#define BOOT_ANIMATION_BG_B         (0x{background[2]:02X})',
+        '',
+        '/** @brief Per frame: image to draw (-1 = background only) and its top-left position. */',
         'static const struct { int8_t image; int16_t x; int16_t y; } boot_animation_frames[BOOT_ANIMATION_FRAMES] = {',
     ]
     lines += [f'    {{ {image}, {x}, {y} }},' for image, x, y in table]
