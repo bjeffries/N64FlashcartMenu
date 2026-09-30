@@ -6,7 +6,8 @@
  *
  * Plays the boot animation's eclipse (without the title): the sun and moon fade in, the moon's
  * approach follows the loading progress, and the corona appears once loading is done, holds, then
- * fades out so the game starts from black rather than cutting away from the ring. The eclipse
+ * drops off the bottom of the screen, accelerating like something let go of, so the game starts
+ * from black rather than cutting away from the ring. The eclipse
  * is centred in the Library's info panel, which is left blank while a game loads.
  *
  * The shapes are drawn with the RDP each frame rather than from pre-rendered images: every
@@ -29,8 +30,9 @@
 #define FADE_IN_MS          (8 * FRAME_MS)      // frames 1-9: sun and moon fade in
 #define CORONA_MS           (3 * FRAME_MS)      // frames 55-57: the corona fades in
 #define DONE_HOLD_MS        (350)   // show the full corona this long,
-#define RING_FADE_MS        (550)   // then fade it out (after loading: 100% is still totality).
-                                    // With the corona that's 1s: the length of the loading wind.
+#define DROP_MS             (550)   // then drop it off the bottom of the screen (constant
+                                    // acceleration from rest). With the corona that's 1s: the
+                                    // length of the loading wind.
 
 // Geometry in pixels, relative to the sun's centre (make_eclipse_intro.py).
 #define SUN_RADIUS          (28.0f)
@@ -111,8 +113,8 @@ static void span (int x0, int x1, int y, color_t colour, float coverage) {
  * accurate for circles this size: fully inside by half a pixel is solid, and so on.
  */
 static void draw_ring (float cx, float cy, float inner, float outer, color_t colour) {
-    int y0 = (int) floorf(cy - outer - 0.5f);
-    int y1 = (int) ceilf(cy + outer + 0.5f);
+    int y0 = MAX(0, (int) floorf(cy - outer - 0.5f));
+    int y1 = MIN(DISPLAY_HEIGHT - 1, (int) ceilf(cy + outer + 0.5f));
     for (int y = y0; y <= y1; y++) {
         float dy = (y + 0.5f) - cy;
         float reach = outer + 0.5f;
@@ -217,7 +219,7 @@ void ui_components_loading_animation_done (void) {
  * @brief Whether the corona has finished after ui_components_loading_animation_done().
  */
 bool ui_components_loading_animation_finished (void) {
-    return done && (get_ticks_ms() - done_ms) >= CORONA_MS + DONE_HOLD_MS + RING_FADE_MS;
+    return done && (get_ticks_ms() - done_ms) >= CORONA_MS + DONE_HOLD_MS + DROP_MS;
 }
 
 /**
@@ -240,12 +242,16 @@ void ui_components_loading_animation_draw (float progress) {
     float fade = ui_components_loading_animation_fade_in();
     float approach = 0.0f;
     float corona = 0.0f;
+    float drop = 0.0f;      // how far the eclipse has fallen, in pixels
     if (done) {
         uint32_t since = now - done_ms;
         approach = 1.0f;
         corona = clamp01((since + FRAME_MS) / (float) CORONA_MS);
         if (since > CORONA_MS + DONE_HOLD_MS) {
-            corona *= 1.0f - clamp01((since - CORONA_MS - DONE_HOLD_MS) / (float) RING_FADE_MS);
+            // Fall from rest, accelerating so the ring's top edge clears the screen at DROP_MS.
+            float t = clamp01((since - CORONA_MS - DONE_HOLD_MS) / (float) DROP_MS);
+            float distance_to_fall = DISPLAY_HEIGHT - (LOADING_ANIMATION_CENTER_Y - CORONA_OUTER_RADIUS - 1.0f);
+            drop = distance_to_fall * t * t;
         }
     } else if (now - start_ms >= FADE_IN_MS) {
         approach = progress;
@@ -258,7 +264,7 @@ void ui_components_loading_animation_draw (float progress) {
     p = p * p * (3.0f - 2.0f * p);      // how far the eclipse is: drives the colours
 
     float cx = LOADING_ANIMATION_CENTER_X;
-    float cy = LOADING_ANIMATION_CENTER_Y;
+    float cy = LOADING_ANIMATION_CENTER_Y + drop;
 
     rdpq_mode_push();
         rdpq_set_mode_standard();
