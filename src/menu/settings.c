@@ -38,7 +38,7 @@ static settings_t init = {
     .force_progressive_scan = false,
     .show_protected_entries = false,
     .show_hidden_games = false,
-    .default_directory = "/",
+    .default_directory = SETTINGS_DEFAULT_DIRECTORY,  // falls back to "/" if missing (menu.c)
     .palette = "dusk",
     .custom_palettes = {
         { 0x000000, 0x1E1E1E, 0x404040, 0x808080, 0xFFFFFF },   // Monochrome

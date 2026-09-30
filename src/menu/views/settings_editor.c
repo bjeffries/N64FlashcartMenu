@@ -169,7 +169,7 @@ static const char *start_folder_value (menu_t *menu) {
 
 static void reset_start_folder (menu_t *menu) {
     free(menu->settings.default_directory);
-    menu->settings.default_directory = strdup("/");
+    menu->settings.default_directory = strdup(SETTINGS_DEFAULT_DIRECTORY);
     settings_save(&menu->settings);
 }
 
@@ -212,7 +212,7 @@ static option_t options[] = {
 #endif
     { .label = "Start Folder", .type = OPTION_ACTION, .value = start_folder_value,
       .action = reset_start_folder, .action_name = "Reset",
-      .description = "Folder the Library opens in. Set it with C-Left on a folder; A resets it to the top." },
+      .description = "Folder the Library opens in. Set it with C-Left on a folder; A resets it to /N64." },
     { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset, .action_name = "Reset",
       .description = "Put every menu setting back to its default." },
 };

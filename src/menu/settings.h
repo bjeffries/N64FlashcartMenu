@@ -10,6 +10,9 @@
 #include <stdint.h>
 
 
+/** @brief Start Folder default, and what Menu Settings > Start Folder resets it to. */
+#define SETTINGS_DEFAULT_DIRECTORY  "/N64"
+
 /** @brief Settings Structure */
 typedef struct {
     /** @brief Settings version */
