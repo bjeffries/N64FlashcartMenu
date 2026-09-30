@@ -33,6 +33,9 @@
 #define DROP_MS             (550)   // then drop it off the bottom of the screen (constant
                                     // acceleration from rest). With the corona that's 1s: the
                                     // length of the loading wind.
+#define BLUR_SHUTTER_MS     (FRAME_MS)  // motion blur while dropping: where the ring was over this long,
+#define BLUR_SPACING_PX     (3.0f)      // drawn as a fading copy every this many pixels,
+#define BLUR_MAX_COPIES     (6)         // at most this many
 
 // Geometry in pixels, relative to the sun's centre (make_eclipse_intro.py).
 #define SUN_RADIUS          (28.0f)
@@ -152,6 +155,13 @@ static void draw_ring (float cx, float cy, float inner, float outer, color_t col
     }
 }
 
+/** @brief How far the eclipse has fallen this long into the drop: from rest, accelerating so the ring's top edge clears the screen at DROP_MS. */
+static float drop_offset (float ms) {
+    float t = clamp01(ms / DROP_MS);
+    float distance = DISPLAY_HEIGHT - (LOADING_ANIMATION_CENTER_Y - CORONA_OUTER_RADIUS - 1.0f);
+    return distance * t * t;
+}
+
 /** @brief The moon's centre relative to the sun for an approach of 0-1: constant speed on a shallow arc. */
 static void moon_offset (float t, float *x, float *y) {
     float distance = SUN_RADIUS + MOON_RADIUS + MOON_START_GAP;
@@ -242,16 +252,13 @@ void ui_components_loading_animation_draw (float progress) {
     float fade = ui_components_loading_animation_fade_in();
     float approach = 0.0f;
     float corona = 0.0f;
-    float drop = 0.0f;      // how far the eclipse has fallen, in pixels
+    float drop_ms = -1.0f;  // time into the drop (< 0: not dropping)
     if (done) {
         uint32_t since = now - done_ms;
         approach = 1.0f;
         corona = clamp01((since + FRAME_MS) / (float) CORONA_MS);
         if (since > CORONA_MS + DONE_HOLD_MS) {
-            // Fall from rest, accelerating so the ring's top edge clears the screen at DROP_MS.
-            float t = clamp01((since - CORONA_MS - DONE_HOLD_MS) / (float) DROP_MS);
-            float distance_to_fall = DISPLAY_HEIGHT - (LOADING_ANIMATION_CENTER_Y - CORONA_OUTER_RADIUS - 1.0f);
-            drop = distance_to_fall * t * t;
+            drop_ms = since - CORONA_MS - DONE_HOLD_MS;
         }
     } else if (now - start_ms >= FADE_IN_MS) {
         approach = progress;
@@ -264,6 +271,7 @@ void ui_components_loading_animation_draw (float progress) {
     p = p * p * (3.0f - 2.0f * p);      // how far the eclipse is: drives the colours
 
     float cx = LOADING_ANIMATION_CENTER_X;
+    float drop = (drop_ms >= 0.0f) ? drop_offset(drop_ms) : 0.0f;
     float cy = LOADING_ANIMATION_CENTER_Y + drop;
 
     rdpq_mode_push();
@@ -281,7 +289,20 @@ void ui_components_loading_animation_draw (float progress) {
             draw_ring(cx + moon_x, cy + moon_y, -1.0f, MOON_RADIUS, moon);
         }
         if (corona > 0.0f) {
-            draw_ring(cx, cy, CORONA_INNER_RADIUS, CORONA_OUTER_RADIUS, mix(behind, style.corona, corona * fade));
+            color_t ring = mix(behind, style.corona, corona * fade);
+            // Motion blur: fading copies where the ring was during the last frame, oldest first,
+            // so each newer copy covers the older ones and the trail fades out behind it.
+            if (drop_ms > 0.0f) {
+                float trail = drop - drop_offset(drop_ms - BLUR_SHUTTER_MS);
+                int copies = MIN(BLUR_MAX_COPIES, (int) ceilf(trail / BLUR_SPACING_PX));
+                for (int i = copies; i >= 1; i--) {
+                    float ghost_drop = drop_offset(drop_ms - (BLUR_SHUTTER_MS * i) / (float) copies);
+                    float strength = 1.0f - i / (float) (copies + 1);
+                    draw_ring(cx, LOADING_ANIMATION_CENTER_Y + ghost_drop, CORONA_INNER_RADIUS, CORONA_OUTER_RADIUS,
+                        mix(behind, ring, strength));
+                }
+            }
+            draw_ring(cx, cy, CORONA_INNER_RADIUS, CORONA_OUTER_RADIUS, ring);
         }
     rdpq_mode_pop();
 }
