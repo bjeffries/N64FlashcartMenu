@@ -17,7 +17,7 @@
 #include "../ui_components/constants.h"
 
 #define HOLD_MS     (700)   // show the finished title this long after the last frame
-#define FADE_MS     (300)   // then fade to black over this long
+#define FADE_MS     (300)   // then fade to black over this long (only if the Library's background differs)
 
 static struct {
     bool playing;
@@ -37,6 +37,12 @@ static void animation_finish (menu_t *menu) {
     menu->next_mode = MENU_MODE_BROWSER;
 }
 
+/** @brief Whether to fade to black before the Library: only if its background colour differs from the animation's. */
+static bool fade_needed (void) {
+    color_t bg = PALETTE_BACKGROUND;
+    return !(bg.r == BOOT_ANIMATION_BG_R && bg.g == BOOT_ANIMATION_BG_G && bg.b == BOOT_ANIMATION_BG_B);
+}
+
 static void draw_animation (menu_t *menu, surface_t *d) {
     if (animation.start_ms == 0) {
         animation.start_ms = get_ticks_ms();    // start on the first drawn frame, after loading
@@ -44,6 +50,7 @@ static void draw_animation (menu_t *menu, surface_t *d) {
     }
     uint32_t elapsed = get_ticks_ms() - animation.start_ms;
     uint32_t frames_ms = (BOOT_ANIMATION_FRAMES * 1000) / BOOT_ANIMATION_FPS;
+    uint32_t fade_ms = fade_needed() ? FADE_MS : 0;     // same background: go straight to the Library
     int frame = (int) ((elapsed * BOOT_ANIMATION_FPS) / 1000);
     if (frame >= BOOT_ANIMATION_FRAMES) {
         frame = BOOT_ANIMATION_FRAMES - 1;
@@ -71,9 +78,9 @@ static void draw_animation (menu_t *menu, surface_t *d) {
         rdpq_set_mode_copy(false);
         rdpq_sprite_blit(animation.sprite, boot_animation_frames[frame].x, boot_animation_frames[frame].y, NULL);
 
-        if (elapsed > frames_ms + HOLD_MS) {
+        if (fade_ms > 0 && elapsed > frames_ms + HOLD_MS) {
             uint32_t fade = elapsed - frames_ms - HOLD_MS;
-            uint8_t alpha = (fade >= FADE_MS) ? 0xFF : (uint8_t) ((fade * 0xFF) / FADE_MS);
+            uint8_t alpha = (fade >= fade_ms) ? 0xFF : (uint8_t) ((fade * 0xFF) / fade_ms);
             rdpq_set_mode_standard();
             rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
             rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
@@ -83,7 +90,7 @@ static void draw_animation (menu_t *menu, surface_t *d) {
     }
     rdpq_detach_show();
 
-    if (elapsed >= frames_ms + HOLD_MS + FADE_MS) {
+    if (elapsed >= frames_ms + HOLD_MS + fade_ms) {
         animation_finish(menu);
     }
 }
