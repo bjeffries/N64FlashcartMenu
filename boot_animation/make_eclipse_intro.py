@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Render Eclipse Cart with Python 3 + Pillow. Run beside the output folder.
+"""Render the Eclipse title intro with Python 3 + Pillow. Run beside the output folder.
 
-Geometry uses binary 4x masks sampled at subpixel centres, then BOX filtering.
+Geometry uses binary 12x masks sampled at subpixel centres, then BOX filtering.
+12x is the same supersampling the codeblaine.com logo PNGs are exported at, so the
+final title matches the website/label logo exactly (see README.txt).
 No quantization or dithering is applied to the RGB PNG frames.
 GIF has a 10 ms timebase: 30/30/40 ms delays average exactly 30 fps.
 Keep the bundled fonts/ directory beside this script. No network is needed.
@@ -10,11 +12,11 @@ The final frame intentionally holds the title instead of fading to black.
 import json
 import math
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont, GifImagePlugin
+from PIL import Image, ImageDraw, ImageFont, GifImagePlugin, ImageChops
 
 WIDTH, HEIGHT = 640, 480
-FPS, FRAME_COUNT, SUPERSAMPLE = 30, 90, 4
-SUN_CENTRE = (213.5, 200)
+FPS, FRAME_COUNT, SUPERSAMPLE = 30, 90, 12  # 12x: matches the logo export (was 4x)
+SUN_CENTRE = (320, 200)  # X is derived from the centered visible-ink title layout.
 SUN_RADIUS = MOON_RADIUS = 28
 MOON_START_GAP = 2
 MOON_APPROACH_OFFSET = (-190, 40)
@@ -26,8 +28,9 @@ MOON_START = tuple(c + offset * MOON_START_DISTANCE / math.hypot(*MOON_APPROACH_
                    for c, offset in zip(SUN_CENTRE, MOON_APPROACH_OFFSET))
 CORONA_INNER_RADIUS, CORONA_OUTER_RADIUS = 29, 32
 SUN_START_COLOUR, SUN_END_COLOUR = (184, 86, 26), (255, 255, 255)
-MOON_START_COLOUR, MOON_END_COLOUR = (112, 112, 112), (0, 0, 0)
-CORONA_COLOUR, BACKGROUND = (255, 255, 255), (0, 0, 0)
+BACKGROUND = (35, 26, 46)  # #231A2E
+MOON_START_COLOUR, MOON_END_COLOUR = (112, 112, 112), BACKGROUND
+CORONA_COLOUR = (255, 255, 255)
 FADE_IN_START, FADE_IN_END = 1, 9
 MOVE_START, MOVE_END = 10, 54
 CORONA_START, CORONA_END = 55, 57
@@ -35,71 +38,71 @@ C_FORM_START, C_FORM_END = 58, 72
 MOON_FINAL_RIGHT_SHIFT = 8
 TEXT_FADE_START, TEXT_FADE_END = 73, 81
 TITLE_HOLD_START, TITLE_HOLD_END = 82, 90
-TITLE_TEXT, TITLE_FONT_SIZE, TITLE_FONT_WEIGHT = 'ECLIPSE', 93, 300
-TITLE_SPACING, TITLE_C_SLOT_WIDTH = 6, 64
-TITLE_OPTICAL_OFFSET_X = -2  # Centre visible ink, accounting for font sidebearings.
+TITLE_TEXT, TITLE_FONT_SIZE, TITLE_FONT_WEIGHT = 'ECLIPSE', 90, 300
+TITLE_PLAIN_I = True  # Replace the I crossbars with its original vertical stem.
+TITLE_SPACING = 12.5  # Visible edge gap; approximately 30% below prior mean 18 px.
+TITLE_PAIR_EXTRA_SPACING = {'IP': 4.0}  # Optical correction for two straight stems.
 TITLE_COLOUR = (255, 255, 255)
-SUBTITLE_TEXT, SUBTITLE_FONT_SIZE = 'CART', 28  # Fades in with the title, centred below it.
-SUBTITLE_FONT_WEIGHT = 500  # Heavier than the title so its bars stay >= 2 px (480i flicker).
-SUBTITLE_SPACING, SUBTITLE_GAP = 14, 18  # Letter spacing; gap below the title's ink, px.
 SAFE_BOUNDS = (32, 24, 608, 456)
 EMPTY_FROM_Y = 330
 CONTACT_STEP, CONTACT_COLUMNS = 5, 3
 THUMBNAIL_SIZE, LABEL_HEIGHT = (320, 240), 28
 OUTPUT_ROOT = Path(__file__).resolve().parent
 FRAME_FOLDER = OUTPUT_ROOT / 'eclipse_intro'
-FONT_PATH = OUTPUT_ROOT / 'fonts' / 'Oxanium.ttf'
+FONT_PATH = OUTPUT_ROOT / 'fonts' / 'Lexend.ttf'
 
 
 def title_mask():
-    """Centre the selected title with a geometric C in its second slot."""
-    font = ImageFont.truetype(str(FONT_PATH), TITLE_FONT_SIZE * SUPERSAMPLE)
+    """Space visible ink with a targeted optical adjustment between I and P."""
+    global SUN_CENTRE, MOON_START
+    scale = SUPERSAMPLE
+    font = ImageFont.truetype(str(FONT_PATH), TITLE_FONT_SIZE * scale)
     font.set_variation_by_axes([TITLE_FONT_WEIGHT])
+    reference = (320, SUN_CENTRE[1])
+    c_mask = ImageChops.subtract(disc_mask(reference, CORONA_OUTER_RADIUS),
+                                disc_mask(reference, CORONA_INNER_RADIUS))
+    c_mask = ImageChops.subtract(c_mask, disc_mask(
+        (reference[0] + MOON_FINAL_RIGHT_SHIFT, reference[1]), MOON_RADIUS))
+    c_bounds = c_mask.getbbox()
     glyphs = []
     for letter in TITLE_TEXT:
         if letter == 'C':
-            glyphs.append(Image.new('L', (TITLE_C_SLOT_WIDTH * SUPERSAMPLE, 64 * SUPERSAMPLE)))
+            glyphs.append(c_mask.crop(c_bounds))
         else:
             bounds = font.getbbox(letter)
             glyph = Image.new('L', (bounds[2] - bounds[0], bounds[3] - bounds[1]))
             ImageDraw.Draw(glyph).text((-bounds[0], -bounds[1]), letter, font=font, fill=255)
-            # Binary subpixel membership keeps edge shades controlled; BOX supplies AA.
-            glyphs.append(glyph.point(lambda value: 255 if value >= 128 else 0))
-    width = sum(g.width for g in glyphs) + (len(glyphs) - 1) * TITLE_SPACING * SUPERSAMPLE
-    left = round((WIDTH * SUPERSAMPLE - width) / 2 + TITLE_OPTICAL_OFFSET_X * SUPERSAMPLE)
-    expected_c_x = (left + glyphs[0].width + TITLE_SPACING * SUPERSAMPLE + TITLE_C_SLOT_WIDTH * SUPERSAMPLE / 2) / SUPERSAMPLE
-    assert expected_c_x == SUN_CENTRE[0], 'Update SUN_CENTRE to match the title layout'
-    mask = Image.new('L', (WIDTH * SUPERSAMPLE, HEIGHT * SUPERSAMPLE))
+            glyph = glyph.point(lambda value: 255 if value >= 128 else 0)
+            glyph = glyph.crop(glyph.getbbox())
+            if letter == 'I' and TITLE_PLAIN_I:
+                # The centre row contains only the original stem. Preserve its
+                # thickness and cap height, but remove the top/bottom crossbars.
+                stem = glyph.crop((0, glyph.height // 2, glyph.width, glyph.height // 2 + 1)).getbbox()
+                glyph = Image.new('L', (stem[2] - stem[0], glyph.height), 255)
+            glyphs.append(glyph)
+    gap = round(TITLE_SPACING * scale)
+    pair_gaps = [round((TITLE_SPACING + TITLE_PAIR_EXTRA_SPACING.get(a + b, 0)) * scale)
+                 for a, b in zip(TITLE_TEXT, TITLE_TEXT[1:])]
+    width = sum(g.width for g in glyphs) + sum(pair_gaps)
+    left = round((WIDTH * scale - width) / 2)
+    c_left = left + glyphs[0].width + gap
+    SUN_CENTRE = ((c_left - (c_bounds[0] - reference[0] * scale)) / scale, reference[1])
+    MOON_START = tuple(c + offset * MOON_START_DISTANCE / math.hypot(*MOON_APPROACH_OFFSET)
+                      for c, offset in zip(SUN_CENTRE, MOON_APPROACH_OFFSET))
+    mask = Image.new('L', (WIDTH * scale, HEIGHT * scale))
     x = left
-    for glyph in glyphs:
-        mask.paste(glyph, (x, round(SUN_CENTRE[1] * SUPERSAMPLE) - glyph.height // 2))
-        x += glyph.width + TITLE_SPACING * SUPERSAMPLE
-    subtitle_top = mask.getbbox()[3] + SUBTITLE_GAP * SUPERSAMPLE
-    subtitle_width = paste_word(mask, SUBTITLE_TEXT, SUBTITLE_FONT_SIZE, SUBTITLE_SPACING, subtitle_top)
-    return mask, {'font': 'Oxanium Light', 'font_size_px': TITLE_FONT_SIZE,
-                  'title_width_px': width / SUPERSAMPLE, 'title_left_px': left / SUPERSAMPLE,
-                  'spacing_px': TITLE_SPACING, 'eclipse_centre': list(SUN_CENTRE),
-                  'subtitle': SUBTITLE_TEXT, 'subtitle_font_size_px': SUBTITLE_FONT_SIZE,
-                  'subtitle_width_px': subtitle_width / SUPERSAMPLE, 'subtitle_top_px': subtitle_top / SUPERSAMPLE}
-
-
-def paste_word(mask, text, size, spacing, top):
-    """Paste a letter-spaced word centred horizontally with its cap tops at `top`."""
-    font = ImageFont.truetype(str(FONT_PATH), size * SUPERSAMPLE)
-    font.set_variation_by_axes([SUBTITLE_FONT_WEIGHT])
-    cap_top = font.getbbox('H')[1]
-    glyphs = []
-    for letter in text:
-        bounds = font.getbbox(letter)
-        glyph = Image.new('L', (bounds[2] - bounds[0], bounds[3] - cap_top))
-        ImageDraw.Draw(glyph).text((-bounds[0], -cap_top), letter, font=font, fill=255)
-        glyphs.append(glyph.point(lambda value: 255 if value >= 128 else 0))
-    width = sum(g.width for g in glyphs) + (len(glyphs) - 1) * spacing * SUPERSAMPLE
-    x = round((WIDTH * SUPERSAMPLE - width) / 2)
-    for glyph in glyphs:
-        mask.paste(glyph, (x, top))
-        x += glyph.width + spacing * SUPERSAMPLE
-    return width
+    ink_bounds = []
+    for index, (letter, glyph) in enumerate(zip(TITLE_TEXT, glyphs)):
+        ink_bounds.append([x / scale, (x + glyph.width) / scale])
+        if letter != 'C':
+            mask.paste(glyph, (x, round(SUN_CENTRE[1] * scale) - glyph.height // 2))
+        x += glyph.width + (pair_gaps[index] if index < len(pair_gaps) else 0)
+    gaps = [b[0] - a[1] for a, b in zip(ink_bounds, ink_bounds[1:])]
+    assert all(abs(g - expected / scale) < 1 / scale for g, expected in zip(gaps, pair_gaps))
+    return mask, {'font': 'Lexend Light', 'font_size_px': TITLE_FONT_SIZE, 'plain_vertical_i': TITLE_PLAIN_I,
+                  'title_width_px': width / scale, 'title_left_px': left / scale,
+                  'spacing_px': gap / scale, 'pair_extra_spacing_px': TITLE_PAIR_EXTRA_SPACING, 'visible_ink_gaps_px': gaps,
+                  'eclipse_centre': list(SUN_CENTRE)}
 
 
 def srgb_to_linear(value):
@@ -118,7 +121,11 @@ def colour_lerp(start, end, progress):
 
 
 def scaled(colour, opacity):
-    return tuple(int(c * opacity + 0.5) for c in colour)
+    return tuple(int(b + (c - b) * opacity + 0.5) for b, c in zip(BACKGROUND, colour))
+
+
+def foreground_bbox(image):
+    return ImageChops.difference(image, Image.new("RGB", image.size, BACKGROUND)).getbbox()
 
 
 def disc_mask(centre, radius):
@@ -202,14 +209,14 @@ def verify(frames, ring_mask, text_mask, layout):
             colours = im.getcolors(WIDTH * HEIGHT)
             counts.append(len(colours))
             assert len(colours) <= 256, (path, len(colours))
-            bbox = im.getbbox()
+            bbox = foreground_bbox(im)
             if bbox:
                 x0, y0, x1, y1 = bbox
                 assert x0 >= SAFE_BOUNDS[0] and y0 >= SAFE_BOUNDS[1]
                 assert x1 - 1 <= SAFE_BOUNDS[2] and y1 - 1 <= SAFE_BOUNDS[3]
                 assert y1 <= EMPTY_FROM_Y
                 bounds.append(bbox)
-    assert frames[0].getbbox() is None and frames[-1].getbbox() is not None
+    assert foreground_bbox(frames[0]) is None and foreground_bbox(frames[-1]) is not None
     assert all(frame.tobytes() == frames[-1].tobytes() for frame in frames[TEXT_FADE_END - 1:])
     c_frame = frames[C_FORM_END - 1]
     # Verify the text-free C and the full title independently against their masks.
@@ -221,7 +228,7 @@ def verify(frames, ring_mask, text_mask, layout):
     expected_c.paste(TITLE_COLOUR, (0, 0), text_mask)
     assert frames[-1].tobytes() == expected_c.resize((WIDTH, HEIGHT), Image.Resampling.BOX).tobytes()
     assert frames[TEXT_FADE_START - 1].tobytes() != c_frame.tobytes()
-    final_bounds = frames[-1].getbbox()
+    final_bounds = foreground_bbox(frames[-1])
     assert abs((final_bounds[0] + final_bounds[2]) / 2 - WIDTH / 2) <= 1
     centre, p, _, _ = state(55)
     assert centre == SUN_CENTRE and p == 1
@@ -243,7 +250,7 @@ def verify(frames, ring_mask, text_mask, layout):
             radius = SUN_RADIUS + (step + 0.5) * radial_step
             x = math.floor(SUN_CENTRE[0] + radius * math.cos(angle))
             y = math.floor(SUN_CENTRE[1] + radius * math.sin(angle))
-            hit_count += ring.getpixel((x, y)) >= 128
+            hit_count += ring.getpixel((x, y)) >= (BACKGROUND[0] + 255) / 2
         min_width = min(min_width, hit_count * radial_step)
     assert min_width >= 2
     with Image.open(OUTPUT_ROOT / 'preview.gif') as gif:
@@ -259,15 +266,15 @@ def verify(frames, ring_mask, text_mask, layout):
         'moon_speed_px_per_second': speed, 'moon_arc_bow_px': MOON_ARC_BOW,
         'moon_equal_frame_steps_verified': True,
         'frame_count': len(paths), 'size': [WIDTH, HEIGHT], 'mode': 'RGB', 'alpha': False,
-        'max_distinct_colours': max(counts), 'first_frame_pure_black': True,
+        'max_distinct_colours': max(counts), 'first_frame_uniform_background': True, 'background_hex': '#231A2E',
         'final_frame_holds_title': True, 'identical_full_title_frames': [TEXT_FADE_END, FRAME_COUNT],
         'text_fade_frames': [TEXT_FADE_START, TEXT_FADE_END],
         'c_formation_frames': [C_FORM_START, C_FORM_END],
         'final_moon_centre': list(final_moon_centre), 'title_layout': layout,
         'full_title_bounds_exclusive': list(final_bounds),
-        'nonblack_bounds_inclusive': [min(b[0] for b in bounds), min(b[1] for b in bounds),
+        'foreground_bounds_inclusive': [min(b[0] for b in bounds), min(b[1] for b in bounds),
                                       max(b[2] for b in bounds) - 1, max(b[3] for b in bounds) - 1],
-        'safe_area_pass': True, 'empty_from_y_330': True,
+        'safe_area_pass': True, 'background_only_from_y_330': True,
         'frame_55_moon_centre': list(centre), 'frame_55_only_corona_visible': True,
         'corona_geometric_thickness_px': CORONA_OUTER_RADIUS - CORONA_INNER_RADIUS,
         'corona_min_sampled_raster_thickness_px_at_half_intensity': round(min_width, 2),

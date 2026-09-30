@@ -1,0 +1,85 @@
+{
+  "moon_start_centre": [
+    176.9107791374352,
+    211.94860790089083
+  ],
+  "moon_initial_edge_gap_px": 2.0,
+  "moon_motion": "constant speed on a shallow circular arc; no easing",
+  "moon_speed_px_per_second": 39.15523712794359,
+  "moon_arc_bow_px": 4,
+  "moon_equal_frame_steps_verified": true,
+  "frame_count": 90,
+  "size": [
+    640,
+    480
+  ],
+  "mode": "RGB",
+  "alpha": false,
+  "max_distinct_colours": 245,
+  "first_frame_uniform_background": true,
+  "background_hex": "#231A2E",
+  "final_frame_holds_title": true,
+  "identical_full_title_frames": [
+    81,
+    90
+  ],
+  "text_fade_frames": [
+    73,
+    81
+  ],
+  "c_formation_frames": [
+    58,
+    72
+  ],
+  "final_moon_centre": [
+    241.66666666666666,
+    200
+  ],
+  "title_layout": {
+    "font": "Lexend Light",
+    "font_size_px": 90,
+    "plain_vertical_i": true,
+    "title_width_px": 338.0,
+    "title_left_px": 151.0,
+    "spacing_px": 12.5,
+    "pair_extra_spacing_px": {
+      "IP": 4.0
+    },
+    "visible_ink_gaps_px": [
+      12.5,
+      12.5,
+      12.5,
+      16.5,
+      12.5,
+      12.5
+    ],
+    "eclipse_centre": [
+      233.66666666666666,
+      200
+    ]
+  },
+  "full_title_bounds_exclusive": [
+    151,
+    167,
+    489,
+    233
+  ],
+  "foreground_bounds_inclusive": [
+    148,
+    167,
+    488,
+    239
+  ],
+  "safe_area_pass": true,
+  "background_only_from_y_330": true,
+  "frame_55_moon_centre": [
+    233.66666666666666,
+    200
+  ],
+  "frame_55_only_corona_visible": true,
+  "corona_geometric_thickness_px": 3,
+  "corona_min_sampled_raster_thickness_px_at_half_intensity": 2.01,
+  "gif_frames": 90,
+  "gif_total_duration_ms": 3000,
+  "gif_timing_note": "30/40 ms frame delays; exactly 3 seconds, average 30 fps"
+}
