@@ -292,9 +292,9 @@ void ui_components_file_list_free(void);
  */
 void ui_components_carousel_draw(path_t *directory, entry_t *list, int32_t entries, int32_t selected, bool selected_favorite);
 
-/** @brief Load the game loading animation's frames into memory (before loading: rom:/ is overwritten). */
+/** @brief Reset the game loading animation before loading starts (it is drawn natively; nothing is loaded). */
 void ui_components_loading_animation_prepare(void);
-/** @brief Free the game loading animation's frames. */
+/** @brief Reset the game loading animation after loading. */
 void ui_components_loading_animation_free(void);
 /** @brief Draw the game loading animation for a progress of 0-1 (bottom-right quadrant). */
 void ui_components_loading_animation_draw(float progress);

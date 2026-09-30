@@ -1,6 +1,7 @@
 /**
  * @file loading_animation.c
- * @brief Game loading animation: the boot animation's eclipse, driven by loading progress
+ * @brief Game loading animation: the boot animation's eclipse, drawn natively and driven by
+ *        loading progress
  * @ingroup ui_components
  *
  * Plays the boot animation's eclipse (without the title): the sun and moon fade in, the moon's
@@ -8,88 +9,186 @@
  * fades out so the game starts from black rather than cutting away from the ring. The eclipse
  * is centred in the Library's info panel, which is left blank while a game loads.
  *
- * The frames come in one set per palette background (scripts/make_loading_frames.py, in
- * rom:/loading/<set>/), smoothed against that colour so their edges don't show a dark fringe;
- * the set matching the current palette is used.
- *
- * On the SummerCart64 the game is loaded over the cartridge space the menu's own files (rom:/)
- * live in, so every frame is loaded into memory by ui_components_loading_animation_prepare()
- * before loading starts. Every other approach frame is skipped to halve that (~170 KiB).
+ * The shapes are drawn with the RDP each frame rather than from pre-rendered images: every
+ * circle is drawn row by row as one solid span plus antialiased edge pixels, whose alpha is the
+ * pixel's coverage. Geometry, colours and timing follow boot_animation/make_eclipse_intro.py, but
+ * the moon moves continuously with the loading progress, every colour is blended against the
+ * actual colour behind the eclipse (the palette background, fading to black near the end), and
+ * nothing has to be loaded into memory before loading starts. The look is set by the style
+ * below, so it can be changed or tied to the palette in one place.
  */
 
+#include <math.h>
+
 #include "../ui_components.h"
-#include "../loading_frames.h"
 #include "constants.h"
 #include "utils/utils.h"
 
-// Frame numbers (1-based) in the boot animation.
-#define FADE_IN_LAST        (9)     // 1-9: sun and moon fade in, moon at its start
-#define APPROACH_FIRST      (10)    // 10-54: moon moves over the sun
-#define APPROACH_LAST       (54)
-#define CORONA_LAST         (57)    // 55-57: corona fades in
-#define FRAME_MS            (1000 / 30)         // the boot animation's 30fps
+// Timing, as on the boot animation (30 fps frames).
+#define FRAME_MS            (1000 / 30)
+#define FADE_IN_MS          (8 * FRAME_MS)      // frames 1-9: sun and moon fade in
+#define CORONA_MS           (3 * FRAME_MS)      // frames 55-57: the corona fades in
 #define DONE_HOLD_MS        (350)   // show the full corona this long,
 #define RING_FADE_MS        (550)   // then fade it out (after loading: 100% is still totality).
                                     // With the corona that's 1s: the length of the loading wind.
 
+// Geometry in pixels, relative to the sun's centre (make_eclipse_intro.py).
+#define SUN_RADIUS          (28.0f)
+#define MOON_RADIUS         (28.0f)
+#define MOON_START_GAP      (2.0f)              // edge gap between sun and moon at the start
+#define MOON_APPROACH_X     (-190.0f)           // direction the moon starts in, from the sun
+#define MOON_APPROACH_Y     (40.0f)
+#define MOON_ARC_BOW        (4.0f)              // the approach bows this far off a straight line
+#define CORONA_INNER_RADIUS (29.0f)
+#define CORONA_OUTER_RADIUS (32.0f)
 
-static sprite_t *sprites[LOADING_MAX_IMAGES];
-static const loading_frame_set_t *set = &loading_frame_sets[0];
+/** @brief The eclipse's colours. The moon ends as the colour behind it, so it disappears into any palette. */
+static const struct {
+    color_t sun_start, sun_end;     // the sun brightens as the moon covers it
+    color_t moon_start;             // then goes towards the background
+    color_t corona;
+} style = {
+    .sun_start = { 0xB8, 0x56, 0x1A, 0xFF },
+    .sun_end = { 0xFF, 0xFF, 0xFF, 0xFF },
+    .moon_start = { 0x70, 0x70, 0x70, 0xFF },
+    .corona = { 0xFF, 0xFF, 0xFF, 0xFF },
+};
+
 static bool started;
 static uint32_t start_ms;
 static bool done;
 static uint32_t done_ms;
 
 
-static bool frame_used (int frame) {
-    if (frame > APPROACH_FIRST && frame < APPROACH_LAST) {
-        return ((frame - APPROACH_FIRST) % 2) == 0;
+static float clamp01 (float value) {
+    return (value < 0.0f) ? 0.0f : ((value > 1.0f) ? 1.0f : value);
+}
+
+static float srgb_to_linear (uint8_t value) {
+    float v = value / 255.0f;
+    return (v <= 0.04045f) ? (v / 12.92f) : powf((v + 0.055f) / 1.055f, 2.4f);
+}
+
+static uint8_t linear_to_srgb (float value) {
+    float v = (value <= 0.0031308f) ? (12.92f * value) : (1.055f * powf(value, 1.0f / 2.4f) - 0.055f);
+    return (uint8_t) (clamp01(v) * 255.0f + 0.5f);
+}
+
+/** @brief Blend in linear light, as the boot animation's colour transitions do. */
+static color_t colour_lerp (color_t a, color_t b, float amount) {
+    return RGBA32(
+        linear_to_srgb(srgb_to_linear(a.r) + (srgb_to_linear(b.r) - srgb_to_linear(a.r)) * amount),
+        linear_to_srgb(srgb_to_linear(a.g) + (srgb_to_linear(b.g) - srgb_to_linear(a.g)) * amount),
+        linear_to_srgb(srgb_to_linear(a.b) + (srgb_to_linear(b.b) - srgb_to_linear(a.b)) * amount),
+        0xFF
+    );
+}
+
+/** @brief Blend in sRGB, as the boot animation's opacity fades do. */
+static color_t mix (color_t a, color_t b, float amount) {
+    return RGBA32(
+        (uint8_t) (a.r + (b.r - a.r) * amount + 0.5f),
+        (uint8_t) (a.g + (b.g - a.g) * amount + 0.5f),
+        (uint8_t) (a.b + (b.b - a.b) * amount + 0.5f),
+        0xFF
+    );
+}
+
+/** @brief Draw one pixel-wide span in a colour at a given coverage (0-1). */
+static void span (int x0, int x1, int y, color_t colour, float coverage) {
+    if (x1 < x0 || coverage <= 0.0f) {
+        return;
     }
-    return frame <= CORONA_LAST;
+    colour.a = (uint8_t) (clamp01(coverage) * 255.0f + 0.5f);
+    rdpq_set_prim_color(colour);
+    rdpq_fill_rectangle(x0, y, x1 + 1, y + 1);
 }
 
 /**
- * @brief Load the frames into memory. Call before loading starts (rom:/ is overwritten after).
+ * @brief Draw an antialiased ring (or disc, with inner < 0) centred on (cx, cy).
+ *
+ * A pixel's coverage is approximated from the distance of its centre to the edge, which is
+ * accurate for circles this size: fully inside by half a pixel is solid, and so on.
+ */
+static void draw_ring (float cx, float cy, float inner, float outer, color_t colour) {
+    int y0 = (int) floorf(cy - outer - 0.5f);
+    int y1 = (int) ceilf(cy + outer + 0.5f);
+    for (int y = y0; y <= y1; y++) {
+        float dy = (y + 0.5f) - cy;
+        float reach = outer + 0.5f;
+        if (fabsf(dy) >= reach) {
+            continue;
+        }
+        float half = sqrtf(reach * reach - dy * dy);
+        int x0 = (int) ceilf(cx - half - 0.5f);
+        int x1 = (int) floorf(cx + half - 0.5f);
+
+        // Runs of fully covered pixels are drawn as one span; the rest one pixel at a time.
+        int run_start = -1;
+        for (int x = x0; x <= x1; x++) {
+            float dx = (x + 0.5f) - cx;
+            float d = sqrtf(dx * dx + dy * dy);
+            float coverage = clamp01(outer + 0.5f - d);
+            if (inner >= 0.0f) {
+                coverage = fminf(coverage, clamp01(d - inner + 0.5f));
+            }
+            if (coverage >= 1.0f) {
+                if (run_start < 0) {
+                    run_start = x;
+                }
+                continue;
+            }
+            if (run_start >= 0) {
+                span(run_start, x - 1, y, colour, 1.0f);
+                run_start = -1;
+            }
+            span(x, x, y, colour, coverage);
+        }
+        if (run_start >= 0) {
+            span(run_start, x1, y, colour, 1.0f);
+        }
+    }
+}
+
+/** @brief The moon's centre relative to the sun for an approach of 0-1: constant speed on a shallow arc. */
+static void moon_offset (float t, float *x, float *y) {
+    float distance = SUN_RADIUS + MOON_RADIUS + MOON_START_GAP;
+    float length = sqrtf(MOON_APPROACH_X * MOON_APPROACH_X + MOON_APPROACH_Y * MOON_APPROACH_Y);
+    float start_x = MOON_APPROACH_X * distance / length;
+    float start_y = MOON_APPROACH_Y * distance / length;
+    if (t <= 0.0f) {
+        *x = start_x;
+        *y = start_y;
+        return;
+    }
+    if (t >= 1.0f) {
+        *x = 0.0f;
+        *y = 0.0f;
+        return;
+    }
+    float ux = -start_x / distance, uy = -start_y / distance;       // towards the sun
+    float nx = uy, ny = -ux;                                        // bows to this side
+    float arc_radius = (distance * distance) / (8.0f * MOON_ARC_BOW) + (MOON_ARC_BOW / 2.0f);
+    float arc_angle = 2.0f * asinf(distance / (2.0f * arc_radius));
+    float angle = (t - 0.5f) * arc_angle;
+    float along = arc_radius * sinf(angle);
+    float bow = arc_radius * (cosf(angle) - cosf(arc_angle / 2.0f));
+    *x = (start_x / 2.0f) + ux * along + nx * bow;
+    *y = (start_y / 2.0f) + uy * along + ny * bow;
+}
+
+/**
+ * @brief Reset the animation before loading starts. (Nothing needs loading: it is drawn natively.)
  */
 void ui_components_loading_animation_prepare (void) {
-    // The set rendered for the current palette's background (the first set is black).
-    ui_components_loading_animation_free();
-    // The set rendered for the nearest background (exact for the built-in palettes; custom ones
-    // get the closest, so their edges may show a slight fringe).
-    set = &loading_frame_sets[0];
-    int best = -1;
-    color_t bg = PALETTE_BACKGROUND;
-    for (int i = 0; i < LOADING_FRAME_SETS; i++) {
-        int dr = loading_frame_sets[i].r - bg.r, dg = loading_frame_sets[i].g - bg.g, db = loading_frame_sets[i].b - bg.b;
-        int distance = (dr * dr) + (dg * dg) + (db * db);
-        if (best < 0 || distance < best) {
-            best = distance;
-            set = &loading_frame_sets[i];
-        }
-    }
-    for (int frame = 1; frame <= CORONA_LAST; frame++) {
-        int image = set->frames[frame - 1].image;
-        if (frame_used(frame) && image >= 0 && !sprites[image]) {
-            char path[48];
-            snprintf(path, sizeof(path), "rom:/loading/%s/%02d.sprite", set->dir, image);
-            sprites[image] = sprite_load(path);
-        }
-    }
     started = false;
     done = false;
 }
 
 /**
- * @brief Free the frames.
+ * @brief Reset the animation after loading.
  */
 void ui_components_loading_animation_free (void) {
-    rspq_wait();    // the RDP may still be drawing one
-    for (int i = 0; i < LOADING_MAX_IMAGES; i++) {
-        if (sprites[i]) {
-            sprite_free(sprites[i]);
-            sprites[i] = NULL;
-        }
-    }
     started = false;
     done = false;
 }
@@ -101,8 +200,7 @@ float ui_components_loading_animation_fade_in (void) {
     if (!started) {
         return 0.0f;
     }
-    uint32_t elapsed = get_ticks_ms() - start_ms;
-    return MIN(1.0f, elapsed / (float) (FADE_IN_LAST * FRAME_MS));
+    return clamp01((get_ticks_ms() - start_ms) / (float) FADE_IN_MS);
 }
 
 /**
@@ -119,56 +217,65 @@ void ui_components_loading_animation_done (void) {
  * @brief Whether the corona has finished after ui_components_loading_animation_done().
  */
 bool ui_components_loading_animation_finished (void) {
-    uint32_t corona_ms = (CORONA_LAST - APPROACH_LAST) * FRAME_MS;
-    return done && (get_ticks_ms() - done_ms) >= corona_ms + DONE_HOLD_MS + RING_FADE_MS;
-}
-
-static int current_frame (float progress) {
-    uint32_t now = get_ticks_ms();
-    if (!started) {
-        started = true;
-        start_ms = now;
-    }
-    if (done) {
-        return MIN(CORONA_LAST, APPROACH_LAST + 1 + (int) ((now - done_ms) / FRAME_MS));
-    }
-    uint32_t elapsed = now - start_ms;
-    if (elapsed < FADE_IN_LAST * FRAME_MS) {
-        return 1 + (int) (elapsed / FRAME_MS);
-    }
-    progress = (progress < 0.0f) ? 0.0f : ((progress > 1.0f) ? 1.0f : progress);
-    int frame = APPROACH_FIRST + (int) (progress * (APPROACH_LAST - APPROACH_FIRST));
-    while (!frame_used(frame)) {
-        frame--;
-    }
-    return frame;
+    return done && (get_ticks_ms() - done_ms) >= CORONA_MS + DONE_HOLD_MS + RING_FADE_MS;
 }
 
 /**
  * @brief Draw the animation for the given loading progress (0-1), over whatever is on screen.
  */
 void ui_components_loading_animation_draw (float progress) {
-    int frame = current_frame(progress);
-    int image = set->frames[frame - 1].image;
-    if (image < 0 || !sprites[image]) {
-        return;     // an all-black frame (the moon exactly over the sun)
+    uint32_t now = get_ticks_ms();
+    if (!started) {
+        started = true;
+        start_ms = now;
     }
-    int x = LOADING_ANIMATION_CENTER_X - LOADING_SUN_X + set->frames[frame - 1].x;
-    int y = LOADING_ANIMATION_CENTER_Y - LOADING_SUN_Y + set->frames[frame - 1].y;
-    rdpq_mode_push();
-        rdpq_set_mode_copy(true);   // the background colour is transparent
-        rdpq_sprite_blit(sprites[image], x, y, NULL);
+    progress = clamp01(progress);
 
-        // After the hold, fade the ring out (the screen around it is already black).
-        uint32_t fade_start = ((CORONA_LAST - APPROACH_LAST) * FRAME_MS) + DONE_HOLD_MS;
-        uint32_t since_done = done ? get_ticks_ms() - done_ms : 0;
-        if (done && since_done > fade_start) {
-            uint32_t fading = MIN(RING_FADE_MS, since_done - fade_start);
-            rdpq_set_mode_standard();
-            rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
-            rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-            rdpq_set_prim_color(PALETTE_WITH_ALPHA(FADE_COLOR, (uint8_t) ((fading * 0xFF) / RING_FADE_MS)));
-            rdpq_fill_rectangle(x, y, x + sprites[image]->width, y + sprites[image]->height);
+    // The colour behind the eclipse: the palette background, which the loading screen fades to
+    // black from LOADING_FADE_START (load_rom.c), and black once loading is done.
+    float screen_fade = done ? 1.0f : clamp01((progress - LOADING_FADE_START) / (1.0f - LOADING_FADE_START));
+    color_t behind = mix(PALETTE_BACKGROUND, RGBA32(0x00, 0x00, 0x00, 0xFF), screen_fade);
+
+    // Where the moon is (0: start, 1: over the sun), how far everything has faded in, and the corona.
+    float fade = ui_components_loading_animation_fade_in();
+    float approach = 0.0f;
+    float corona = 0.0f;
+    if (done) {
+        uint32_t since = now - done_ms;
+        approach = 1.0f;
+        corona = clamp01((since + FRAME_MS) / (float) CORONA_MS);
+        if (since > CORONA_MS + DONE_HOLD_MS) {
+            corona *= 1.0f - clamp01((since - CORONA_MS - DONE_HOLD_MS) / (float) RING_FADE_MS);
+        }
+    } else if (now - start_ms >= FADE_IN_MS) {
+        approach = progress;
+    }
+
+    float moon_x, moon_y;
+    moon_offset(approach, &moon_x, &moon_y);
+    float distance = sqrtf(moon_x * moon_x + moon_y * moon_y);
+    float p = clamp01(1.0f - distance / (2.0f * SUN_RADIUS));
+    p = p * p * (3.0f - 2.0f * p);      // how far the eclipse is: drives the colours
+
+    float cx = LOADING_ANIMATION_CENTER_X;
+    float cy = LOADING_ANIMATION_CENTER_Y;
+
+    rdpq_mode_push();
+        rdpq_set_mode_standard();
+        rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+        rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+
+        // The sun, until the moon covers it exactly (its edge would show around the moon's).
+        if (distance > 0.0f) {
+            draw_ring(cx, cy, -1.0f, SUN_RADIUS, mix(behind, colour_lerp(style.sun_start, style.sun_end, p), fade));
+        }
+        // The moon, going from grey to the colour behind it.
+        color_t moon = mix(behind, colour_lerp(style.moon_start, behind, p), fade);
+        if (distance > 0.0f || moon.r != behind.r || moon.g != behind.g || moon.b != behind.b) {
+            draw_ring(cx + moon_x, cy + moon_y, -1.0f, MOON_RADIUS, moon);
+        }
+        if (corona > 0.0f) {
+            draw_ring(cx, cy, CORONA_INNER_RADIUS, CORONA_OUTER_RADIUS, mix(behind, style.corona, corona * fade));
         }
     rdpq_mode_pop();
 }
