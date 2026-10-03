@@ -18,6 +18,7 @@
 /filesystem/*.wav
 /filesystem/*.sprite
 /filesystem/boot
+/filesystem/n64logo
 /filesystem/loading
 
 # Ignore external development tools
