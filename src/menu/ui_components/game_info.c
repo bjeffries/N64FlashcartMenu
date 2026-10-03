@@ -421,8 +421,13 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
 static void draw_logo (void) {
     static sprite_t *logo;
     static int logo_frame = -1;
-    // Played in reverse: the logo turns the other way.
-    int frame = (N64_LOGO_FRAMES - 1) - (int) ((get_ticks_ms() / N64_LOGO_FRAME_MS) % N64_LOGO_FRAMES);
+    // The generated sequence sets the order (reversed) and each frame's time, so the turn is steady.
+    uint32_t t = get_ticks_ms() % N64_LOGO_LOOP_MS;
+    int step = N64_LOGO_FRAMES - 1;
+    while (step > 0 && n64_logo_sequence[step].start_ms > t) {
+        step--;
+    }
+    int frame = n64_logo_sequence[step].frame;
     if (frame != logo_frame) {
         if (logo) {
             rspq_wait();    // the RDP may still be drawing the last frame
