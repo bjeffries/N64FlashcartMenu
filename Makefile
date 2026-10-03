@@ -214,7 +214,7 @@ $(FILESYSTEM_DIR)/boot/eclipse_boot_hall.wav64: boot_animation/boot_audio/eclips
 $(FILESYSTEM_DIR)/n64logo/%.sprite: $(ASSETS_DIR)/n64logo/%.png
 	@echo "    [SPRITE] $@"
 	@mkdir -p $(dir $@)
-	@$(N64_MKSPRITE) --format CI4 --compress 1 -o $(dir $@) "$<"
+	@$(N64_MKSPRITE) --format CI8 --compress 1 -o $(dir $@) "$<"
 
 $(FILESYSTEM_DIR)/boot/%.sprite: $(ASSETS_DIR)/boot/%.png
 	@echo "    [SPRITE] $@"

@@ -421,7 +421,7 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
 static void draw_logo (void) {
     static sprite_t *logo;
     static int logo_frame = -1;
-    // The frames are evenly spaced over one turn (interpolated, one per refresh at 30fps).
+    // Half a turn rendered at 30fps (the logo looks the same after half a turn), looped.
     int frame = (int)((get_ticks_ms() % N64_LOGO_LOOP_MS) * N64_LOGO_FRAMES / N64_LOGO_LOOP_MS);
     if (frame != logo_frame) {
         if (logo) {
