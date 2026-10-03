@@ -421,20 +421,15 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
 static void draw_logo (void) {
     static sprite_t *logo;
     static int logo_frame = -1;
-    // The generated sequence sets the order (reversed) and each frame's time, so the turn is steady.
-    uint32_t t = get_ticks_ms() % N64_LOGO_LOOP_MS;
-    int step = N64_LOGO_FRAMES - 1;
-    while (step > 0 && n64_logo_sequence[step].start_ms > t) {
-        step--;
-    }
-    int frame = n64_logo_sequence[step].frame;
+    // The frames are evenly spaced over one turn (interpolated, one per refresh at 30fps).
+    int frame = (int)((get_ticks_ms() % N64_LOGO_LOOP_MS) * N64_LOGO_FRAMES / N64_LOGO_LOOP_MS);
     if (frame != logo_frame) {
         if (logo) {
             rspq_wait();    // the RDP may still be drawing the last frame
             sprite_free(logo);
         }
         char path[32];
-        snprintf(path, sizeof(path), "rom:/n64logo/%02d.sprite", frame);
+        snprintf(path, sizeof(path), "rom:/n64logo/%03d.sprite", frame);
         logo = sprite_load(path);
         logo_frame = frame;
     }

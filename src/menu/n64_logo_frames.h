@@ -3,71 +3,9 @@
 #ifndef N64_LOGO_FRAMES_H__
 #define N64_LOGO_FRAMES_H__
 
-#include <stdint.h>
-
-#define N64_LOGO_FRAMES     (56)
+#define N64_LOGO_FRAMES     (240)
 #define N64_LOGO_WIDTH      (160)    // padded; the logo is centred in it
 #define N64_LOGO_HEIGHT     (168)
-#define N64_LOGO_LOOP_MS    (8000)   // one turn
-
-/** @brief Playback order: the frame to show from start_ms into the turn (timed so it turns steadily). */
-static const struct { uint8_t frame; uint16_t start_ms; } n64_logo_sequence[N64_LOGO_FRAMES] = {
-    { 55, 0 },
-    { 54, 75 },
-    { 53, 199 },
-    { 52, 431 },
-    { 51, 554 },
-    { 50, 676 },
-    { 49, 794 },
-    { 48, 1006 },
-    { 47, 1125 },
-    { 46, 1351 },
-    { 45, 1472 },
-    { 44, 1592 },
-    { 43, 1714 },
-    { 42, 1816 },
-    { 41, 1921 },
-    { 40, 2131 },
-    { 39, 2253 },
-    { 38, 2378 },
-    { 37, 2608 },
-    { 36, 2727 },
-    { 35, 2843 },
-    { 34, 2955 },
-    { 33, 3072 },
-    { 32, 3192 },
-    { 31, 3313 },
-    { 30, 3536 },
-    { 29, 3657 },
-    { 28, 3771 },
-    { 27, 3876 },
-    { 26, 4074 },
-    { 25, 4201 },
-    { 24, 4431 },
-    { 23, 4555 },
-    { 22, 4676 },
-    { 21, 4794 },
-    { 20, 4903 },
-    { 19, 5123 },
-    { 18, 5243 },
-    { 17, 5366 },
-    { 16, 5485 },
-    { 15, 5605 },
-    { 14, 5807 },
-    { 13, 5914 },
-    { 12, 6020 },
-    { 11, 6147 },
-    { 10, 6269 },
-    { 9, 6501 },
-    { 8, 6624 },
-    { 7, 6742 },
-    { 6, 6856 },
-    { 5, 7072 },
-    { 4, 7191 },
-    { 3, 7416 },
-    { 2, 7639 },
-    { 1, 7752 },
-    { 0, 7952 },
-};
+#define N64_LOGO_LOOP_MS    (8000)   // one turn, frames evenly spaced in it
 
 #endif
