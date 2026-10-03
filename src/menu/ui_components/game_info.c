@@ -51,6 +51,7 @@ static int about_max_scroll = 0;
 #define SCREENSHOT_CYCLE_MS     (2500)
 static struct {
     char base[256];             // ".../screenshot_" (the number and ".png" follow)
+    bool has_any;               // screenshot_1.png exists (checked straight away, to know whether to show the logo)
     bool counted;               // count is known (looked up once the selection settles)
     int count;                  // screenshots this game has
     int shown_index;            // 1-based number of the one shown (0: none yet)
@@ -104,6 +105,11 @@ static void screenshots_select (const char *rom_path, const char game_code[4]) {
     } else {
         shots.base[0] = '\0';
     }
+    // One quick check now, so the placeholder logo isn't shown for a game that has screenshots
+    // while its first one waits to load (the full count and loading wait for the selection to settle).
+    char first[280];
+    snprintf(first, sizeof(first), "%s1.png", shots.base);
+    shots.has_any = (shots.base[0] != '\0') && file_exists(first);
     shots.selected_ms = get_ticks_ms();
 }
 
@@ -442,9 +448,12 @@ static void draw_screenshots (entry_t *entry) {
         screenshots_update();
     }
     value_right = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_GAP;
-    // No screenshot showing (gallery off, none for this game, or the first still loading): the logo.
-    if (!screenshots_enabled || !shots.shown) {
+    // Gallery off or no screenshots for this game: the logo. Screenshots still loading: nothing yet.
+    if (!screenshots_enabled || !shots.has_any || (shots.counted && shots.count == 0)) {
         draw_logo();
+        return;
+    }
+    if (!shots.shown) {
         return;
     }
     {
