@@ -421,7 +421,8 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
 static void draw_logo (void) {
     static sprite_t *logo;
     static int logo_frame = -1;
-    int frame = (int) ((get_ticks_ms() / N64_LOGO_FRAME_MS) % N64_LOGO_FRAMES);
+    // Played in reverse: the logo turns the other way.
+    int frame = (N64_LOGO_FRAMES - 1) - (int) ((get_ticks_ms() / N64_LOGO_FRAME_MS) % N64_LOGO_FRAMES);
     if (frame != logo_frame) {
         if (logo) {
             rspq_wait();    // the RDP may still be drawing the last frame
