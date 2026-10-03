@@ -10,7 +10,8 @@ seamlessly), and writes
                                  scaled to HEIGHT px tall and padded to an 8-pixel multiple width,
                                  with hard-edged transparency (the menu blits in copy mode) and
                                  one palette shared by every frame, transparent first (CI8)
-  src/menu/n64_logo_frames.h     frame count, size and loop time
+  src/menu/n64_logo_frames.h     frame count, size and loop time, and each frame's opaque extent
+                                 (the screensaver bounces the logo off its visible edges)
 
 Usage: scripts/make_n64_logo.py [render=per2_n64]   (a folder in assets/images/, e.g. per1_n64)
 """
@@ -64,6 +65,7 @@ def main():
     os.makedirs(OUT_IMAGES, exist_ok=True)
     for old in glob.glob(os.path.join(OUT_IMAGES, '*.png')):
         os.remove(old)
+    extents = []
     for n, f in enumerate(frames):
         indexed = f.convert('RGB').quantize(palette=palette_image, dither=Image.Dither.NONE)
         alpha = f.getchannel('A').tobytes()
@@ -71,6 +73,7 @@ def main():
         out = Image.frombytes('P', f.size, pixels)
         out.putpalette([0, 0, 0] + palette)
         out.save(os.path.join(OUT_IMAGES, f'{n:03d}.png'), transparency=0)
+        extents.append(out.point(lambda i: 255 if i else 0).getbbox())
 
     loop_ms = round(len(frames) * 1000 / FPS)
     header = [
@@ -79,10 +82,19 @@ def main():
         '#ifndef N64_LOGO_FRAMES_H__',
         '#define N64_LOGO_FRAMES_H__',
         '',
+        '#include <stdint.h>',
+        '',
         f'#define N64_LOGO_FRAMES     ({len(frames)})',
         f'#define N64_LOGO_WIDTH      ({padded_width})    // padded; the logo is centred in it',
         f'#define N64_LOGO_HEIGHT     ({HEIGHT})',
         f'#define N64_LOGO_LOOP_MS    ({loop_ms})   // half a turn, frames evenly spaced in it',
+        '',
+        '/** @brief Per frame, the box the logo covers in it: left, top, right, bottom (exclusive). */',
+        'static const struct { uint8_t x0, y0, x1, y1; } n64_logo_extents[N64_LOGO_FRAMES] = {',
+    ]
+    header += [f'    {{ {x0}, {y0}, {x1}, {y1} }},' for x0, y0, x1, y1 in extents]
+    header += [
+        '};',
         '',
         '#endif',
         '',

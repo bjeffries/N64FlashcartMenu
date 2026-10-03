@@ -414,31 +414,12 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
  * @brief The game's screenshots in the right half of the info area (Overview and Details pages),
  *        if it has any; values then stop short of them.
  */
-/**
- * @brief The spinning N64 logo (scripts/make_n64_logo.py), centred in the screenshot area. Its
- *        frames are loaded from rom:/ one at a time as they come up, as all of them won't fit in memory.
- */
+/** @brief The spinning N64 logo, centred in the screenshot area. */
 static void draw_logo (void) {
-    static sprite_t *logo;
-    static int logo_frame = -1;
-    // Half a turn rendered at 30fps (the logo looks the same after half a turn), looped.
-    int frame = (int)((get_ticks_ms() % N64_LOGO_LOOP_MS) * N64_LOGO_FRAMES / N64_LOGO_LOOP_MS);
-    if (frame != logo_frame) {
-        if (logo) {
-            rspq_wait();    // the RDP may still be drawing the last frame
-            sprite_free(logo);
-        }
-        char path[32];
-        snprintf(path, sizeof(path), "rom:/n64logo/%03d.sprite", frame);
-        logo = sprite_load(path);
-        logo_frame = frame;
-    }
-    rdpq_mode_push();
-        rdpq_set_mode_copy(true);   // transparent background
-        rdpq_sprite_blit(logo,
-            GAME_INFO_SCREENSHOT_X + ((GAME_INFO_SCREENSHOT_WIDTH - N64_LOGO_WIDTH) / 2),
-            GAME_INFO_SCREENSHOT_Y + ((GAME_INFO_SCREENSHOT_HEIGHT - N64_LOGO_HEIGHT) / 2), NULL);
-    rdpq_mode_pop();
+    ui_components_n64_logo_draw(
+        GAME_INFO_SCREENSHOT_X + ((GAME_INFO_SCREENSHOT_WIDTH - N64_LOGO_WIDTH) / 2),
+        GAME_INFO_SCREENSHOT_Y + ((GAME_INFO_SCREENSHOT_HEIGHT - N64_LOGO_HEIGHT) / 2),
+        ui_components_n64_logo_frame());
 }
 
 static void draw_screenshots (entry_t *entry) {

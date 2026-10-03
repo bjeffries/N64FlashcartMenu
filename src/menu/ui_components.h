@@ -457,6 +457,16 @@ void ui_components_game_info_invalidate(void);
 void ui_components_game_info_screenshots_enable(bool enabled);
 
 /**
+ * @brief Draw a frame of the spinning N64 logo (N64_LOGO_WIDTH x N64_LOGO_HEIGHT, in n64_logo_frames.h).
+ * @param x, y Top-left corner.
+ * @param frame 0 .. N64_LOGO_FRAMES - 1.
+ */
+void ui_components_n64_logo_draw(int x, int y, int frame);
+
+/** @brief The logo's frame for now when it spins steadily (the Library's screenshot placeholder). */
+int ui_components_n64_logo_frame(void);
+
+/**
  * @brief Turn a file name into a display title (drops extension and region tags, fixes ", The").
  *
  * @param name File or directory name.

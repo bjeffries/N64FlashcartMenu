@@ -76,6 +76,9 @@ typedef struct {
     /** @brief Show game screenshots in the Library's info panel */
     bool screenshot_gallery_enabled;
 
+    /** @brief Seconds without input before the screensaver starts; 0 = never */
+    int screensaver_timeout;
+
     /** @brief Enable Sound effects within the menu */
     bool soundfx_enabled;
 

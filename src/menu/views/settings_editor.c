@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "../sound.h"
 #include "../fonts.h"
+#include "../screensaver.h"
 #include "../settings.h"
 #include "../ui_components/constants.h"
 #include "views.h"
@@ -90,6 +91,46 @@ static void set_controller_hints (menu_t *menu, bool value) {
     ui_components_button_hints_enable(value);
     settings_save(&menu->settings);
 }
+
+/** @brief Screensaver timeouts in seconds, in the order of the picker's rows. */
+static const int screensaver_timeouts[] = {
+#ifdef DEV_SD
+    5,
+#endif
+    0, 30, 60, 300,
+};
+
+static void set_screensaver (menu_t *menu, void *arg) {
+    int seconds = (int) (intptr_t) arg;
+    menu->settings.screensaver_timeout = seconds;
+    screensaver_set_timeout(seconds);
+    settings_save(&menu->settings);
+}
+
+static int get_screensaver_selection (menu_t *menu) {
+    int count = sizeof(screensaver_timeouts) / sizeof(screensaver_timeouts[0]);
+    for (int i = 0; i < count; i++) {
+        if (screensaver_timeouts[i] == menu->settings.screensaver_timeout) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+static component_context_menu_t screensaver_picker = {
+    .get_default_selection = get_screensaver_selection,
+    .list = {
+        // Same order as screensaver_timeouts.
+#ifdef DEV_SD
+        { .text = "5 Seconds", .action = set_screensaver, .arg = (void *) (5) },
+#endif
+        { .text = "Off", .action = set_screensaver, .arg = (void *) (0) },
+        { .text = "30 Seconds", .action = set_screensaver, .arg = (void *) (30) },
+        { .text = "1 Minute", .action = set_screensaver, .arg = (void *) (60) },
+        { .text = "5 Minutes", .action = set_screensaver, .arg = (void *) (300) },
+        COMPONENT_CONTEXT_MENU_LIST_END,
+    }
+};
 
 static bool get_hidden_games (menu_t *menu) { return menu->settings.show_hidden_games; }
 static void set_hidden_games (menu_t *menu, bool value) {
@@ -186,6 +227,8 @@ static option_t options[] = {
       .description = "Show which buttons do what along the bottom of the screen." },
     { .label = "Palette", .type = OPTION_CHOICE, .picker = &palette_picker,
       .description = "Colors of the menu. Button icons and cartridges keep their own colors." },
+    { .label = "Screensaver", .type = OPTION_CHOICE, .picker = &screensaver_picker,
+      .description = "Bounce the N64 logo around the screen after this long without a button press." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,

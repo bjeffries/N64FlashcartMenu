@@ -21,6 +21,7 @@
 #include "menu_state.h"
 #include "menu.h"
 #include "png_decoder.h"
+#include "screensaver.h"
 #include "settings.h"
 #include "sound.h"
 #include "usb_comm.h"
@@ -150,6 +151,7 @@ static void menu_init (boot_params_t *boot_params) {
     sound_use_sfx(menu->settings.soundfx_enabled);
     ui_components_game_info_screenshots_enable(menu->settings.screenshot_gallery_enabled);
     ui_components_button_hints_enable(menu->settings.controller_hints_enabled);
+    screensaver_set_timeout(menu->settings.screensaver_timeout);
 
     menu->browser.directory = path_init(menu->storage_prefix, menu->settings.default_directory);
     if (!directory_exists(path_get(menu->browser.directory))) {
@@ -262,7 +264,9 @@ void menu_run (boot_params_t *boot_params) {
             actions_update(menu);
 
             view_t *view = menu_get_view(menu->mode);
-            if (view && view->show) {
+            if (screensaver_update(menu)) {
+                screensaver_draw(display);
+            } else if (view && view->show) {
                 view->show(menu, display);
             } else {
                 ui_components_attach_clear(display);

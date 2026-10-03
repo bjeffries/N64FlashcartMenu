@@ -48,6 +48,7 @@ SRCS = \
 	menu/path.c \
 	menu/png_decoder.c \
 	menu/rom_info.c \
+	menu/screensaver.c \
 	menu/settings.c \
 	menu/sound.c \
 	menu/ui_components/background.c \
@@ -64,6 +65,7 @@ SRCS = \
 	menu/ui_components/game_info.c \
 	menu/ui_components/icons.c \
 	menu/ui_components/keyboard.c \
+	menu/ui_components/n64_logo.c \
 	menu/ui_components/option_list.c \
 	menu/ui_components/tab_header.c \
 	menu/ui_components/tabs.c \
@@ -159,6 +161,7 @@ FILESYSTEM = \
 # DEV_SD=1 packs devsd/ (see scripts/make_devsd.py) into rom:/ so emulators have games to show.
 # Copied as a whole folder because ROM file names contain spaces, which make can't track.
 ifdef DEV_SD
+N64_CFLAGS += -DDEV_SD
 FILESYSTEM += devsd-sync
 devsd-sync:
 	@echo "    [DEVSD] devsd/ -> $(FILESYSTEM_DIR)/"
