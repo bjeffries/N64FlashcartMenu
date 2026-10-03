@@ -33,7 +33,7 @@
 #define DROP_MS             (550)   // then drop it off the bottom of the screen (constant
                                     // acceleration from rest). With the corona that's 1s: the
                                     // length of the loading wind.
-#define BLUR_SHUTTER_MS     (FRAME_MS)  // motion blur while dropping: where the ring was over this long,
+#define BLUR_SHUTTER_MS     (2*FRAME_MS)  // motion blur while dropping: where the ring was over this long,
 #define BLUR_SPACING_PX     (3.0f)      // drawn as a fading copy every this many pixels,
 #define BLUR_MAX_COPIES     (6)         // at most this many
 
