@@ -415,6 +415,9 @@ bool ui_components_tab_process(menu_t *menu, menu_tab_t current);
  */
 void ui_components_carousel_invalidate(void);
 
+/** @brief How long the carousel row has been still (not sliding to a new selection), in ms. */
+uint32_t ui_components_carousel_still_ms(void);
+
 /**
  * @brief Draw one page of the Library info panel for an entry.
  *
@@ -460,8 +463,9 @@ void ui_components_game_info_screenshots_enable(bool enabled);
  * @brief Draw a frame of the spinning N64 logo (N64_LOGO_WIDTH x N64_LOGO_HEIGHT, in n64_logo_frames.h).
  * @param x, y Top-left corner.
  * @param frame 0 .. N64_LOGO_FRAMES - 1.
+ * @param alpha Opacity, 0 (invisible) .. 0xFF (opaque).
  */
-void ui_components_n64_logo_draw(int x, int y, int frame);
+void ui_components_n64_logo_draw(int x, int y, int frame, uint8_t alpha);
 
 /** @brief The logo's frame for now when it spins steadily (the Library's screenshot placeholder). */
 int ui_components_n64_logo_frame(void);

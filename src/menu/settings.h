@@ -67,7 +67,7 @@ typedef struct {
     /** @brief Custom palettes' colours, 0xRRGGBB: background, tone 1-3, highlight */
     uint32_t custom_palettes[2][5];
 
-    /** @brief Play the boot animation at power-on */
+    /** @brief Play the boot animation when the menu starts (power-on or Reset) */
     bool boot_animation_enabled;
 
     /** @brief Show the controller button hints along the bottom of the screen */

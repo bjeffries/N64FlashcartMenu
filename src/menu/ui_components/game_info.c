@@ -414,12 +414,21 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
  * @brief The game's screenshots in the right half of the info area (Overview and Details pages),
  *        if it has any; values then stop short of them.
  */
-/** @brief The spinning N64 logo, centred in the screenshot area. */
+/**
+ * @brief The spinning N64 logo, centred in the screenshot area. Hidden while the carousel slides
+ *        and for a moment after, then faded in.
+ */
 static void draw_logo (void) {
+    uint32_t still = ui_components_carousel_still_ms();
+    if (still < GAME_INFO_LOGO_DELAY_MS) {
+        return;
+    }
+    uint32_t fading = still - GAME_INFO_LOGO_DELAY_MS;
+    uint8_t alpha = (fading >= GAME_INFO_LOGO_FADE_MS) ? 0xFF : (uint8_t) ((fading * 0xFF) / GAME_INFO_LOGO_FADE_MS);
     ui_components_n64_logo_draw(
         GAME_INFO_SCREENSHOT_X + ((GAME_INFO_SCREENSHOT_WIDTH - N64_LOGO_WIDTH) / 2),
         GAME_INFO_SCREENSHOT_Y + ((GAME_INFO_SCREENSHOT_HEIGHT - N64_LOGO_HEIGHT) / 2),
-        ui_components_n64_logo_frame());
+        ui_components_n64_logo_frame(), alpha);
 }
 
 static void draw_screenshots (entry_t *entry) {

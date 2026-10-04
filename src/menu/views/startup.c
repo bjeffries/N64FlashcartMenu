@@ -1,6 +1,6 @@
 /**
  * @file startup.c
- * @brief Startup view: plays the Eclipse boot animation at power-on, then opens the Library
+ * @brief Startup view: plays the Eclipse boot animation whenever the menu starts, then opens the Library
  * @ingroup view
  *
  * The frames (boot_animation/, converted by scripts/make_boot_animation.py) are cropped CI8
@@ -144,8 +144,9 @@ void view_startup_init (menu_t *menu) {
         settings_save(&menu->settings);
     }
 
-    // Power-on only: returning from a game with Reset is a warm (NMI) reset.
-    if (menu->settings.boot_animation_enabled && sys_reset_type() == RESET_COLD) {
+    // Every time the menu starts, power-on or Reset: the SummerCart64 bootloader starts the menu as
+    // a warm (NMI) reset either way, so sys_reset_type() can't tell them apart on the cart.
+    if (menu->settings.boot_animation_enabled) {
         animation.playing = true;
         animation.start_ms = 0;
         animation.sprite = NULL;

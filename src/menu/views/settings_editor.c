@@ -220,7 +220,7 @@ static void ask_reset (menu_t *menu) {
 
 static option_t options[] = {
     { .label = "Boot Animation", .type = OPTION_TOGGLE, .get = get_boot_animation, .set = set_boot_animation,
-      .description = "Play the Eclipse Cart animation when the console is switched on." },
+      .description = "Play the Eclipse Cart animation whenever the menu starts, at power-on or after Reset." },
     { .label = "Screenshot Gallery", .type = OPTION_TOGGLE, .get = get_screenshot_gallery, .set = set_screenshot_gallery,
       .description = "Show game screenshots in the Library's info panel, changing every few seconds." },
     { .label = "Controller Hints", .type = OPTION_TOGGLE, .get = get_controller_hints, .set = set_controller_hints,

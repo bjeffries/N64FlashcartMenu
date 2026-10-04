@@ -154,6 +154,6 @@ void screensaver_draw (surface_t *display) {
     }
 
     ui_components_attach_clear(display);
-    ui_components_n64_logo_draw((int) logo.x, (int) logo.y, frame);
+    ui_components_n64_logo_draw((int) logo.x, (int) logo.y, frame, 0xFF);
     rdpq_detach_show();
 }

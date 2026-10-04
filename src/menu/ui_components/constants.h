@@ -440,6 +440,10 @@
 #define GAME_INFO_SCREENSHOT_OUTLINE_COLOR  SPRITE_OUTLINE_SELECTED
 #define GAME_INFO_SCREENSHOT_SHADOW     (4)
 #define GAME_INFO_SCREENSHOT_SHADOW_COLOR   TEXT_SHADOW_COLOR
+/** @brief The placeholder logo shows this long after the carousel stops (both animating is too slow on hardware). */
+#define GAME_INFO_LOGO_DELAY_MS         (300)
+/** @brief The placeholder logo then fades in over this long. */
+#define GAME_INFO_LOGO_FADE_MS          (250)
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
 /** @brief Baseline of the first info row. */

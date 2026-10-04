@@ -62,6 +62,7 @@ static sprite_t *hidden_outline = NULL;
 static bool scroll_ready = false;       // false: snap to the selection on the next draw
 static float scroll_position = 0;       // selection index currently in the focus frame (fractional while moving)
 static uint64_t scroll_last_us = 0;
+static uint32_t last_moving_ms = 0;    // last draw where the row was still sliding
 
 
 static void label_cache_reset (void) {
@@ -356,6 +357,10 @@ void ui_components_carousel_invalidate (void) {
     scroll_ready = false;
 }
 
+uint32_t ui_components_carousel_still_ms (void) {
+    return get_ticks_ms() - last_moving_ms;
+}
+
 /**
  * @brief Draw the carousel row and the selected entry's title.
  */
@@ -377,6 +382,9 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
     }
 
     bool settled = scroll_update(selected, entries);
+    if (!settled) {
+        last_moving_ms = get_ticks_ms();
+    }
 
     int32_t first = MAX(0, (int32_t) floorf(scroll_position) - 3);
     int32_t last = MIN(entries - 1, (int32_t) ceilf(scroll_position) + 5);
