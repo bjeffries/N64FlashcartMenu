@@ -4,7 +4,7 @@
  * @ingroup menu
  *
  * The logo moves diagonally on the palette's background and bounces off the edges of the screen
- * (inside the overscan margins), at the edges of the logo itself as it turns. Each bounce reverses
+ * (inside the safe area), at the edges of the logo itself as it turns. Each bounce reverses
  * its spin; a corner hit counts as one bounce. Any button or stick movement wakes the menu without
  * acting on it, and input is ignored for a second after that, and until everything is let go.
  */
@@ -23,10 +23,10 @@
 #define SCREENSAVER_WAKE_MS         (1000)      // input ignored after waking up
 #define SCREENSAVER_MAX_STEP_MS     (100)       // longest step the logo moves in one frame
 
-#define SCREENSAVER_LEFT            (OVERSCAN_WIDTH)
-#define SCREENSAVER_RIGHT           (DISPLAY_WIDTH - OVERSCAN_WIDTH)
-#define SCREENSAVER_TOP             (OVERSCAN_HEIGHT)
-#define SCREENSAVER_BOTTOM          (DISPLAY_HEIGHT - OVERSCAN_HEIGHT)
+#define SCREENSAVER_LEFT            (VISIBLE_AREA_X0)
+#define SCREENSAVER_RIGHT           (VISIBLE_AREA_X1)
+#define SCREENSAVER_TOP             (VISIBLE_AREA_Y0)
+#define SCREENSAVER_BOTTOM          (VISIBLE_AREA_Y1)
 
 static int timeout_ms;
 static bool active;

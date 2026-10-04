@@ -349,7 +349,7 @@ void ui_components_main_text_draw (menu_font_type_t style, rdpq_align_t align, r
         &(rdpq_textparms_t) {
             .style_id = style,
             .width = VISIBLE_AREA_WIDTH - (TEXT_MARGIN_HORIZONTAL * 2),
-            .height = LAYOUT_ACTIONS_SEPARATOR_Y - OVERSCAN_HEIGHT - (TEXT_MARGIN_VERTICAL * 2),
+            .height = LAYOUT_ACTIONS_SEPARATOR_Y - VISIBLE_AREA_Y0 - (TEXT_MARGIN_VERTICAL * 2),
             .align = align,
             .valign = valign,
             .wrap = WRAP_WORD,
@@ -418,7 +418,7 @@ void ui_components_tabs_draw(const char **text, int count, int selected, float w
     float starting_x = VISIBLE_AREA_X0;
 
     float x = starting_x;
-    float y = OVERSCAN_HEIGHT;    
+    float y = VISIBLE_AREA_Y0;    
     float height = TAB_HEIGHT;
 
     // first draw the tabs that are not selected

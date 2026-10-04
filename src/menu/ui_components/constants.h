@@ -58,17 +58,23 @@
  * @brief Overscan margin on the Y axis (pixels).
  */
 #define OVERSCAN_HEIGHT                 (24)
+/**
+ * @brief Extra margin on the left and at the top, past the overscan margins: CRTs crop more of
+ *        the picture there. Screens laid out from the top (headers, lists) move down by EXTRA_TOP.
+ */
+#define SAFE_AREA_EXTRA_LEFT            (16)
+#define SAFE_AREA_EXTRA_TOP             (12)
 
 /**
  * @def VISIBLE_AREA_X0
  * @brief Start X coordinate of the visible display area.
  */
-#define VISIBLE_AREA_X0                 (OVERSCAN_WIDTH)
+#define VISIBLE_AREA_X0                 (OVERSCAN_WIDTH + SAFE_AREA_EXTRA_LEFT)
 /**
  * @def VISIBLE_AREA_Y0
  * @brief Start Y coordinate of the visible display area.
  */
-#define VISIBLE_AREA_Y0                 (OVERSCAN_HEIGHT)
+#define VISIBLE_AREA_Y0                 (OVERSCAN_HEIGHT + SAFE_AREA_EXTRA_TOP)
 /**
  * @def VISIBLE_AREA_X1
  * @brief End X coordinate of the visible display area.
@@ -381,9 +387,9 @@
 /** @brief Left edge of the selected tile, header, title and info labels. */
 #define CAROUSEL_SELECTED_X             (VISIBLE_AREA_X0 + 8)
 /** @brief Baseline of the screen header ("Library"). */
-#define LIBRARY_HEADER_Y                (42)
+#define LIBRARY_HEADER_Y                (42 + SAFE_AREA_EXTRA_TOP)
 /** @brief Top of the selected tile. */
-#define CAROUSEL_TILE_Y                 (60)
+#define CAROUSEL_TILE_Y                 (60 + SAFE_AREA_EXTRA_TOP)
 /** @brief Selected tile width and height (~30% larger than the others). */
 #define CAROUSEL_SELECTED_TILE_SIZE     (146)
 /** @brief Unselected tile width and height. */
@@ -499,7 +505,7 @@
 /** @brief Tab bar colour (same gray as the L / R pills, scripts/make_icons.py). */
 #define TAB_BAR_COLOR                   SPRITE_BUTTON_GRAY
 /** @brief Baseline of the first Settings tab row. */
-#define SETTINGS_HUB_Y                  (110)
+#define SETTINGS_HUB_Y                  (110 + SAFE_AREA_EXTRA_TOP)
 /** @brief Distance between Settings tab rows. */
 #define SETTINGS_HUB_ROW_PITCH          (36)
 
@@ -510,11 +516,11 @@
 #define LOADING_BAR_Y                   (250)
 
 /** @brief Baseline of the first row on option-list screens without a game title (e.g. Menu Settings). */
-#define SETTINGS_LIST_Y                 (96)
+#define SETTINGS_LIST_Y                 (96 + SAFE_AREA_EXTRA_TOP)
 
 /** @brief Time screen: baseline of the large date and time, and of the help text below it. */
-#define TIME_VALUE_Y                    (150)
-#define TIME_HELP_Y                     (240)
+#define TIME_VALUE_Y                    (150 + SAFE_AREA_EXTRA_TOP)
+#define TIME_HELP_Y                     (240 + SAFE_AREA_EXTRA_TOP)
 
 /** @brief On-screen keyboard: key, SHIFT-on key and text field backgrounds. */
 #define KEYBOARD_KEY_COLOR              PALETTE_TONE_2
@@ -529,7 +535,7 @@
 /** @brief Rows an option list shows before it scrolls, leaving room for the description below. */
 #define OPTION_LIST_VISIBLE_ROWS        (8)
 /** @brief Baseline of the first Cheat Codes row (its column headers sit above it). */
-#define CHEAT_LIST_Y                    (110)
+#define CHEAT_LIST_Y                    (110 + SAFE_AREA_EXTRA_TOP)
 /** @brief Scroll bar at the right edge of scrolling tables (option lists, Cheat Codes). */
 #define TABLE_SCROLLBAR_WIDTH           (4)
 #define TABLE_SCROLLBAR_X               (VISIBLE_AREA_X1 - TABLE_SCROLLBAR_WIDTH)
