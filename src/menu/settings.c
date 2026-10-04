@@ -53,11 +53,8 @@ static settings_t init = {
     .boot_animation_enabled = true,
     .screenshot_gallery_enabled = true,
     .controller_hints_enabled = true,
-#ifdef DEV_SD
-    .screensaver_timeout = 5,       // quick to test in an emulator
-#else
-    .screensaver_timeout = 30,
-#endif
+    .carousel_at_bottom = true,
+    .screensaver_timeout = 60,
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     .rom_autoload_enabled = false,
     .rom_autoload_path = "",
@@ -109,6 +106,7 @@ void settings_load (settings_t *settings) {
     settings->boot_animation_enabled = ini_get_bool(ini, "menu", "boot_animation_enabled", init.boot_animation_enabled);
     settings->screenshot_gallery_enabled = ini_get_bool(ini, "menu", "screenshot_gallery_enabled", init.screenshot_gallery_enabled);
     settings->controller_hints_enabled = ini_get_bool(ini, "menu", "controller_hints_enabled", init.controller_hints_enabled);
+    settings->carousel_at_bottom = ini_get_bool(ini, "menu", "carousel_at_bottom", init.carousel_at_bottom);
     settings->screensaver_timeout = ini_get_int(ini, "menu", "screensaver_timeout", init.screensaver_timeout);
 
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
@@ -152,6 +150,7 @@ void settings_save (settings_t *settings) {
     ini_set_bool(ini, "menu", "boot_animation_enabled", settings->boot_animation_enabled);
     ini_set_bool(ini, "menu", "screenshot_gallery_enabled", settings->screenshot_gallery_enabled);
     ini_set_bool(ini, "menu", "controller_hints_enabled", settings->controller_hints_enabled);
+    ini_set_bool(ini, "menu", "carousel_at_bottom", settings->carousel_at_bottom);
     ini_set_int(ini, "menu", "screensaver_timeout", settings->screensaver_timeout);
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     ini_set_bool(ini, "menu", "autoload_rom_enabled", settings->rom_autoload_enabled);

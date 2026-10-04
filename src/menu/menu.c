@@ -152,6 +152,7 @@ static void menu_init (boot_params_t *boot_params) {
     ui_components_game_info_screenshots_enable(menu->settings.screenshot_gallery_enabled);
     ui_components_button_hints_enable(menu->settings.controller_hints_enabled);
     screensaver_set_timeout(menu->settings.screensaver_timeout);
+    ui_components_layout_set(menu->settings.carousel_at_bottom);
 
     menu->browser.directory = path_init(menu->storage_prefix, menu->settings.default_directory);
     if (!directory_exists(path_get(menu->browser.directory))) {

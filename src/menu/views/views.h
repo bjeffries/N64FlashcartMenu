@@ -39,6 +39,8 @@ void view_startup_display(menu_t *menu, surface_t *display);
  * @param menu Pointer to the menu structure.
  */
 void view_browser_init(menu_t *menu);
+/** @brief Read the start folder's listing ahead of the Library (during the boot animation). */
+void view_browser_preload(menu_t *menu);
 
 /**
  * @brief Display the browser view.

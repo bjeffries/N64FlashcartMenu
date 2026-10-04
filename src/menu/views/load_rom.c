@@ -626,6 +626,7 @@ static void config_process (menu_t *menu) {
     }
     if (menu->actions.back) {
         sound_play_effect(SFX_EXIT);
+        ui_components_game_info_forget(menu->load.rom_path);    // its settings may have changed
         menu->next_mode = menu->load.return_mode;
     }
 }

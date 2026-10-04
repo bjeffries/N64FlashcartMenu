@@ -156,6 +156,9 @@ static void draw_content (menu_t *menu, bool show_hints) {
     }
     ui_components_game_info_draw(NULL, &entries[selected], &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
+    if (ui_components_carousel_still_ms() >= GAME_INFO_LOAD_DELAY_MS) {
+        ui_components_game_info_prefetch(NULL, entries, entry_count, selected, GAME_INFO_PREFETCH_IDLE_US);
+    }
     ui_components_letter_indicator_draw();
     if (tab == TAB_FAVORITES) {
         ui_components_position_indicator_draw(selected + 1, entry_count);

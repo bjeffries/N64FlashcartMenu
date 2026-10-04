@@ -388,8 +388,10 @@
 #define CAROUSEL_SELECTED_X             (VISIBLE_AREA_X0 + 8)
 /** @brief Baseline of the screen header ("Library"). */
 #define LIBRARY_HEADER_Y                (42 + SAFE_AREA_EXTRA_TOP)
-/** @brief Top of the selected tile. */
-#define CAROUSEL_TILE_Y                 (60 + SAFE_AREA_EXTRA_TOP)
+/** @brief Top of the selected tile with the carousel at the top (Menu Settings > Carousel Position). */
+#define CAROUSEL_TOP_TILE_Y             (60 + SAFE_AREA_EXTRA_TOP)
+/** @brief Top of the selected tile, for the current layout (layout.c). */
+#define CAROUSEL_TILE_Y                 (ui_components_layout_carousel_y())
 /** @brief Selected tile width and height (~30% larger than the others). */
 #define CAROUSEL_SELECTED_TILE_SIZE     (146)
 /** @brief Unselected tile width and height. */
@@ -425,9 +427,21 @@
 /** @brief How far the label extends under the cartridge on each side, hiding the label's own edge. */
 #define CARTRIDGE_LABEL_BLEED           (2)
 /** @brief Baseline of the captions under unselected tiles: level with the bottom of the selected cartridge's outline. */
-#define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + ((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2) + CARTRIDGE_LARGE_HEIGHT + CARTRIDGE_OUTLINE_OFFSET)
-/** @brief Baseline of the selected entry's title: 22px below the captions, plus the title's 18px capitals. */
-#define CAROUSEL_TITLE_Y                (CAROUSEL_CAPTION_Y + 40)
+#define CAROUSEL_CAPTION_Y              (CAROUSEL_TILE_Y + CAROUSEL_CAPTION_OFFSET)
+#define CAROUSEL_CAPTION_OFFSET         (((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2) + CARTRIDGE_LARGE_HEIGHT + CARTRIDGE_OUTLINE_OFFSET)
+/** @brief Top of the selected cartridge's outline, below the top of its tile. */
+#define CAROUSEL_OUTLINE_TOP            (((CAROUSEL_SELECTED_TILE_SIZE - CARTRIDGE_LARGE_HEIGHT) / 2) - CARTRIDGE_OUTLINE_OFFSET)
+/** @brief With the carousel at the top, how far it and the info panel sit above CAROUSEL_TOP_TILE_Y's layout (tabs and hints stay put). */
+#define CAROUSEL_TOP_LAYOUT_RAISE       (16)
+/** @brief With the carousel at the bottom, how far it sits above the top layout's screenshot bottom (clear of the hints). */
+#define CAROUSEL_BOTTOM_RAISE           (20)
+/** @brief Height of the title's capitals. */
+#define CAROUSEL_TITLE_CAPS             (18)
+/**
+ * @brief Baseline of the selected entry's title, at the top of the info panel (layout.c): with the
+ *        carousel at the top, 22px below the captions plus the title's capitals.
+ */
+#define CAROUSEL_TITLE_Y                (ui_components_layout_title_y())
 /** @brief Left edge of the info panel's labels (PLAYER COUNT, REGION, ...). */
 #define GAME_INFO_LABEL_X               (CAROUSEL_SELECTED_X)
 /** @brief Left edge of the info panel's values: the label column is 112px wide. */
@@ -446,15 +460,20 @@
 #define GAME_INFO_SCREENSHOT_OUTLINE_COLOR  SPRITE_OUTLINE_SELECTED
 #define GAME_INFO_SCREENSHOT_SHADOW     (4)
 #define GAME_INFO_SCREENSHOT_SHADOW_COLOR   TEXT_SHADOW_COLOR
-/** @brief The placeholder logo shows this long after the carousel stops (both animating is too slow on hardware). */
-#define GAME_INFO_LOGO_DELAY_MS         (300)
-/** @brief The placeholder logo then fades in over this long. */
-#define GAME_INFO_LOGO_FADE_MS          (250)
+/** @brief The info panel reads the selected game's details from the SD card once the carousel has been still this long (not on every step while scrolling). */
+#define GAME_INFO_LOAD_DELAY_MS         (100)
+/** @brief Time per frame spent reading games' info into the cache in the background: during the boot animation, and while the carousel is still. */
+#define GAME_INFO_PREFETCH_BOOT_US      (6000)
+#define GAME_INFO_PREFETCH_IDLE_US      (4000)
+/** @brief The screenshot (or placeholder logo) shows this long after the carousel stops (animating both is too slow on hardware)... */
+#define GAME_INFO_FADE_DELAY_MS         (600)
+/** @brief ...then fades in over this long (a screenshot that loads later fades in once it's loaded). */
+#define GAME_INFO_FADE_MS               (250)
 /** @brief Left edge of the selected entry's title: indented to leave room for the page dots. */
 #define GAME_INFO_TITLE_X               (GAME_INFO_LABEL_X + 14)
-/** @brief Baseline of the first info row. */
-#define GAME_INFO_Y                     (CAROUSEL_TITLE_Y + 30 + (ui_components_button_hints_enabled() ? 0 : GAME_INFO_NO_HINTS_SHIFT))
-/** @brief With Controller Hints off, the info rows and screenshot move down by half the freed space. */
+/** @brief Baseline of the first info row: 30px below the title (layout.c). */
+#define GAME_INFO_Y                     (ui_components_layout_info_y())
+/** @brief With Controller Hints off, the info rows and screenshot (or the carousel, when it's at the bottom) move down by half the freed space. */
 #define GAME_INFO_NO_HINTS_SHIFT        (18)
 /**
  * @brief The UI's two text styles: 32px titles (TITLE_FONT, also the top and bottom bars) and
@@ -479,7 +498,7 @@
  *         and the bottom of the text area. */
 #define GAME_INFO_ABOUT_LINE_HEIGHT     (MAX(14, fonts_ascent(GAME_INFO_FONT) + 3))
 #define GAME_INFO_ABOUT_ASCENT          (MAX(10, fonts_ascent(GAME_INFO_FONT)))
-#define GAME_INFO_ABOUT_BOTTOM          (ui_components_button_hints_enabled() ? (LIBRARY_BUTTONS_Y - 34) : (VISIBLE_AREA_Y1 - 12))
+#define GAME_INFO_ABOUT_BOTTOM          (ui_components_layout_info_bottom())
 
 /** @brief Size of an info page dot. */
 #define GAME_INFO_DOT_SIZE              (6)
@@ -567,7 +586,7 @@
  *        info row and the top of the "Loading" text (which sits on the button hints' baseline).
  */
 #define LOADING_ANIMATION_CENTER_X      (DISPLAY_CENTER_X)
-#define LOADING_ANIMATION_CENTER_Y      (((GAME_INFO_Y - 14) + (LIBRARY_BUTTONS_Y - 14)) / 2)
+#define LOADING_ANIMATION_CENTER_Y      (ui_components_layout_loading_y())
 /** @brief Game loading: from this progress on, the screen behind the eclipse fades to black. */
 #define LOADING_FADE_START              (0.8f)
 /** @brief Emulators only (no SummerCart64): how long the pretend game load takes. */
@@ -578,8 +597,8 @@
 #define CAROUSEL_PAGING_INTERVAL_MS     (400)
 /** @brief Paging letter: baseline (title font; its capitals top out at the safe area). */
 #define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + fonts_cap_height(FNT_TITLE))
-/** @brief Paging letter: left edge, lined up with the cartridge, page dots and info labels. */
-#define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X)
+/** @brief Paging letter: left edge, 8px left of the cartridge, page dots and info labels (the position counter mirrors it on the right). */
+#define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X - 8)
 #define LETTER_INDICATOR_FADE_IN_MS     (120)
 /** @brief Position counter (a vertical fraction): space above and below its bar, and the bar's thickness. */
 #define POSITION_FRACTION_GAP           (3)

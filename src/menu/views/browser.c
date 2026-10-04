@@ -572,6 +572,10 @@ static void draw_content (menu_t *menu, bool show_hints) {
     }
     ui_components_game_info_draw(menu->browser.directory, menu->browser.entry, &menu->bookkeeping, info_page);
     ui_components_game_info_dots_draw(info_page, pages);
+    if (ui_components_carousel_still_ms() >= GAME_INFO_LOAD_DELAY_MS) {
+        ui_components_game_info_prefetch(menu->browser.directory, menu->browser.list, menu->browser.entries,
+            menu->browser.selected, GAME_INFO_PREFETCH_IDLE_US);
+    }
     ui_components_letter_indicator_draw();
 
     // Position among the games (not folders); hidden games are only in the list when shown.
@@ -676,6 +680,13 @@ static void draw (menu_t *menu, surface_t *d) {
  */
 void view_browser_draw_behind_loading (menu_t *menu) {
     draw_content(menu, false);
+}
+
+void view_browser_preload (menu_t *menu) {
+    // Errors are left for view_browser_init() to report (it tries again).
+    if (!menu->browser.valid && !load_directory(menu)) {
+        menu->browser.valid = true;
+    }
 }
 
 void view_browser_init (menu_t *menu) {

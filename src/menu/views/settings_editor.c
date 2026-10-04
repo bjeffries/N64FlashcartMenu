@@ -92,6 +92,14 @@ static void set_controller_hints (menu_t *menu, bool value) {
     settings_save(&menu->settings);
 }
 
+static bool get_carousel_bottom (menu_t *menu) { return menu->settings.carousel_at_bottom; }
+static void set_carousel_bottom (menu_t *menu, bool value) {
+    menu->settings.carousel_at_bottom = value;
+    ui_components_layout_set(menu->settings.carousel_at_bottom);
+    settings_save(&menu->settings);
+}
+static const char *carousel_position_value (menu_t *menu) { return menu->settings.carousel_at_bottom ? "Bottom" : "Top"; }
+
 /** @brief Screensaver timeouts in seconds, in the order of the picker's rows. */
 static const int screensaver_timeouts[] = {
 #ifdef DEV_SD
@@ -225,6 +233,9 @@ static option_t options[] = {
       .description = "Show game screenshots in the Library's info panel, changing every few seconds." },
     { .label = "Controller Hints", .type = OPTION_TOGGLE, .get = get_controller_hints, .set = set_controller_hints,
       .description = "Show which buttons do what along the bottom of the screen." },
+    { .label = "Carousel Position", .type = OPTION_TOGGLE, .get = get_carousel_bottom, .set = set_carousel_bottom,
+      .value = carousel_position_value,
+      .description = "Show the row of games above or below the game info." },
     { .label = "Palette", .type = OPTION_CHOICE, .picker = &palette_picker,
       .description = "Colors of the menu. Button icons and cartridges keep their own colors." },
     { .label = "Screensaver", .type = OPTION_CHOICE, .picker = &screensaver_picker,

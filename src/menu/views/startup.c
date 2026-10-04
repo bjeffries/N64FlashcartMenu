@@ -95,6 +95,12 @@ static void draw_animation (menu_t *menu, surface_t *d) {
     }
     rdpq_detach_show();
 
+    // Meanwhile, read the start folder's games' info for the Library, nearest the first game first.
+    if (menu->browser.valid) {
+        ui_components_game_info_prefetch(menu->browser.directory, menu->browser.list, menu->browser.entries,
+            menu->browser.selected, GAME_INFO_PREFETCH_BOOT_US);
+    }
+
     if (elapsed >= frames_ms + HOLD_MS + FADE_MS) {
         if (!to_black) {
             view_browser_fade_in();
@@ -149,6 +155,7 @@ void view_startup_init (menu_t *menu) {
     if (menu->settings.boot_animation_enabled) {
         animation.playing = true;
         animation.start_ms = 0;
+        view_browser_preload(menu);     // its games' info is read during the animation
         animation.sprite = NULL;
         animation.image = -1;
         return;     // draw() moves on to the Library when the animation ends

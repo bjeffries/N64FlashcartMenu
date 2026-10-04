@@ -65,6 +65,7 @@ SRCS = \
 	menu/ui_components/game_info.c \
 	menu/ui_components/icons.c \
 	menu/ui_components/keyboard.c \
+	menu/ui_components/layout.c \
 	menu/ui_components/n64_logo.c \
 	menu/ui_components/option_list.c \
 	menu/ui_components/tab_header.c \

@@ -191,8 +191,12 @@ void ui_components_option_list_draw (menu_t *menu, option_list_t *list, int y_to
         menu_font_style_t value_style = STL_DEFAULT;
         if (option->type == OPTION_TOGGLE) {
             bool on = option->get(menu);
-            value = on ? "On" : "Off";
-            value_style = on ? STL_DEFAULT : STL_GRAY;
+            if (option->value) {
+                value = option->value(menu);    // two named choices (e.g. Top / Bottom): neither grayed out
+            } else {
+                value = on ? "On" : "Off";
+                value_style = on ? STL_DEFAULT : STL_GRAY;
+            }
         } else if (option->type == OPTION_CHOICE) {
             value = choice_text(menu, option);
         } else if (option->value) {

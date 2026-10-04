@@ -76,6 +76,9 @@ typedef struct {
     /** @brief Show game screenshots in the Library's info panel */
     bool screenshot_gallery_enabled;
 
+    /** @brief Library layout: carousel below the info panel instead of above it */
+    bool carousel_at_bottom;
+
     /** @brief Seconds without input before the screensaver starts; 0 = never */
     int screensaver_timeout;
 

@@ -459,6 +459,25 @@ void ui_components_game_info_invalidate(void);
 /** @brief Turn the screenshot gallery (Menu Settings > Screenshot Gallery) on or off. */
 void ui_components_game_info_screenshots_enable(bool enabled);
 
+/** @brief Drop a game's cached info (e.g. after its settings changed), so it's read again. */
+void ui_components_game_info_forget(path_t *path);
+
+/**
+ * @brief Read the info of a list's games into the cache in the background, nearest the selection
+ *        first, for up to budget_us (at least one game) per call.
+ * @param directory Folder the entries are in, or NULL if their names are full paths (Faves, History).
+ */
+void ui_components_game_info_prefetch(path_t *directory, entry_t *list, int32_t count, int32_t selected, uint32_t budget_us);
+
+/** @brief Library layout (Menu Settings > Carousel Position). */
+void ui_components_layout_set(bool carousel_at_bottom);
+/** @brief Layout positions for the current setting (layout.c); used through constants.h. */
+int ui_components_layout_carousel_y(void);
+int ui_components_layout_title_y(void);
+int ui_components_layout_info_y(void);
+int ui_components_layout_info_bottom(void);
+int ui_components_layout_loading_y(void);
+
 /**
  * @brief Draw a frame of the spinning N64 logo (N64_LOGO_WIDTH x N64_LOGO_HEIGHT, in n64_logo_frames.h).
  * @param x, y Top-left corner.
@@ -533,7 +552,7 @@ typedef struct {
     void (*set)(menu_t *menu, bool value);      /**< OPTION_TOGGLE: change the value */
     component_context_menu_t *picker;           /**< OPTION_CHOICE: pop-up whose current row is the value */
     void (*action)(menu_t *menu);               /**< OPTION_ACTION: what A does */
-    const char *(*value)(menu_t *menu);         /**< Optional value text (overrides the picker's row text) */
+    const char *(*value)(menu_t *menu);         /**< Optional value text (overrides the picker's row text, or a toggle's On / Off) */
     const char *action_name;                    /**< OPTION_ACTION: A's hint (default "Open") */
 } option_t;
 

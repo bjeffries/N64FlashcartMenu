@@ -24,14 +24,69 @@
 #define TAG_SEPARATOR_SIZE  (3)
 #define GAME_INFO_PAGES     (3)
 
-/** @brief Info for the currently selected entry, reloaded only when the selection changes. */
-static struct {
-    char *path;
+/*
+ * Info cache: what the Overview and Details pages show for each game, read from the SD card once
+ * (several reads per game: the file's date and size, the ROM header and config, its metadata and a
+ * screenshot check) and kept in memory. It's filled a few games per frame in the background
+ * (ui_components_game_info_prefetch) during the boot animation and whenever the carousel is
+ * still, nearest the selection first, so scrolling shows cached games' info straight away; a
+ * game that isn't cached yet is read once the carousel settles. The About page's description is
+ * cached too with an Expansion Pak; without one (4MB) it's read when that page is shown.
+ */
+#define INFO_TEXT               (48)
+typedef struct {
+    char *path;                 // NULL: free slot
+    uint32_t hash;
+    int next;                   // next in its bucket, or -1
     bool is_rom;
-    rom_info_t rom_info;
+    bool has_screenshot;        // screenshot_1.png exists
     time_t added;
     int64_t size;
-    time_t last_played;
+    char game_code[4];
+    uint8_t version;
+    uint8_t players;
+    rom_destination_type_t region;
+    bool rumble_pak, controller_pak, transfer_pak, vru;
+    rom_expansion_pak_t expansion_pak;
+    rom_save_type_t save_type;
+    rom_cic_type_t cic;
+    rom_tv_type_t tv;
+    bool cheats, clear_rdram;
+    char developer[INFO_TEXT];  // "" when unknown
+    char publisher[INFO_TEXT];
+    char release[INFO_TEXT / 2];
+    bool has_description;       // description below is cached (Expansion Pak only)
+    char *description;          // NULL when there's none
+} game_summary_t;
+
+#define INFO_CACHE_BUCKETS          (1024)
+#define INFO_CACHE_SIZE             (2048)  // games kept with an Expansion Pak...
+#define INFO_CACHE_SIZE_SMALL       (512)   // ...and without one (4MB)
+static struct {
+    game_summary_t *entries;
+    int capacity;
+    int used;
+    int evict;                  // next slot to reuse once full (oldest first)
+    int buckets[INFO_CACHE_BUCKETS];
+} cache;
+
+/** @brief Background filling: the list being worked through, outward from where it started. */
+static struct {
+    const entry_t *list;
+    int32_t count;
+    char *directory;
+    uint32_t signature;         // first and last names: Faves and History share one array
+    int32_t origin;
+    int32_t done;               // entries visited, in the order origin, +1, -1, +2, -2, ...
+} prefetch;
+
+/** @brief The selected entry: the full info (About page) and screenshots follow it. */
+static struct {
+    char *path;
+    bool shots_selected;
+    bool about_loaded;
+    bool about_is_rom;
+    rom_info_t about;
 } current;
 
 // About page scrolling, in lines of text.
@@ -47,7 +102,7 @@ static int about_max_scroll = 0;
  * settled; with several, the next is decoded every SCREENSHOT_CYCLE_MS and swapped in.
  */
 #define SCREENSHOT_MAX          (9)
-#define SCREENSHOT_SETTLE_MS    (250)   // don't decode while scrolling past games
+#define SCREENSHOT_SETTLE_MS    (250)   // carousel still this long: don't count or decode while scrolling past games
 #define SCREENSHOT_CYCLE_MS     (2500)
 static struct {
     char base[256];             // ".../screenshot_" (the number and ".png" follow)
@@ -56,8 +111,8 @@ static struct {
     int count;                  // screenshots this game has
     int shown_index;            // 1-based number of the one shown (0: none yet)
     surface_t *shown;
-    uint32_t selected_ms;       // when this game was selected
     uint32_t shown_ms;          // when the shown one appeared
+    uint32_t appeared_ms;       // when the first one appeared (it fades in from then)
     bool decoding;
     int generation;             // bumped on every game change, to drop stale decodes
 } shots;
@@ -96,21 +151,21 @@ static void screenshots_release (void) {
     shots.generation++;
 }
 
-/** @brief Note where the selected game's screenshots would be (call once its ROM info is loaded). */
-static void screenshots_select (const char *rom_path, const char game_code[4]) {
-    rom_info_metadata_path(rom_path, game_code, shots.base, sizeof(shots.base));
-    char *name = strrchr(shots.base, '/');
+/** @brief ".../screenshot_" for a game: where its screenshots are, the number and ".png" to follow. */
+static void screenshot_base (const char *rom_path, const char game_code[4], char *out, size_t out_size) {
+    rom_info_metadata_path(rom_path, game_code, out, out_size);
+    char *name = strrchr(out, '/');
     if (name) {
-        snprintf(name + 1, sizeof(shots.base) - (size_t) (name + 1 - shots.base), "screenshot_");
+        snprintf(name + 1, out_size - (size_t) (name + 1 - out), "screenshot_");
     } else {
-        shots.base[0] = '\0';
+        out[0] = '\0';
     }
-    // One quick check now, so the placeholder logo isn't shown for a game that has screenshots
-    // while its first one waits to load (the full count and loading wait for the selection to settle).
-    char first[280];
-    snprintf(first, sizeof(first), "%s1.png", shots.base);
-    shots.has_any = (shots.base[0] != '\0') && file_exists(first);
-    shots.selected_ms = get_ticks_ms();
+}
+
+/** @brief Note where the selected game's screenshots are; whether it has any is cached (the full count and loading wait for the carousel to settle). */
+static void screenshots_select (const char *rom_path, const char game_code[4], bool has_any) {
+    screenshot_base(rom_path, game_code, shots.base, sizeof(shots.base));
+    shots.has_any = has_any && (shots.base[0] != '\0');
 }
 
 /** @brief How many screenshots the game has: screenshot_1.png, screenshot_2.png, ... */
@@ -140,6 +195,8 @@ static void screenshot_decoded (png_err_t err, surface_t *image, void *data) {
         rspq_wait();
         surface_free(shots.shown);
         free(shots.shown);
+    } else {
+        shots.appeared_ms = get_ticks_ms();
     }
     shots.shown = image;
     shots.shown_index = (shots.shown_index % shots.count) + 1;
@@ -149,8 +206,9 @@ static void screenshot_decoded (png_err_t err, surface_t *image, void *data) {
 /** @brief Once the selection settles, count the screenshots and decode the first; then one per cycle. */
 static void screenshots_update (void) {
     uint32_t now = get_ticks_ms();
+    bool settled = ui_components_carousel_still_ms() >= SCREENSHOT_SETTLE_MS;
     if (!shots.counted) {
-        if ((now - shots.selected_ms) < SCREENSHOT_SETTLE_MS) {
+        if (!settled) {
             return;
         }
         screenshots_count();    // reads the SD card, so not while scrolling past games
@@ -160,7 +218,7 @@ static void screenshots_update (void) {
     }
     bool due = shots.shown
         ? (shots.count > 1 && (now - shots.shown_ms) >= SCREENSHOT_CYCLE_MS)
-        : ((now - shots.selected_ms) >= SCREENSHOT_SETTLE_MS);
+        : settled;
     if (!due) {
         return;
     }
@@ -175,39 +233,153 @@ static void screenshots_update (void) {
 }
 
 
+static uint32_t hash_path (const char *path) {
+    uint32_t hash = 2166136261u;     // FNV-1a
+    for (const char *c = path; *c; c++) {
+        hash = (hash ^ (uint8_t) (*c)) * 16777619u;
+    }
+    return hash;
+}
+
+static void cache_init (void) {
+    if (cache.entries) {
+        return;
+    }
+    cache.capacity = is_memory_expanded() ? INFO_CACHE_SIZE : INFO_CACHE_SIZE_SMALL;
+    cache.entries = calloc(cache.capacity, sizeof(game_summary_t));
+    for (int i = 0; i < INFO_CACHE_BUCKETS; i++) {
+        cache.buckets[i] = -1;
+    }
+}
+
+static game_summary_t *cache_find (const char *path) {
+    if (!cache.entries) {
+        return NULL;
+    }
+    uint32_t hash = hash_path(path);
+    for (int i = cache.buckets[hash % INFO_CACHE_BUCKETS]; i >= 0; i = cache.entries[i].next) {
+        if (cache.entries[i].hash == hash && strcmp(cache.entries[i].path, path) == 0) {
+            return &cache.entries[i];
+        }
+    }
+    return NULL;
+}
+
+/** @brief Take a slot out of its bucket and free it. */
+static void cache_remove (int index) {
+    game_summary_t *entry = &cache.entries[index];
+    if (!entry->path) {
+        return;
+    }
+    int *link = &cache.buckets[entry->hash % INFO_CACHE_BUCKETS];
+    while (*link >= 0 && *link != index) {
+        link = &cache.entries[*link].next;
+    }
+    if (*link == index) {
+        *link = entry->next;
+    }
+    free(entry->path);
+    free(entry->description);
+    entry->path = NULL;
+    entry->description = NULL;
+}
+
+/** @brief A slot for a new game: unused, or the oldest one. */
+static game_summary_t *cache_add (const char *path) {
+    cache_init();
+    int index;
+    if (cache.used < cache.capacity) {
+        index = cache.used++;
+    } else {
+        index = cache.evict;
+        cache.evict = (cache.evict + 1) % cache.capacity;
+        cache_remove(index);
+    }
+    game_summary_t *entry = &cache.entries[index];
+    memset(entry, 0, sizeof(*entry));
+    entry->path = strdup(path);
+    entry->hash = hash_path(path);
+    int *bucket = &cache.buckets[entry->hash % INFO_CACHE_BUCKETS];
+    entry->next = *bucket;
+    *bucket = index;
+    return entry;
+}
+
+static void copy_meta (char *out, size_t size, const char *value);
+static const char *meta_value (const char *value);
+
+/** @brief Read a game's info from the SD card into the cache. */
+static game_summary_t *summary_load (path_t *path, entry_type_t type) {
+    game_summary_t *summary = cache_add(path_get(path));
+    if (!summary->path) {
+        return NULL;
+    }
+
+    struct stat st;
+    if (stat(path_get(path), &st) == 0) {
+        summary->added = st.st_mtime;
+        summary->size = st.st_size;
+    }
+    sound_poll();
+
+    if (type == ENTRY_TYPE_ROM) {
+        rom_info_t info;
+        summary->is_rom = (rom_config_load(path, &info) == ROM_OK);
+        sound_poll();
+        if (summary->is_rom) {
+            memcpy(summary->game_code, info.game_code, sizeof(summary->game_code));
+            summary->version = info.version;
+            summary->players = (uint8_t) MIN(info.meta.num_players, 255);
+            summary->region = info.destination_code;
+            summary->rumble_pak = info.features.rumble_pak;
+            summary->controller_pak = info.features.controller_pak;
+            summary->transfer_pak = info.features.transfer_pak;
+            summary->vru = info.features.voice_recognition_unit;
+            summary->expansion_pak = info.features.expansion_pak;
+            summary->save_type = rom_info_get_save_type(&info);
+            summary->cic = rom_info_get_cic_type(&info);
+            summary->tv = rom_info_get_tv_type(&info);
+            summary->cheats = info.settings.cheats_enabled;
+            summary->clear_rdram = info.settings.clear_rdram_enabled;
+            copy_meta(summary->developer, sizeof(summary->developer), info.meta.author);
+            copy_meta(summary->publisher, sizeof(summary->publisher), info.meta.publisher);
+            copy_meta(summary->release, sizeof(summary->release), info.meta.release_date);
+            if (is_memory_expanded()) {
+                const char *description = meta_value(info.meta.short_description);
+                summary->description = description ? strdup(description) : NULL;
+                summary->has_description = true;
+            }
+            rom_info_free_meta(&info);
+
+            char first[280];
+            screenshot_base(path_get(path), summary->game_code, first, sizeof(first) - 8);
+            if (first[0] != '\0') {
+                strcat(first, "1.png");
+                summary->has_screenshot = file_exists(first);
+            }
+        }
+    }
+    return summary;
+}
+
+/** @brief Forget the selected entry: its screenshots and About page text. */
 static void current_free (void) {
     screenshots_reset();
-    if (current.is_rom) {
-        rom_info_free_meta(&current.rom_info);
+    if (current.about_loaded && current.about_is_rom) {
+        rom_info_free_meta(&current.about);
     }
     free(current.path);
     memset(&current, 0, sizeof(current));
 }
 
-static void current_load (path_t *path, entry_t *entry, bookkeeping_t *bookkeeping) {
-    if (current.path && strcmp(current.path, path_get(path)) == 0) {
+/** @brief Follow the selection: when it changes, drop the last entry's screenshots and About text. */
+static void current_select (const char *path) {
+    if (current.path && strcmp(current.path, path) == 0) {
         return;
     }
-
     current_free();
-    current.path = strdup(path_get(path));
+    current.path = strdup(path);
     about_scroll = 0;
-
-    struct stat st;
-    if (stat(path_get(path), &st) == 0) {
-        current.added = st.st_mtime;
-        current.size = st.st_size;
-    }
-    current.last_played = bookkeeping_history_last_played(bookkeeping, path);
-    sound_poll();
-
-    if (entry->type == ENTRY_TYPE_ROM) {
-        current.is_rom = (rom_config_load(path, &current.rom_info) == ROM_OK);
-        sound_poll();
-        if (current.is_rom) {
-            screenshots_select(path_get(path), current.rom_info.game_code);
-        }
-    }
 }
 
 static const char *format_region (rom_destination_type_t code) {
@@ -241,6 +413,17 @@ static const char *meta_value (const char *value) {
         return NULL;
     }
     return value;
+}
+
+/** @brief Copy a metadata string into the cache ("" when missing). */
+static void copy_meta (char *out, size_t size, const char *value) {
+    value = meta_value(value);
+    snprintf(out, size, "%s", value ? value : "");
+}
+
+/** @brief A cached string, or NULL ("-") when empty. */
+static const char *cached_text (const char *text) {
+    return (text[0] != '\0') ? text : NULL;
 }
 
 static const char *format_date (time_t t, char *buffer, size_t size) {
@@ -321,16 +504,16 @@ static void draw_player_count (int x, int y, uint32_t players) {
     }
 }
 
-static void draw_accessories (int x, int y, rom_info_t *info) {
+static void draw_accessories (int x, int y, game_summary_t *info) {
     const char *badges[6];
     int count = 0;
 
-    if (info->features.rumble_pak) badges[count++] = "RMB PAK";
-    if (info->features.controller_pak) badges[count++] = "CTL PAK";
-    if (info->features.transfer_pak) badges[count++] = "TFR PAK";
-    if (info->features.expansion_pak == EXPANSION_PAK_REQUIRED) badges[count++] = "EXP PAK";
-    else if (info->features.expansion_pak == EXPANSION_PAK_RECOMMENDED) badges[count++] = "EXP PAK+";
-    if (info->features.voice_recognition_unit) badges[count++] = "VRU";
+    if (info->rumble_pak) badges[count++] = "RMB PAK";
+    if (info->controller_pak) badges[count++] = "CTL PAK";
+    if (info->transfer_pak) badges[count++] = "TFR PAK";
+    if (info->expansion_pak == EXPANSION_PAK_REQUIRED) badges[count++] = "EXP PAK";
+    else if (info->expansion_pak == EXPANSION_PAK_RECOMMENDED) badges[count++] = "EXP PAK+";
+    if (info->vru) badges[count++] = "VRU";
 
     if (count == 0) {
         draw_text(x, y, STL_DEFAULT, "-");
@@ -414,17 +597,42 @@ static const char *format_size (int64_t bytes, char *buffer, size_t size) {
  * @brief The game's screenshots in the right half of the info area (Overview and Details pages),
  *        if it has any; values then stop short of them.
  */
+/** @brief Opacity this long into a GAME_INFO_FADE_MS fade-in. */
+static uint8_t fade_in_alpha (uint32_t since) {
+    return (since >= GAME_INFO_FADE_MS) ? 0xFF : (uint8_t) ((since * 0xFF) / GAME_INFO_FADE_MS);
+}
+
 /**
- * @brief The spinning N64 logo, centred in the screenshot area. Hidden while the carousel slides
- *        and for a moment after, then faded in.
+ * @brief Opacity of the screenshot area's contents: hidden while the carousel slides and for
+ *        GAME_INFO_FADE_DELAY_MS after, then faded in.
  */
-static void draw_logo (void) {
+static uint8_t settled_alpha (void) {
     uint32_t still = ui_components_carousel_still_ms();
-    if (still < GAME_INFO_LOGO_DELAY_MS) {
+    return (still < GAME_INFO_FADE_DELAY_MS) ? 0 : fade_in_alpha(still - GAME_INFO_FADE_DELAY_MS);
+}
+
+/** @brief A filled box at an opacity. */
+static void draw_box_faded (int x0, int y0, int x1, int y1, color_t color, uint8_t alpha) {
+    if (alpha == 0xFF) {
+        ui_components_box_draw(x0, y0, x1, y1, color);
         return;
     }
-    uint32_t fading = still - GAME_INFO_LOGO_DELAY_MS;
-    uint8_t alpha = (fading >= GAME_INFO_LOGO_FADE_MS) ? 0xFF : (uint8_t) ((fading * 0xFF) / GAME_INFO_LOGO_FADE_MS);
+    color.a = alpha;
+    rdpq_mode_push();
+        rdpq_set_mode_standard();
+        rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+        rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+        rdpq_set_prim_color(color);
+        rdpq_fill_rectangle(x0, y0, x1, y1);
+    rdpq_mode_pop();
+}
+
+/** @brief The spinning N64 logo, centred in the screenshot area, faded in once the carousel settles. */
+static void draw_logo (void) {
+    uint8_t alpha = settled_alpha();
+    if (alpha == 0) {
+        return;
+    }
     ui_components_n64_logo_draw(
         GAME_INFO_SCREENSHOT_X + ((GAME_INFO_SCREENSHOT_WIDTH - N64_LOGO_WIDTH) / 2),
         GAME_INFO_SCREENSHOT_Y + ((GAME_INFO_SCREENSHOT_HEIGHT - N64_LOGO_HEIGHT) / 2),
@@ -447,6 +655,11 @@ static void draw_screenshots (entry_t *entry) {
     if (!shots.shown) {
         return;
     }
+    // Like the logo, faded in once the carousel settles, or once the first one loads if that's later.
+    uint8_t alpha = MIN(settled_alpha(), fade_in_alpha(get_ticks_ms() - shots.appeared_ms));
+    if (alpha == 0) {
+        return;
+    }
     {
         // Drop shadow, then a white outline, then the screenshot.
         int x0 = GAME_INFO_SCREENSHOT_X - GAME_INFO_SCREENSHOT_OUTLINE;
@@ -454,16 +667,24 @@ static void draw_screenshots (entry_t *entry) {
         int x1 = GAME_INFO_SCREENSHOT_X + GAME_INFO_SCREENSHOT_WIDTH + GAME_INFO_SCREENSHOT_OUTLINE;
         int y1 = GAME_INFO_SCREENSHOT_Y + GAME_INFO_SCREENSHOT_HEIGHT + GAME_INFO_SCREENSHOT_OUTLINE;
         int s = GAME_INFO_SCREENSHOT_SHADOW;
-        ui_components_box_draw(x0 + s, y0 + s, x1 + s, y1 + s, GAME_INFO_SCREENSHOT_SHADOW_COLOR);
-        ui_components_box_draw(x0, y0, x1, y1, GAME_INFO_SCREENSHOT_OUTLINE_COLOR);
+        draw_box_faded(x0 + s, y0 + s, x1 + s, y1 + s, GAME_INFO_SCREENSHOT_SHADOW_COLOR, alpha);
+        draw_box_faded(x0, y0, x1, y1, GAME_INFO_SCREENSHOT_OUTLINE_COLOR, alpha);
         rdpq_mode_push();
-            rdpq_set_mode_copy(false);
+            if (alpha == 0xFF) {
+                rdpq_set_mode_copy(false);
+            } else {
+                rdpq_set_mode_standard();
+                rdpq_mode_combiner(RDPQ_COMBINER1((0, 0, 0, TEX0), (0, 0, 0, PRIM)));
+                rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+                rdpq_set_prim_color(RGBA32(0xFF, 0xFF, 0xFF, alpha));
+            }
             rdpq_tex_blit(shots.shown, GAME_INFO_SCREENSHOT_X, GAME_INFO_SCREENSHOT_Y, NULL);
         rdpq_mode_pop();
     }
 }
 
-static void draw_overview_page (entry_t *entry, rom_info_t *info) {
+static void draw_overview_page (entry_t *entry, game_summary_t *summary, time_t last_played) {
+    game_summary_t *info = summary->is_rom ? summary : NULL;
     int x = GAME_INFO_VALUE_X;
     int y = GAME_INFO_Y;
     char date[32];
@@ -471,7 +692,7 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     draw_screenshots(entry);
 
     draw_row(y, "Player Count");
-    draw_player_count(x, y, info ? info->meta.num_players : 0);
+    draw_player_count(x, y, info ? info->players : 0);
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Accessories");
@@ -483,7 +704,7 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Region");
-    const char *region = info ? format_region(info->destination_code) : NULL;
+    const char *region = info ? format_region(info->region) : NULL;
     if (region) {
         draw_tag(x, y, region);
     } else {
@@ -492,27 +713,27 @@ static void draw_overview_page (entry_t *entry, rom_info_t *info) {
     y += GAME_INFO_ROW_PITCH + GAME_INFO_GROUP_GAP;
 
     draw_row(y, "Developers");
-    draw_value(y, info ? meta_value(info->meta.author) : NULL);
+    draw_value(y, info ? cached_text(info->developer) : NULL);
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Publishers");
-    draw_value(y, info ? meta_value(info->meta.publisher) : NULL);
+    draw_value(y, info ? cached_text(info->publisher) : NULL);
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Release");
-    draw_value(y, info ? meta_value(info->meta.release_date) : NULL);
+    draw_value(y, info ? cached_text(info->release) : NULL);
     y += GAME_INFO_ROW_PITCH + GAME_INFO_GROUP_GAP;
 
     draw_row(y, "Added");
-    draw_value(y, format_date(current.added, date, sizeof(date)));
+    draw_value(y, format_date(summary->added, date, sizeof(date)));
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Last Played");
-    draw_value(y, format_date(current.last_played, date, sizeof(date)));
+    draw_value(y, format_date(last_played, date, sizeof(date)));
 }
 
 /** @brief Page 2: header and boot details. */
-static void draw_details_page (entry_t *entry, rom_info_t *info) {
+static void draw_details_page (entry_t *entry, game_summary_t *info) {
     int y = GAME_INFO_Y;
     char buffer[32];
 
@@ -530,33 +751,31 @@ static void draw_details_page (entry_t *entry, rom_info_t *info) {
 
     draw_row(y, "Size");
     // Directory listings don't always carry sizes (e.g. the emulator's rom:/ filesystem), so use stat().
-    draw_value(y, format_size(current.size ? current.size : entry->size, buffer, sizeof(buffer)));
+    draw_value(y, format_size(info->size ? info->size : entry->size, buffer, sizeof(buffer)));
     y += GAME_INFO_ROW_PITCH + GAME_INFO_GROUP_GAP;
 
     draw_row(y, "Save Type");
-    draw_value(y, format_save_type(rom_info_get_save_type(info)));
+    draw_value(y, format_save_type(info->save_type));
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "CIC");
-    draw_value(y, format_cic(rom_info_get_cic_type(info)));
+    draw_value(y, format_cic(info->cic));
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Video");
-    draw_value(y, format_video(rom_info_get_tv_type(info)));
+    draw_value(y, format_video(info->tv));
     y += GAME_INFO_ROW_PITCH + GAME_INFO_GROUP_GAP;
 
     draw_row(y, "Cheats");
-    draw_value(y, info->settings.cheats_enabled ? "On" : "Off");
+    draw_value(y, info->cheats ? "On" : "Off");
     y += GAME_INFO_ROW_PITCH;
 
     draw_row(y, "Clear RDRAM");
-    draw_value(y, info->settings.clear_rdram_enabled ? "On" : "Off");
+    draw_value(y, info->clear_rdram ? "On" : "Off");
 }
 
-/** @brief Page 3: description and links from the game's metadata. */
-/** @brief Page 3: the game's description, using the whole info area; scrolls when it doesn't fit. */
-static void draw_about_page (rom_info_t *info) {
-    const char *description = meta_value(info->meta.short_description);
+/** @brief Page 3: the game's description (NULL: none), using the whole info area; scrolls when it doesn't fit. */
+static void draw_about_page (const char *description) {
     int x = GAME_INFO_LABEL_X;
     int top = GAME_INFO_Y - GAME_INFO_ABOUT_ASCENT;
     int bottom = GAME_INFO_ABOUT_BOTTOM;
@@ -631,6 +850,61 @@ void ui_components_game_info_screenshots_enable (bool enabled) {
 
 void ui_components_game_info_invalidate (void) {
     current_free();
+    if (cache.entries) {
+        for (int i = 0; i < cache.used; i++) {
+            free(cache.entries[i].path);
+            free(cache.entries[i].description);
+        }
+        free(cache.entries);
+    }
+    memset(&cache, 0, sizeof(cache));
+    free(prefetch.directory);
+    memset(&prefetch, 0, sizeof(prefetch));
+}
+
+void ui_components_game_info_forget (path_t *path) {
+    game_summary_t *summary = path ? cache_find(path_get(path)) : NULL;
+    if (summary) {
+        cache_remove((int) (summary - cache.entries));
+    }
+    if (path && current.path && strcmp(current.path, path_get(path)) == 0) {
+        current_free();
+    }
+}
+
+void ui_components_game_info_prefetch (path_t *directory, entry_t *list, int32_t count, int32_t selected, uint32_t budget_us) {
+    if (!list || count <= 0) {
+        return;
+    }
+    // A different list (another folder, or Faves / History): start again, outward from the selection.
+    const char *dir = directory ? path_get(directory) : "";
+    uint32_t signature = hash_path(list[0].name) ^ (hash_path(list[count - 1].name) * 31u);
+    if (prefetch.list != list || prefetch.count != count || prefetch.signature != signature ||
+            !prefetch.directory || strcmp(prefetch.directory, dir) != 0) {
+        free(prefetch.directory);
+        prefetch.list = list;
+        prefetch.count = count;
+        prefetch.signature = signature;
+        prefetch.directory = strdup(dir);
+        prefetch.origin = (selected >= 0 && selected < count) ? selected : 0;
+        prefetch.done = 0;
+    }
+
+    uint64_t start = get_ticks_us();
+    while (prefetch.done < count && (get_ticks_us() - start) < budget_us) {
+        int32_t k = prefetch.done++;
+        int32_t offset = (k % 2) ? ((k + 1) / 2) : -(k / 2);
+        int32_t index = ((prefetch.origin + offset) % count + count) % count;
+        entry_t *entry = &list[index];
+        if (entry->type == ENTRY_TYPE_DIR) {
+            continue;
+        }
+        path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
+        if (!cache_find(path_get(path))) {
+            summary_load(path, entry->type);
+        }
+        path_free(path);
+    }
 }
 
 /**
@@ -652,10 +926,32 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
     }
 
     path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
-    current_load(path, entry, bookkeeping);
-    path_free(path);
+    current_select(path_get(path));
+    bool settled = ui_components_carousel_still_ms() >= GAME_INFO_LOAD_DELAY_MS;
 
-    rom_info_t *info = current.is_rom ? &current.rom_info : NULL;
+    game_summary_t *summary = cache_find(path_get(path));
+    if (summary && entry->size > 0 && summary->size > 0 && entry->size != summary->size) {
+        // The file changed since it was cached.
+        cache_remove((int) (summary - cache.entries));
+        summary = NULL;
+    }
+    if (!summary) {
+        if (!settled) {
+            // Not cached yet: reading it takes several SD card reads, so while the carousel slides
+            // past games the panel stays empty until it settles.
+            path_free(path);
+            return;
+        }
+        summary = summary_load(path, entry->type);
+        if (!summary) {
+            path_free(path);
+            return;
+        }
+    }
+    if (summary->is_rom && !current.shots_selected) {
+        screenshots_select(path_get(path), summary->game_code, summary->has_screenshot);
+        current.shots_selected = true;
+    }
 
     if (page != last_page_drawn) {
         about_scroll = 0;
@@ -663,13 +959,26 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
     last_page_drawn = page;
     value_right = VISIBLE_AREA_X1;     // the Overview page narrows it for the screenshot
 
-    if (page == 1 && info) {
-        draw_details_page(entry, info);
-    } else if (page == PAGE_ABOUT && info) {
-        draw_about_page(info);
+    if (page == 1 && summary->is_rom) {
+        draw_details_page(entry, summary);
+    } else if (page == PAGE_ABOUT && summary->is_rom) {
+        if (summary->has_description) {
+            draw_about_page(summary->description);
+        } else {
+            // Not cached (no Expansion Pak): read the full info once the carousel settles.
+            if (!current.about_loaded && settled) {
+                current.about_loaded = true;
+                current.about_is_rom = (rom_config_load(path, &current.about) == ROM_OK);
+                sound_poll();
+            }
+            if (current.about_loaded && current.about_is_rom) {
+                draw_about_page(meta_value(current.about.meta.short_description));
+            }
+        }
     } else {
-        draw_overview_page(entry, info);
+        draw_overview_page(entry, summary, bookkeeping_history_last_played(bookkeeping, path));
     }
+    path_free(path);
 }
 
 /**
