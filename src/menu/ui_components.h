@@ -418,6 +418,12 @@ bool ui_components_tab_process(menu_t *menu, menu_tab_t current);
 void ui_components_carousel_invalidate(void);
 /** @brief Snap the scroll position to the selection on the next draw (a carousel screen opened); cached labels are kept if the list is the same. */
 void ui_components_carousel_snap(void);
+/** @brief A game's large cartridge label if the carousel has it cached (still the carousel's: don't free it), else NULL. */
+surface_t *ui_components_carousel_cached_label(path_t *directory, const char *name);
+/** @brief Load a game's large cartridge label (yours: free it with labels_free), or NULL if it has none. Reads the SD card. */
+surface_t *ui_components_cartridge_label_load(path_t *directory, const char *name);
+/** @brief Draw a large cartridge centred on (cx, cy), scaled, with its label (NULL: the placeholder); the label and the shell darkened to their brightness (0xFF: as is). */
+void ui_components_cartridge_draw(float cx, float cy, float scale, surface_t *label, uint8_t label_brightness, uint8_t brightness);
 /** @brief Whether labels near the selection are still being loaded (as of the last time the row was still). */
 bool ui_components_carousel_labels_pending(void);
 /** @brief Load a list's cartridge labels ahead of drawing it (during the boot animation), nearest the selection first, for up to budget_us. */
@@ -506,6 +512,8 @@ void ui_components_layout_set_loading_y(int y);
 void ui_components_n64_logo_draw(int x, int y, int frame, uint8_t alpha);
 /** @brief Draw the same frame of the N64 logo at several positions (top-left corners), loading its texture once for all of them. */
 void ui_components_n64_logo_draw_many(const int *xs, const int *ys, int count, int frame);
+/** @brief Draw a frame of the N64 logo centred on (cx, cy), scaled (1: full size) and at an opacity. */
+void ui_components_n64_logo_draw_scaled(float cx, float cy, int frame, float scale, uint8_t alpha);
 /** @brief Draw a frame of the N64 logo in grey (the screensaver's trail). */
 void ui_components_n64_logo_draw_gray(int x, int y, int frame);
 

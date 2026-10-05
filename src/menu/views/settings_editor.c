@@ -167,6 +167,8 @@ static component_context_menu_t screensaver_style_picker = {
         { .text = "Bounce", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_BOUNCE) },
         { .text = "Trails", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_TRAILS) },
         { .text = "Grid", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_GRID) },
+        { .text = "Starfield", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_STARFIELD) },
+        { .text = "Orbit", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_ORBIT) },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
@@ -274,7 +276,7 @@ static option_t options[] = {
     { .label = "Screensaver", .type = OPTION_CHOICE, .picker = &screensaver_picker,
       .description = "Show the screensaver after this long without a button press." },
     { .label = "Screensaver Style", .type = OPTION_CHOICE, .picker = &screensaver_style_picker,
-      .description = "Bounce, Trails or Grid, or Random for a different one each time." },
+      .description = "Bounce, Trails, Grid, Starfield or Orbit, or Random for a different one each time." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,

@@ -44,7 +44,7 @@ bool labels_rom_id(const char *rom_path, uint32_t *id, char game_code[4]);
  * @param large_width, large_height Size of the first image (at most #LABEL_WIDTH x #LABEL_HEIGHT).
  * @param large Output: newly allocated RGBA16 surface (free with #labels_free), or NULL.
  * @param small_width, small_height Size of the second image.
- * @param small Output: likewise.
+ * @param small Output: likewise (NULL: only the first size is made).
  * @return false if there is no label for this ID (both outputs NULL).
  */
 bool labels_load_pair(uint32_t id, int large_width, int large_height, surface_t **large,

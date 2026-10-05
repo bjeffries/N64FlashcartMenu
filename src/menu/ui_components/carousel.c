@@ -111,18 +111,22 @@ static uint32_t hash_text (uint32_t hash, const char *text) {
 }
 
 /** @brief Hash of an entry's full path (the same for a game in the Library and in Favorites). */
-static uint32_t game_hash (int32_t position) {
+static uint32_t hash_game_path (path_t *directory, const char *name) {
     uint32_t hash = 2166136261u;
-    if (list_directory) {
-        const char *dir = path_get(list_directory);
+    if (directory) {
+        const char *dir = path_get(directory);
         hash = hash_text(hash, dir);
         size_t length = strlen(dir);
         if (length == 0 || dir[length - 1] != '/') {
             hash = hash_text(hash, "/");
         }
     }
-    hash = hash_text(hash, list_entries[position].name);
+    hash = hash_text(hash, name);
     return hash ? hash : 1;
+}
+
+static uint32_t game_hash (int32_t position) {
+    return hash_game_path(list_directory, list_entries[position].name);
 }
 
 /** @brief Draw / load from this list; the cached labels are dropped if they belong to another one. */
@@ -478,6 +482,73 @@ static bool scroll_update (int32_t selected, int32_t entries) {
 void ui_components_carousel_invalidate (void) {
     label_cache_reset();
     scroll_ready = false;
+}
+
+surface_t *ui_components_carousel_cached_label (path_t *directory, const char *name) {
+    uint32_t game = hash_game_path(directory, name);
+    for (int i = 0; i < label_cache_size; i++) {
+        if (label_cache[i].game == game) {
+            return label_cache[i].large;
+        }
+    }
+    return NULL;
+}
+
+surface_t *ui_components_cartridge_label_load (path_t *directory, const char *name) {
+    path_t *path = directory ? path_clone_push(directory, (char *) name) : path_create(name);
+    uint32_t id;
+    int known = ui_components_game_info_label_id(path_get(path), &id);
+    bool has_id = (known == 1) || ((known < 0) && labels_rom_id(path_get(path), &id, NULL));
+    path_free(path);
+    surface_t *large = NULL;
+    if (has_id) {
+        labels_load_pair(id,
+            large_style.label_width + (CARTRIDGE_LABEL_BLEED * 2), large_style.label_height + (CARTRIDGE_LABEL_BLEED * 2), &large,
+            0, 0, NULL);
+    }
+    sound_poll();
+    return large;
+}
+
+void ui_components_cartridge_draw (float cx, float cy, float scale, surface_t *label, uint8_t label_brightness, uint8_t brightness) {
+    if (!large_style.cartridge) {
+        large_style.cartridge = sprite_load("rom:/cartridge_large.sprite");
+    }
+    float x = cx - ((CARTRIDGE_LARGE_WIDTH * scale) / 2.0f);
+    float y = cy - ((CARTRIDGE_LARGE_HEIGHT * scale) / 2.0f);
+    float lx = x + (CARTRIDGE_LARGE_LABEL_X * scale);
+    float ly = y + (CARTRIDGE_LARGE_LABEL_Y * scale);
+    float bleed = CARTRIDGE_LABEL_BLEED * scale;
+    rdpq_blitparms_t parms = { .scale_x = scale, .scale_y = scale };
+
+    if (!label) {
+        color_t placeholder = CAROUSEL_PLACEHOLDER_COLOR;
+        placeholder.r = (placeholder.r * label_brightness) / 0xFF;
+        placeholder.g = (placeholder.g * label_brightness) / 0xFF;
+        placeholder.b = (placeholder.b * label_brightness) / 0xFF;
+        ui_components_box_draw(lx, ly, lx + (CARTRIDGE_LARGE_LABEL_WIDTH * scale), ly + (CARTRIDGE_LARGE_LABEL_HEIGHT * scale), placeholder);
+    }
+    rdpq_mode_push();
+        rdpq_set_mode_standard();
+        rdpq_mode_alphacompare(1);
+        rdpq_mode_filter(FILTER_POINT);
+        // Darkened as they're drawn (texel colour times a grey), in the same single pass.
+        bool shaded = (label_brightness < 0xFF) || (brightness < 0xFF);
+        if (shaded) {
+            rdpq_mode_combiner(RDPQ_COMBINER1((TEX0, 0, PRIM, 0), (0, 0, 0, TEX0)));
+        }
+        // The label goes underneath; the cartridge is an overlay with a window cut out for it.
+        if (label) {
+            if (shaded) {
+                rdpq_set_prim_color(RGBA32(label_brightness, label_brightness, label_brightness, 0xFF));
+            }
+            rdpq_tex_blit(label, lx - bleed, ly - bleed, &parms);
+        }
+        if (shaded) {
+            rdpq_set_prim_color(RGBA32(brightness, brightness, brightness, 0xFF));
+        }
+        rdpq_sprite_blit(large_style.cartridge, x, y, &parms);
+    rdpq_mode_pop();
 }
 
 bool ui_components_carousel_labels_pending (void) {

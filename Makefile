@@ -161,8 +161,8 @@ FILESYSTEM = \
 # Copied as a whole folder because ROM file names contain spaces, which make can't track.
 ifdef DEV_SD
 N64_CFLAGS += -DDEV_SD
-# Screensaver style for testing: grid (default), bounce, trails or random (as in release builds).
-SCREENSAVER_STYLE ?= grid
+# Screensaver style for testing: orbit (default), bounce, trails, grid, starfield or random (as in release builds).
+SCREENSAVER_STYLE ?= orbit
 # Its default (Menu Settings > Screensaver Style can still change it).
 N64_CFLAGS += -DSCREENSAVER_STYLE_DEFAULT=\"$(SCREENSAVER_STYLE)\"
 FILESYSTEM += devsd-sync

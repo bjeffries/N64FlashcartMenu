@@ -71,6 +71,28 @@ void ui_components_n64_logo_draw (int x, int y, int frame, uint8_t alpha) {
     rdpq_mode_pop();
 }
 
+void ui_components_n64_logo_draw_scaled (float cx, float cy, int frame, float scale, uint8_t alpha) {
+    if (alpha == 0 || scale <= 0.0f) {
+        return;
+    }
+    sprite_t *sprite = get_frame(frame);
+    rdpq_mode_push();
+        rdpq_set_mode_standard();
+        rdpq_mode_alphacompare(1);          // transparent background
+        rdpq_mode_filter(FILTER_POINT);     // crisp pixels at any size
+        if (alpha == 0xFF) {
+            rdpq_mode_combiner(RDPQ_COMBINER_TEX);
+        } else {
+            rdpq_mode_combiner(RDPQ_COMBINER1((0, 0, 0, TEX0), (TEX0, 0, PRIM, 0)));
+            rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+            rdpq_set_prim_color(RGBA32(0xFF, 0xFF, 0xFF, alpha));
+        }
+        rdpq_sprite_blit(sprite, cx, cy, &(rdpq_blitparms_t) {
+            .cx = N64_LOGO_WIDTH / 2, .cy = N64_LOGO_HEIGHT / 2, .scale_x = scale, .scale_y = scale,
+        });
+    rdpq_mode_pop();
+}
+
 void ui_components_n64_logo_draw_gray (int x, int y, int frame) {
     sprite_t *sprite = get_frame(frame);
     if (!gray_palette) {

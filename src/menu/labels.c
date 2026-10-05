@@ -166,7 +166,9 @@ static surface_t *make_label (const uint8_t *bgra, int width, int height) {
 bool labels_load_pair (uint32_t id, int large_width, int large_height, surface_t **large,
         int small_width, int small_height, surface_t **small) {
     *large = NULL;
-    *small = NULL;
+    if (small) {
+        *small = NULL;
+    }
     int index = (ids && db) ? find_id(id) : -1;
     if (index < 0) {
         return false;
@@ -178,7 +180,9 @@ bool labels_load_pair (uint32_t id, int large_width, int large_height, surface_t
         && (fread(bgra, LABEL_BYTES, 1, db) == 1);
     if (ok) {
         *large = make_label(bgra, large_width, large_height);
-        *small = make_label(bgra, small_width, small_height);
+        if (small) {
+            *small = make_label(bgra, small_width, small_height);
+        }
     }
     free(bgra);
     return ok;
