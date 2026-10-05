@@ -1,6 +1,7 @@
 #include "../bookkeeping.h"
 #include "../cart_load.h"
 #include "../datel_codes.h"
+#include "../play_stats.h"
 #include "../fonts.h"
 #include "../rom_info.h"
 #include "../sound.h"
@@ -655,8 +656,11 @@ static void config_draw (menu_t *menu, surface_t *d) {
 /** @brief The screen the game was started from, with the loading animation (and any warning) on top. */
 static void draw_carousel_loading (menu_t *menu, surface_t *d, float progress, bool animate) {
     ui_components_attach_clear(d);
+    ui_components_carousel_skip_label_loading();
     if (menu->load.return_mode == MENU_MODE_BROWSER) {
         view_browser_draw_behind_loading(menu);
+    } else if (menu->load.return_mode == MENU_MODE_HISTORY) {
+        view_history_draw_behind_loading(menu);
     } else {
         view_history_favorites_draw_behind_loading(menu);
     }
@@ -989,6 +993,7 @@ static void load (menu_t *menu) {
     }
 
     bookkeeping_history_add(&menu->bookkeeping, menu->load.rom_path, NULL, BOOKKEEPING_TYPE_ROM);
+    play_stats_record(menu->load.rom_path);
 
     menu->next_mode = MENU_MODE_BOOT;
 
@@ -1065,7 +1070,10 @@ void view_load_rom_init (menu_t *menu) {
             path_free(menu->load.rom_path);
         }
 
-        if(menu->load.load_history_id != -1) {
+        if (menu->load.request_path) {
+            menu->load.rom_path = menu->load.request_path;
+            menu->load.request_path = NULL;
+        } else if(menu->load.load_history_id != -1) {
             menu->load.rom_path = path_clone(menu->bookkeeping.history_items[menu->load.load_history_id].primary_path);
         } else if(menu->load.load_favorite_id != -1) {
             menu->load.rom_path = path_clone(menu->bookkeeping.favorite_items[menu->load.load_favorite_id].primary_path);
@@ -1123,6 +1131,8 @@ void view_load_rom_init (menu_t *menu) {
     load_over_carousel = play_now && (menu->load.return_mode == MENU_MODE_BROWSER ||
         menu->load.return_mode == MENU_MODE_FAVORITE || menu->load.return_mode == MENU_MODE_HISTORY);
     loading_menu = menu;
+    // Over the History table, the eclipse goes in the middle of the table instead of the info panel.
+    ui_components_layout_set_loading_y((menu->load.return_mode == MENU_MODE_HISTORY) ? view_history_loading_center_y() : -1);
     if (load_over_carousel) {
         ui_components_loading_animation_prepare();
         sound_loading_wind_prepare();

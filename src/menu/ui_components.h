@@ -320,12 +320,14 @@ void ui_components_table_scrollbar_draw(int first_row_y, int pitch, int first_vi
 
 /** @brief Forget any held direction (call when a carousel view opens). */
 void ui_components_carousel_scroll_reset(void);
-/** @brief Handle ←/→ for a circular carousel list; a long hold pages by letter if letter_paging. Returns the new selection. */
-int32_t ui_components_carousel_scroll(menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging);
-/** @brief Draw the letter being paged to (top left), fading in and out. */
+/** @brief Handle ←/→ for a circular carousel list, speeding up while held; shows the first letter as it changes if letter_hint. Returns the new selection. */
+int32_t ui_components_carousel_scroll(menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_hint);
+/** @brief Draw the letter being scrolled through (right margin, level with the title), fading in and out. */
 void ui_components_letter_indicator_draw(void);
 /** @brief Draw the position counter (index over total, top right), fading like the letter indicator; index 0 draws nothing. */
 void ui_components_position_indicator_draw(int index, int total);
+/** @brief Show or hide the position counter (Menu Settings > Game Counter). */
+void ui_components_position_indicator_enable(bool enabled);
 
 /** @brief Controller button icons (assets/images/button_*.png, see scripts/make_icons.py). */
 typedef enum {
@@ -414,6 +416,14 @@ bool ui_components_tab_process(menu_t *menu, menu_tab_t current);
  * @brief Forget cached labels; call whenever the directory listing changes.
  */
 void ui_components_carousel_invalidate(void);
+/** @brief Snap the scroll position to the selection on the next draw (a carousel screen opened); cached labels are kept if the list is the same. */
+void ui_components_carousel_snap(void);
+/** @brief Whether labels near the selection are still being loaded (as of the last time the row was still). */
+bool ui_components_carousel_labels_pending(void);
+/** @brief Load a list's cartridge labels ahead of drawing it (during the boot animation), nearest the selection first, for up to budget_us. */
+void ui_components_carousel_preload(path_t *directory, entry_t *list, int32_t entries, int32_t selected, uint32_t budget_us);
+/** @brief Don't load labels during the next carousel draw (a game is loading behind it). */
+void ui_components_carousel_skip_label_loading(void);
 
 /** @brief How long the carousel row has been still (not sliding to a new selection), in ms. */
 uint32_t ui_components_carousel_still_ms(void);
@@ -464,10 +474,17 @@ void ui_components_game_info_forget(path_t *path);
 
 /**
  * @brief Read the info of a list's games into the cache in the background, nearest the selection
- *        first, for up to budget_us (at least one game) per call.
+ *        first, for up to budget_us per call (at least one game read; 0: exactly one).
+ * @return Whether every game in the list has been visited.
  * @param directory Folder the entries are in, or NULL if their names are full paths (Faves, History).
  */
-void ui_components_game_info_prefetch(path_t *directory, entry_t *list, int32_t count, int32_t selected, uint32_t budget_us);
+bool ui_components_game_info_prefetch(path_t *directory, entry_t *list, int32_t count, int32_t selected, uint32_t budget_us);
+/** @brief A game's metadata title if its info is cached and has one, else NULL. */
+const char *ui_components_game_info_cached_title(const char *path);
+/** @brief Whether a game's info is in the cache. */
+bool ui_components_game_info_is_cached(const char *path);
+/** @brief A game's cartridge label ID from the info cache: 1 (id set), 0 (cached, no ID), -1 (not cached). */
+int ui_components_game_info_label_id(const char *path, uint32_t *id);
 
 /** @brief Library layout (Menu Settings > Carousel Position). */
 void ui_components_layout_set(bool carousel_at_bottom);
@@ -477,6 +494,8 @@ int ui_components_layout_title_y(void);
 int ui_components_layout_info_y(void);
 int ui_components_layout_info_bottom(void);
 int ui_components_layout_loading_y(void);
+/** @brief Put the loading animation at this height instead of the info panel's (-1: the info panel's). */
+void ui_components_layout_set_loading_y(int y);
 
 /**
  * @brief Draw a frame of the spinning N64 logo (N64_LOGO_WIDTH x N64_LOGO_HEIGHT, in n64_logo_frames.h).
@@ -485,6 +504,10 @@ int ui_components_layout_loading_y(void);
  * @param alpha Opacity, 0 (invisible) .. 0xFF (opaque).
  */
 void ui_components_n64_logo_draw(int x, int y, int frame, uint8_t alpha);
+/** @brief Draw the same frame of the N64 logo at several positions (top-left corners), loading its texture once for all of them. */
+void ui_components_n64_logo_draw_many(const int *xs, const int *ys, int count, int frame);
+/** @brief Draw a frame of the N64 logo in grey (the screensaver's trail). */
+void ui_components_n64_logo_draw_gray(int x, int y, int frame);
 
 /** @brief The logo's frame for now when it spins steadily (the Library's screenshot placeholder). */
 int ui_components_n64_logo_frame(void);

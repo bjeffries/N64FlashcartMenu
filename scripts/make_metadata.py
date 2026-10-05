@@ -34,7 +34,7 @@ REPLACEMENTS = {
 
 
 def to_font_text(text):
-    """Replace characters the Analogue OS font doesn't have."""
+    """Replace characters the menu font doesn't have (it's ASCII only)."""
     text = ''.join(REPLACEMENTS.get(c, c) for c in text)
     text = re.sub(r' {2,}', ' ', text)
     return text.encode('ascii', 'ignore').decode('ascii')

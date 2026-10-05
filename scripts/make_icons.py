@@ -5,8 +5,8 @@ Writes icons with black glyphs (RGBA, transparent background) into assets/images
 round A, B, Z and C-button icons, and the tab bar's L / R ends (a pill that curves down into
 the 3px bar the menu draws between them). Each button type has a soft fill colour that keeps
 good contrast with the black glyph.
-Letters are hand-drawn 7x9 pixel glyphs with 2px strokes, in the style of the
-Analogue OS font (the font itself doesn't render cleanly this small).
+Letters are hand-drawn 7x9 pixel glyphs with 2px strokes (a font doesn't render
+cleanly this small).
 
 Usage: scripts/make_icons.py [out_dir=assets/images]
 """

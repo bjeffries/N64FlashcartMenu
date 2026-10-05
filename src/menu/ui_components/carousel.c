@@ -15,7 +15,19 @@
 #include "constants.h"
 #include "utils/utils.h"
 
-#define LABEL_CACHE_SIZE    (16)
+/*
+ * Cartridge labels are read from labels.db in the background, never while a frame waits on them:
+ * each frame the carousel is still, the labels nearest the selection that aren't cached yet are
+ * loaded within LABEL_LOAD_BUDGET_US (at least one); a cartridge whose label isn't loaded yet shows
+ * the placeholder. The label key (a checksum of the ROM's first 8KB) comes from the info cache,
+ * which reads it during the boot animation and while idle. Each label is read once and kept at
+ * both sizes. Labels are kept per game (by path), so they survive changing folder. When the cache
+ * is full, the label used longest ago is replaced; a label counts as used when it's drawn, or while
+ * it's within the window kept loaded around the selection.
+ */
+#define LABEL_CACHE_SIZE_EXPANDED   (128)   // ~18KB a game: ~2.3MB with an Expansion Pak
+#define LABEL_CACHE_SIZE_4MB        (24)    // ~430KB without one
+#define LABEL_LOAD_BUDGET_US        (6000)
 
 /** @brief Everything that differs between the selected (large) tile and the others. */
 typedef struct {
@@ -42,18 +54,25 @@ static tile_style_t large_style = {
 };
 
 typedef struct {
-    int32_t position;       // position in the sorted browser list, -1 when the slot is free
-    bool has_id;            // false when the entry isn't a ROM or couldn't be read
-    uint32_t id;            // label ID
-    bool large_loaded;      // the large label is only loaded once the entry has been selected
+    uint32_t game;          // hash of the game's path, 0 when the slot is free
+    int32_t position;       // its position in the list on screen, -1 if it isn't in it (or not looked up yet)
+    uint32_t last_used;     // use_clock when it was last drawn or in the kept window
     surface_t *small;       // NULL when there is no label
     surface_t *large;
-    bool has_title;         // title from the game's metadata.ini (menu/metadata/A/B/C/D)
-    char title[64];
 } label_slot_t;
 
-static label_slot_t label_cache[LABEL_CACHE_SIZE];
+static label_slot_t *label_cache = NULL;
+static int label_cache_size = 0;
 static bool label_cache_ready = false;
+
+// The list being drawn, for loading labels and titles.
+static path_t *list_directory;  // NULL: entry names are full paths (Favorites)
+static entry_t *list_entries;
+static int32_t list_count;
+static bool skip_label_loading = false;     // for one draw: a game is loading behind it
+static uint32_t list_signature = 0;         // which list the cached labels belong to
+static uint32_t use_clock = 0;              // counts carousel draws, for last_used
+static bool labels_pending = false;         // labels near the selection still to load
 
 static sprite_t *selection_outline = NULL;
 static sprite_t *favorite_outline = NULL;
@@ -66,7 +85,14 @@ static uint32_t last_moving_ms = 0;    // last draw where the row was still slid
 
 
 static void label_cache_reset (void) {
-    for (int i = 0; i < LABEL_CACHE_SIZE; i++) {
+    if (!label_cache) {
+        label_cache_size = is_memory_expanded() ? LABEL_CACHE_SIZE_EXPANDED : LABEL_CACHE_SIZE_4MB;
+        label_cache = calloc(label_cache_size, sizeof(label_slot_t));
+        if (!label_cache) {
+            label_cache_size = 0;
+        }
+    }
+    for (int i = 0; i < label_cache_size; i++) {
         if (label_cache_ready) {
             labels_free(label_cache[i].small);
             labels_free(label_cache[i].large);
@@ -74,67 +100,158 @@ static void label_cache_reset (void) {
         label_cache[i] = (label_slot_t) { .position = -1 };
     }
     label_cache_ready = true;
+    list_signature = 0;
 }
 
-static surface_t *load_label (uint32_t id, tile_style_t *style) {
-    // Loaded slightly larger than the window so the label's printed edge hides under the cartridge.
-    return labels_load(
-        id,
-        style->label_width + (CARTRIDGE_LABEL_BLEED * 2),
-        style->label_height + (CARTRIDGE_LABEL_BLEED * 2)
-    );
+static uint32_t hash_text (uint32_t hash, const char *text) {
+    for (const char *c = text; *c; c++) {
+        hash = (hash ^ (uint8_t) (*c)) * 16777619u;     // FNV-1a
+    }
+    return hash;
 }
 
-static surface_t *label_get (path_t *directory, entry_t *entry, int32_t position, int32_t selected, bool large) {
-    label_slot_t *slot = NULL;
-    label_slot_t *free_slot = NULL;
-    label_slot_t *farthest_slot = &label_cache[0];
-    int32_t farthest_distance = -1;
+/** @brief Hash of an entry's full path (the same for a game in the Library and in Favorites). */
+static uint32_t game_hash (int32_t position) {
+    uint32_t hash = 2166136261u;
+    if (list_directory) {
+        const char *dir = path_get(list_directory);
+        hash = hash_text(hash, dir);
+        size_t length = strlen(dir);
+        if (length == 0 || dir[length - 1] != '/') {
+            hash = hash_text(hash, "/");
+        }
+    }
+    hash = hash_text(hash, list_entries[position].name);
+    return hash ? hash : 1;
+}
 
-    for (int i = 0; i < LABEL_CACHE_SIZE && !slot; i++) {
+/** @brief Draw / load from this list; the cached labels are dropped if they belong to another one. */
+static void use_list (path_t *directory, entry_t *list, int32_t entries) {
+    if (!label_cache_ready) {
+        label_cache_reset();
+    }
+    uint32_t signature = hash_text(2166136261u, directory ? path_get(directory) : "");
+    signature = (signature ^ (uint32_t) entries) * 16777619u;
+    if (entries > 0) {
+        signature = hash_text(hash_text(signature, list[0].name), list[entries - 1].name);
+    }
+    signature |= 1;     // never 0 (0: none)
+    if (signature != list_signature) {
+        // Another list: keep the labels, but their positions are looked up again.
+        for (int i = 0; i < label_cache_size; i++) {
+            label_cache[i].position = -1;
+        }
+        list_signature = signature;
+    }
+    list_directory = directory;
+    list_entries = list;
+    list_count = entries;
+}
+
+static label_slot_t *label_find (int32_t position) {
+    for (int i = 0; i < label_cache_size; i++) {
         if (label_cache[i].position == position) {
-            slot = &label_cache[i];
-        } else if (label_cache[i].position < 0) {
-            free_slot = &label_cache[i];
-        } else {
-            int32_t distance = abs(label_cache[i].position - selected);
-            if (distance > farthest_distance) {
-                farthest_distance = distance;
-                farthest_slot = &label_cache[i];
-            }
+            return &label_cache[i];
         }
     }
+    if (list_entries[position].type != ENTRY_TYPE_ROM) {
+        return NULL;
+    }
+    // Not looked up in this list yet: a label kept from another folder?
+    uint32_t game = game_hash(position);
+    for (int i = 0; i < label_cache_size; i++) {
+        if (label_cache[i].game == game) {
+            label_cache[i].position = position;
+            return &label_cache[i];
+        }
+    }
+    return NULL;
+}
 
+/** @brief A cached label, or NULL (not loaded yet, or the game has none); counts as a use. */
+static surface_t *label_get (int32_t position, bool large) {
+    label_slot_t *slot = label_find(position);
     if (!slot) {
-        slot = free_slot ? free_slot : farthest_slot;
-        labels_free(slot->small);
-        labels_free(slot->large);
-        *slot = (label_slot_t) { .position = position };
-
-        if (entry->type == ENTRY_TYPE_ROM) {
-            path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
-            char game_code[4];
-            slot->has_id = labels_rom_id(path_get(path), &slot->id, game_code);
-            if (slot->has_id) {
-                slot->has_title = rom_info_metadata_title(path_get(path), game_code, slot->title, sizeof(slot->title));
-            }
-            path_free(path);
-        }
-        if (slot->has_id) {
-            slot->small = load_label(slot->id, &small_style);
-        }
-        sound_poll();   // each new tile reads the SD card; keep audio flowing between them
+        return NULL;
     }
-
-    if (large && !slot->large_loaded) {
-        slot->large_loaded = true;
-        if (slot->small) {
-            slot->large = load_label(slot->id, &large_style);
-            sound_poll();
-        }
-    }
-
+    slot->last_used = use_clock;
     return large ? slot->large : slot->small;
+}
+
+/** @brief The slot to load a new label into: a free one, else the one used longest ago. */
+static label_slot_t *label_slot_to_replace (void) {
+    label_slot_t *oldest = NULL;
+    for (int i = 0; i < label_cache_size; i++) {
+        label_slot_t *slot = &label_cache[i];
+        if (slot->game == 0) {
+            return slot;
+        }
+        if (!oldest || (int32_t) (use_clock - slot->last_used) > (int32_t) (use_clock - oldest->last_used)) {
+            oldest = slot;
+        }
+    }
+    return oldest;
+}
+
+/** @brief Read the label for a list position into a slot, at both sizes. */
+static void label_read (label_slot_t *slot, int32_t position) {
+    *slot = (label_slot_t) { .game = game_hash(position), .position = position, .last_used = use_clock };
+    entry_t *entry = &list_entries[position];
+    path_t *path = list_directory ? path_clone_push(list_directory, entry->name) : path_create(entry->name);
+    uint32_t id;
+    int known = ui_components_game_info_label_id(path_get(path), &id);
+    bool has_id = (known == 1) || ((known < 0) && labels_rom_id(path_get(path), &id, NULL));
+    path_free(path);
+    if (has_id) {
+        // Slightly larger than the window, so the label's printed edge hides under the cartridge.
+        labels_load_pair(id,
+            large_style.label_width + (CARTRIDGE_LABEL_BLEED * 2), large_style.label_height + (CARTRIDGE_LABEL_BLEED * 2), &slot->large,
+            small_style.label_width + (CARTRIDGE_LABEL_BLEED * 2), small_style.label_height + (CARTRIDGE_LABEL_BLEED * 2), &slot->small);
+    }
+    sound_poll();
+}
+
+/** @brief Load the uncached labels nearest the selection, for up to budget_us (at least one). */
+static void labels_update (int32_t selected, uint32_t budget_us) {
+    labels_pending = false;
+    if (label_cache_size == 0 || list_count == 0) {
+        return;
+    }
+    uint64_t start = get_ticks_us();
+    int32_t reach = MIN((label_cache_size / 2) - 1, list_count / 2);
+
+    // The window kept around the selection (smaller than the cache) counts as in use, so filling
+    // one end of it never pushes out the other.
+    for (int32_t offset = -reach; offset <= reach; offset++) {
+        int32_t position = (selected + offset + list_count) % list_count;
+        label_slot_t *slot = (list_entries[position].type == ENTRY_TYPE_ROM) ? label_find(position) : NULL;
+        if (slot) {
+            slot->last_used = use_clock;
+        }
+    }
+
+    for (int32_t d = 0; d <= reach; d++) {
+        for (int side = 0; side < 2; side++) {
+            if (d == 0 && side == 1) {
+                continue;
+            }
+            int32_t position = (selected + (side ? -d : d) + list_count) % list_count;
+            if (list_entries[position].type != ENTRY_TYPE_ROM || label_find(position)) {
+                continue;
+            }
+            label_slot_t *slot = label_slot_to_replace();
+            if (!slot || (slot->game != 0 && slot->last_used == use_clock)) {
+                return;     // everything cached is in use right now
+            }
+            labels_free(slot->small);
+            labels_free(slot->large);
+            label_read(slot, position);
+            if ((get_ticks_us() - start) >= budget_us) {
+                labels_pending = true;      // there may be more
+                return;
+            }
+        }
+    }
 }
 
 /**
@@ -216,7 +333,7 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
     float lx = cx + (style->label_x * scale);
     float ly = cy + (style->label_y * scale);
     float bleed = CARTRIDGE_LABEL_BLEED * scale;
-    surface_t *label = label_get(directory, entry, position, selected, large);
+    surface_t *label = label_get(position, large);
 
     rdpq_mode_push();
         if (native) {
@@ -254,9 +371,15 @@ static void draw_tile (path_t *directory, entry_t *entry, int32_t position, int3
 
 /** @brief Display title for the entry at a list position: its metadata title if known, else from the file name. */
 void ui_components_carousel_entry_title (entry_t *entry, int32_t position, char *out, size_t out_size) {
-    for (int i = 0; i < LABEL_CACHE_SIZE; i++) {
-        if (label_cache[i].position == position && label_cache[i].has_title) {
-            snprintf(out, out_size, "%s", label_cache[i].title);
+    if (entry->type == ENTRY_TYPE_ROM) {
+        // Metadata titles come from the info cache.
+        path_t *path = list_directory ? path_clone_push(list_directory, entry->name) : path_create(entry->name);
+        const char *title = ui_components_game_info_cached_title(path_get(path));
+        if (title) {
+            snprintf(out, out_size, "%s", title);
+        }
+        path_free(path);
+        if (title) {
             return;
         }
     }
@@ -357,6 +480,22 @@ void ui_components_carousel_invalidate (void) {
     scroll_ready = false;
 }
 
+bool ui_components_carousel_labels_pending (void) {
+    return labels_pending;
+}
+
+void ui_components_carousel_snap (void) {
+    scroll_ready = false;
+}
+
+void ui_components_carousel_preload (path_t *directory, entry_t *list, int32_t entries, int32_t selected, uint32_t budget_us) {
+    use_list(directory, list, entries);
+    use_clock++;
+    if (selected >= 0 && selected < entries) {
+        labels_update(selected, budget_us);
+    }
+}
+
 uint32_t ui_components_carousel_still_ms (void) {
     return get_ticks_ms() - last_moving_ms;
 }
@@ -365,9 +504,8 @@ uint32_t ui_components_carousel_still_ms (void) {
  * @brief Draw the carousel row and the selected entry's title.
  */
 void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entries, int32_t selected, bool selected_favorite) {
-    if (!label_cache_ready) {
-        label_cache_reset();
-    }
+    use_list(directory, list, entries);
+    use_clock++;
     if (!small_style.cartridge) {
         small_style.cartridge = sprite_load("rom:/cartridge.sprite");
         large_style.cartridge = sprite_load("rom:/cartridge_large.sprite");
@@ -443,4 +581,14 @@ void ui_components_carousel_draw (path_t *directory, entry_t *list, int32_t entr
         CAROUSEL_TITLE_Y,
         title
     );
+
+    // Labels load only while the row is still (and not while a game loads behind it).
+    if (settled && !skip_label_loading) {
+        labels_update(selected, LABEL_LOAD_BUDGET_US);
+    }
+    skip_label_loading = false;
+}
+
+void ui_components_carousel_skip_label_loading (void) {
+    skip_label_loading = true;
 }

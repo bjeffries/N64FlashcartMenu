@@ -17,9 +17,10 @@
  * in the menu system.
  */
 typedef enum {
-    FNT_DEFAULT = 1, /**< Body text (BODY_FONT, drawn with a shadow); sizes per MENU_FONT in the Makefile */
+    FNT_DEFAULT = 1, /**< Body text (BODY_FONT, drawn with a shadow); sizes in the Makefile (FONT_DEFAULT etc.) */
     FNT_TITLE,       /**< Titles, the top and bottom bars and list rows (TITLE_FONT) */
-    FNT_LAST = FNT_TITLE,
+    FNT_LETTER,      /**< The letter shown while scrolling: twice the title size, A-Z and # only */
+    FNT_LAST = FNT_LETTER,
 } menu_font_type_t;
 
 /**

@@ -42,6 +42,7 @@ SRCS = \
 	menu/datel_codes.c \
 	menu/fonts.c \
 	menu/hidden.c \
+	menu/play_stats.c \
 	menu/labels.c \
 	menu/hdmi.c \
 	menu/menu.c \
@@ -77,6 +78,7 @@ SRCS = \
 	menu/views/error.c \
 	menu/views/fault.c \
 	menu/views/file_info.c \
+	menu/views/history.c \
 	menu/views/history_favorites.c \
 	menu/views/image_viewer.c \
 	menu/views/text_viewer.c \
@@ -94,23 +96,18 @@ SRCS = \
 	utils/fs.c \
 	utils/utf_converter.c \
 
-# Menu font: pixeloperator or analogue. The UI has two text styles: titles (rom:/font-title: game
+# Menu font: Pixel Operator (CC0). The UI has two text styles: titles (rom:/font-title: game
 # titles, the top and bottom bars, list rows) and body text (rom:/font-default, drawn with a 1px
-# shadow). Each is "<font file> <size> <mkfont flags>".
-MENU_FONT ?= pixeloperator
-ifeq ($(MENU_FONT),analogue)
-# Analogue OS is drawn on a 20-unit pixel grid: 20px renders 1:1, 40px renders 2:1.
-FONT_DEFAULT = AnalogueOS-Regular.ttf 20 --monochrome
-FONT_TITLE = AnalogueOS-Regular.ttf 40 --monochrome
-else
-# Pixel Operator (CC0) is drawn on a 16-unit pixel grid, so 16px and 32px are crisp. At 16px its
+# shadow), plus the large letter shown while scrolling. Each is "<font file> <size> <mkfont flags>".
+# Pixel Operator is drawn on a 16-unit pixel grid, so 16px, 32px and 64px are crisp. At 16px its
 # letter gap is already 1px and its lines are 1px (the shadow gives them a second line, for
 # interlaced CRTs); at 32px -1 takes the letter gap from 2px to 1px.
 # Other weights and variants are in assets/fonts/pixel_operator/.
 FONT_DEFAULT = pixel_operator/PixelOperator.ttf 16 --monochrome
 FONT_TITLE = pixel_operator/PixelOperator.ttf 32 --monochrome --char-spacing -1
-endif
-FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)))
+# The letter shown while scrolling (rom:/font-letter): twice the title size, A-Z and # only.
+FONT_LETTER = pixel_operator/PixelOperator.ttf 64 --monochrome
+FONT_FILES = $(addprefix $(ASSETS_DIR)/fonts/,$(sort $(firstword $(FONT_DEFAULT)) $(firstword $(FONT_TITLE)) $(firstword $(FONT_LETTER))))
 
 SOUNDS_WAV = \
 	cursorsound.wav \
@@ -151,6 +148,7 @@ DEPS = $(OBJS:.o=.d)
 FILESYSTEM = \
 	$(FILESYSTEM_DIR)/font-default.font64 \
 	$(FILESYSTEM_DIR)/font-title.font64 \
+	$(FILESYSTEM_DIR)/font-letter.font64 \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_WAV:%.wav=%.wav64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(SOUNDS_XM:%.xm=%.xm64))) \
 	$(addprefix $(FILESYSTEM_DIR)/, $(notdir $(IMAGES:%.png=%.sprite))) \
@@ -163,6 +161,10 @@ FILESYSTEM = \
 # Copied as a whole folder because ROM file names contain spaces, which make can't track.
 ifdef DEV_SD
 N64_CFLAGS += -DDEV_SD
+# Screensaver style for testing: grid (default), bounce, trails or random (as in release builds).
+SCREENSAVER_STYLE ?= grid
+# Its default (Menu Settings > Screensaver Style can still change it).
+N64_CFLAGS += -DSCREENSAVER_STYLE_DEFAULT=\"$(SCREENSAVER_STYLE)\"
 FILESYSTEM += devsd-sync
 devsd-sync:
 	@echo "    [DEVSD] devsd/ -> $(FILESYSTEM_DIR)/"
@@ -172,6 +174,14 @@ else
 $(shell rm -rf $(FILESYSTEM_DIR)/N64 $(FILESYSTEM_DIR)/menu)
 endif
 
+# Rebuild the settings defaults when the screensaver style changes (the stamp's name changes with it).
+SCREENSAVER_STAMP = $(BUILD_DIR)/screensaver-$(or $(SCREENSAVER_STYLE),release).stamp
+$(SCREENSAVER_STAMP):
+	@mkdir -p $(BUILD_DIR)
+	@rm -f $(BUILD_DIR)/screensaver-*.stamp
+	@touch $@
+$(BUILD_DIR)/menu/settings.o: $(SCREENSAVER_STAMP)
+
 $(MINIZ_OBJS): N64_CFLAGS+=-Wno-unused-function -fcompare-debug-second
 $(SPNG_OBJS): N64_CFLAGS+=-DSPNG_USE_MINIZ -fcompare-debug-second
 $(FILESYSTEM_DIR)/%.wav64: AUDIOCONV_FLAGS=--wav-compress 1
@@ -179,18 +189,14 @@ $(FILESYSTEM_DIR)/%.sprite: MKSPRITE_FLAGS=--format RGBA16 --compress 1
 
 $(@info $(shell mkdir -p ./$(FILESYSTEM_DIR) &> /dev/null))
 
-# Rebuild the fonts when MENU_FONT changes (the stamp's name changes with it).
-$(BUILD_DIR)/font-$(MENU_FONT).stamp:
-	@mkdir -p $(BUILD_DIR)
-	@rm -f $(BUILD_DIR)/font-*.stamp
-	@touch $@
-
 $(FILESYSTEM_DIR)/font-default.font64: FONT_SPEC=$(FONT_DEFAULT)
 $(FILESYSTEM_DIR)/font-title.font64: FONT_SPEC=$(FONT_TITLE)
-$(FILESYSTEM_DIR)/font-%.font64: $(FONT_FILES) $(BUILD_DIR)/font-$(MENU_FONT).stamp Makefile
+$(FILESYSTEM_DIR)/font-letter.font64: FONT_SPEC=$(FONT_LETTER)
+$(FILESYSTEM_DIR)/font-letter.font64: FONT_RANGES=--range 23-23 --range 2E-2E --range 41-5A
+$(FILESYSTEM_DIR)/font-%.font64: $(FONT_FILES) Makefile
 	@echo "    [FONT] $@ ($(notdir $(word 1,$(FONT_SPEC))) $(word 2,$(FONT_SPEC))px)"
 	@mkdir -p $(BUILD_DIR)/fonts/$*
-	@$(N64_MKFONT) --compress 1 $(wordlist 3,9,$(FONT_SPEC)) --size $(word 2,$(FONT_SPEC)) --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$(ASSETS_DIR)/fonts/$(word 1,$(FONT_SPEC))"
+	@$(N64_MKFONT) --compress 1 $(FONT_RANGES) $(wordlist 3,9,$(FONT_SPEC)) --size $(word 2,$(FONT_SPEC)) --ellipsis 2E,3 -o $(BUILD_DIR)/fonts/$* "$(ASSETS_DIR)/fonts/$(word 1,$(FONT_SPEC))"
 	@mv $(BUILD_DIR)/fonts/$*/$(basename $(notdir $(word 1,$(FONT_SPEC)))).font64 $@
 
 $(FILESYSTEM_DIR)/%.wav64: $(ASSETS_DIR)/sounds/%.wav

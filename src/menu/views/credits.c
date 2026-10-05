@@ -31,7 +31,7 @@ static const char *libdragon_value (menu_t *menu) {
 
 static const char *authors_value (menu_t *menu) { return "Robin Jones, Mateusz Faderewski"; }
 static const char *license_value (menu_t *menu) { return "AGPL-3.0"; }
-static const char *font_value (menu_t *menu) { return "Analogue OS by AbFarid"; }
+static const char *font_value (menu_t *menu) { return "Pixel Operator by Jayvee Enaguas"; }
 static const char *labels_value (menu_t *menu) { return "Analogue 3D labels.db"; }
 
 static void open_libraries (menu_t *menu) {
@@ -49,7 +49,7 @@ static option_t options[] = {
     { .label = "License", .type = OPTION_INFO, .value = license_value,
       .description = "Source: github.com/Polprzewodnikowy/N64FlashcartMenu" },
     { .label = "Font", .type = OPTION_INFO, .value = font_value,
-      .description = "github.com/AbFarid/analogue-os-font (SIL Open Font License 1.1)" },
+      .description = "Public domain (CC0 1.0)." },
     { .label = "Labels", .type = OPTION_INFO, .value = labels_value,
       .description = "Cartridge label art is read from menu/labels.db on the SD card." },
     { .label = "Libraries", .type = OPTION_ACTION, .action = open_libraries,

@@ -1,6 +1,6 @@
 /**
  * @file history_favorites.c
- * @brief Favorites and History tabs: the Library carousel over bookkeeping entries
+ * @brief Favorites tab: the Library carousel over bookkeeping entries (History is a table: history.c)
  * @ingroup view
  */
 
@@ -30,7 +30,7 @@ static void entries_free (void) {
         free(entries[i].name);
     }
     entry_count = 0;
-    ui_components_carousel_invalidate();
+    ui_components_carousel_snap();
 }
 
 /** @brief Order by file name, like the Library (names are full paths, so compare after the last '/'). */
@@ -83,7 +83,7 @@ static void process (menu_t *menu) {
         return;
     }
 
-    // Favorites are alphabetical, so a long hold pages by letter; History is by date.
+    // Favorites are alphabetical, so a held scroll shows the letter.
     selected = ui_components_carousel_scroll(menu, entries, entry_count, selected, tab == TAB_FAVORITES);
 
     if (entry_count == 0) {
@@ -214,11 +214,3 @@ void view_favorite_display (menu_t *menu, surface_t *display) {
     draw(menu, display);
 }
 
-void view_history_init (menu_t *menu) {
-    init(menu, TAB_HISTORY);
-}
-
-void view_history_display (menu_t *menu, surface_t *display) {
-    process(menu);
-    draw(menu, display);
-}

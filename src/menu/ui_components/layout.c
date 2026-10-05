@@ -15,6 +15,7 @@
 #include "constants.h"
 
 static bool carousel_bottom = false;
+static int loading_y = -1;      // loading animation height set by the screen (History), or -1
 
 
 void ui_components_layout_set (bool carousel_at_bottom) {
@@ -64,7 +65,14 @@ int ui_components_layout_info_bottom (void) {
     return ui_components_button_hints_enabled() ? (LIBRARY_BUTTONS_Y - 34) : (VISIBLE_AREA_Y1 - 12);
 }
 
+void ui_components_layout_set_loading_y (int y) {
+    loading_y = y;
+}
+
 int ui_components_layout_loading_y (void) {
+    if (loading_y >= 0) {
+        return loading_y;
+    }
     int info_y = ui_components_layout_info_y();
     // Centred between the top of the first info row and the top of the "Loading" text (on the
     // button hints' baseline), or with the carousel at the bottom, the bottom of the info panel.

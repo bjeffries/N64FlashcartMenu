@@ -92,6 +92,13 @@ static void set_controller_hints (menu_t *menu, bool value) {
     settings_save(&menu->settings);
 }
 
+static bool get_game_counter (menu_t *menu) { return menu->settings.game_counter_enabled; }
+static void set_game_counter (menu_t *menu, bool value) {
+    menu->settings.game_counter_enabled = value;
+    ui_components_position_indicator_enable(value);
+    settings_save(&menu->settings);
+}
+
 static bool get_carousel_bottom (menu_t *menu) { return menu->settings.carousel_at_bottom; }
 static void set_carousel_bottom (menu_t *menu, bool value) {
     menu->settings.carousel_at_bottom = value;
@@ -136,6 +143,30 @@ static component_context_menu_t screensaver_picker = {
         { .text = "30 Seconds", .action = set_screensaver, .arg = (void *) (30) },
         { .text = "1 Minute", .action = set_screensaver, .arg = (void *) (60) },
         { .text = "5 Minutes", .action = set_screensaver, .arg = (void *) (300) },
+        COMPONENT_CONTEXT_MENU_LIST_END,
+    }
+};
+
+static void set_screensaver_style (menu_t *menu, void *arg) {
+    screensaver_style_setting_t style = (screensaver_style_setting_t) (intptr_t) arg;
+    screensaver_set_style(style);
+    free(menu->settings.screensaver_style);
+    menu->settings.screensaver_style = strdup(screensaver_style_key(style));
+    settings_save(&menu->settings);
+}
+
+static int get_screensaver_style_selection (menu_t *menu) {
+    return screensaver_style_from_key(menu->settings.screensaver_style);
+}
+
+static component_context_menu_t screensaver_style_picker = {
+    .get_default_selection = get_screensaver_style_selection,
+    .list = {
+        // Same order as screensaver_style_setting_t.
+        { .text = "Random", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_RANDOM) },
+        { .text = "Bounce", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_BOUNCE) },
+        { .text = "Trails", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_TRAILS) },
+        { .text = "Grid", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_GRID) },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
@@ -233,13 +264,17 @@ static option_t options[] = {
       .description = "Show game screenshots in the Library's info panel, changing every few seconds." },
     { .label = "Controller Hints", .type = OPTION_TOGGLE, .get = get_controller_hints, .set = set_controller_hints,
       .description = "Show which buttons do what along the bottom of the screen." },
+    { .label = "Game Counter", .type = OPTION_TOGGLE, .get = get_game_counter, .set = set_game_counter,
+      .description = "Show which game you're on and how many there are, top right, while scrolling." },
     { .label = "Carousel Position", .type = OPTION_TOGGLE, .get = get_carousel_bottom, .set = set_carousel_bottom,
       .value = carousel_position_value,
       .description = "Show the row of games above or below the game info." },
     { .label = "Palette", .type = OPTION_CHOICE, .picker = &palette_picker,
       .description = "Colors of the menu. Button icons and cartridges keep their own colors." },
     { .label = "Screensaver", .type = OPTION_CHOICE, .picker = &screensaver_picker,
-      .description = "Bounce the N64 logo around the screen after this long without a button press." },
+      .description = "Show the screensaver after this long without a button press." },
+    { .label = "Screensaver Style", .type = OPTION_CHOICE, .picker = &screensaver_style_picker,
+      .description = "Bounce, Trails or Grid, or Random for a different one each time." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,

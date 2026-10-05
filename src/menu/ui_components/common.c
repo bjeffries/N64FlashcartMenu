@@ -319,10 +319,12 @@ void ui_components_messagebox_draw (char *fmt, ...) {
         paragraph->bbox.y1 - paragraph->bbox.y0 + MESSAGEBOX_MARGIN
     );
 
+    // Centred on the screen like the dialog (the safe area isn't: its top margin is wider).
     int x = DISPLAY_CENTER_X - (MESSAGEBOX_MAX_WIDTH / 2);
-    rdpq_paragraph_render(shadow, x + TEXT_SHADOW_OFFSET, VISIBLE_AREA_Y0 + TEXT_SHADOW_OFFSET);
+    int y = DISPLAY_CENTER_Y - (VISIBLE_AREA_HEIGHT / 2);
+    rdpq_paragraph_render(shadow, x + TEXT_SHADOW_OFFSET, y + TEXT_SHADOW_OFFSET);
     rdpq_paragraph_free(shadow);
-    rdpq_paragraph_render(paragraph, x, VISIBLE_AREA_Y0);
+    rdpq_paragraph_render(paragraph, x, y);
 
     rdpq_paragraph_free(paragraph);
 }

@@ -20,6 +20,7 @@
 #include "labels.h"
 #include "menu_state.h"
 #include "menu.h"
+#include "play_stats.h"
 #include "png_decoder.h"
 #include "screensaver.h"
 #include "settings.h"
@@ -36,6 +37,7 @@
 #define MENU_CACHE_DIRECTORY        "cache"
 #define MENU_LABELS_FILE            "labels.db"
 #define MENU_HIDDEN_FILE            "hidden.txt"
+#define MENU_PLAY_STATS_FILE        "play_stats.txt"
 #define BACKGROUND_CACHE_FILE       "background.data"
 
 #define FPS_LIMIT                   (30.0f)
@@ -91,6 +93,10 @@ static void menu_init (boot_params_t *boot_params) {
     menu->load.load_history_id = -1;
     menu->load.load_favorite_id = -1;
     menu->load.return_mode = MENU_MODE_BROWSER;
+    path_pop(path);
+
+    path_push(path, MENU_PLAY_STATS_FILE);
+    play_stats_init(path_get(path), &menu->bookkeeping);
     path_pop(path);
 
     // Force interlacing off in VI settings for TVs and other devices that struggle with interlaced video input.
@@ -152,7 +158,9 @@ static void menu_init (boot_params_t *boot_params) {
     ui_components_game_info_screenshots_enable(menu->settings.screenshot_gallery_enabled);
     ui_components_button_hints_enable(menu->settings.controller_hints_enabled);
     screensaver_set_timeout(menu->settings.screensaver_timeout);
+    screensaver_set_style(screensaver_style_from_key(menu->settings.screensaver_style));
     ui_components_layout_set(menu->settings.carousel_at_bottom);
+    ui_components_position_indicator_enable(menu->settings.game_counter_enabled);
 
     menu->browser.directory = path_init(menu->storage_prefix, menu->settings.default_directory);
     if (!directory_exists(path_get(menu->browser.directory))) {
@@ -178,6 +186,7 @@ static void menu_deinit (menu_t *menu) {
     ui_components_game_info_invalidate();
     labels_deinit();
     hidden_deinit();
+    play_stats_deinit();
     rspq_wait();  // Execute deferred callbacks (e.g., display list freeing) before closing RSPQ
 
     hdmi_send_game_id(menu->boot_params);

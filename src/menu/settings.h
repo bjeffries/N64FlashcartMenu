@@ -76,8 +76,14 @@ typedef struct {
     /** @brief Show game screenshots in the Library's info panel */
     bool screenshot_gallery_enabled;
 
+    /** @brief Show the game counter (position / total) in the top-right corner while scrolling */
+    bool game_counter_enabled;
+
     /** @brief Library layout: carousel below the info panel instead of above it */
     bool carousel_at_bottom;
+
+    /** @brief Screensaver style, by its config.ini key ("random", "bounce", "trails", "grid") */
+    char *screensaver_style;
 
     /** @brief Seconds without input before the screensaver starts; 0 = never */
     int screensaver_timeout;

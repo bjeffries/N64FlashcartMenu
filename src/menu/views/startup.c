@@ -96,9 +96,17 @@ static void draw_animation (menu_t *menu, surface_t *d) {
     rdpq_detach_show();
 
     // Meanwhile, read the start folder's games' info for the Library, nearest the first game first.
-    if (menu->browser.valid) {
-        ui_components_game_info_prefetch(menu->browser.directory, menu->browser.list, menu->browser.entries,
-            menu->browser.selected, GAME_INFO_PREFETCH_BOOT_US);
+    // ...and their cartridge labels, so the Library opens with them showing. One game's info or
+    // label every BOOT_PREFETCH_FRAMES frames, taking turns, so the animation stays smooth.
+    static int prefetch_frame = 0;
+    if (menu->browser.valid && (++prefetch_frame % BOOT_PREFETCH_FRAMES) == 0) {
+        if ((prefetch_frame / BOOT_PREFETCH_FRAMES) % 2) {
+            ui_components_game_info_prefetch(menu->browser.directory, menu->browser.list, menu->browser.entries,
+                menu->browser.selected, 0);
+        } else {
+            ui_components_carousel_preload(menu->browser.directory, menu->browser.list, menu->browser.entries,
+                menu->browser.selected, 0);
+        }
     }
 
     if (elapsed >= frames_ms + HOLD_MS + FADE_MS) {

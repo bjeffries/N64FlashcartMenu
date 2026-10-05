@@ -1,16 +1,19 @@
 /**
  * @file carousel_scroll.c
- * @brief Left / right scrolling for carousel lists, with letter paging while held
+ * @brief Left / right scrolling for carousel lists, speeding up while held
  * @ingroup ui_components
  *
- * Holding ←/→ moves one tile every CAROUSEL_REPEAT_FRAMES. After CAROUSEL_PAGING_DELAY_MS it
- * switches to jumping a letter at a time (A -> B -> C, landing on the first entry of each letter
- * in either direction) every CAROUSEL_PAGING_INTERVAL_MS, and shows the letter in the top-left
- * corner, fading in and out. Letters come from file names, which is what the lists are sorted by;
- * names that don't start with a letter are grouped as '#', and folders page separately from games.
+ * Holding ←/→ moves CAROUSEL_SPEED_1 tiles a second, then CAROUSEL_SPEED_2 after
+ * CAROUSEL_SPEED_STEP_MS and CAROUSEL_SPEED_3 after twice that; letting go drops straight back.
+ * While held, the first letter of the file name (what the lists are sorted by; '#' for names that
+ * don't start with a letter) shows against the right margin, level with the game title, each time
+ * it changes: large, on a half-transparent black rounded box. It stays while the scroll is held and
+ * fades out after letting go. A single press neither speeds up nor shows the letter. The cursor sound plays at most every
+ * CAROUSEL_SOUND_MIN_MS, so fast scrolling ticks instead of buzzing.
  */
 
 #include <ctype.h>
+#include <math.h>
 #include <string.h>
 
 #include "../ui_components.h"
@@ -19,11 +22,17 @@
 #include "constants.h"
 #include "utils/utils.h"
 
+// Holds pause for the menu's key-repeat delay (~270ms) after the first press: a gap shorter than
+// this is still the same hold.
+#define HOLD_GAP_MS     (300)
+
 static struct {
-    int hold_frames;
+    int direction;          // -1 / 1 while held, 0 when not
+    int moves;              // tiles moved in this hold
     uint32_t hold_start_ms;
-    uint32_t last_page_ms;
-    bool paging;
+    uint32_t last_seen_ms;  // last frame the direction was held
+    uint32_t next_move_ms;
+    uint32_t last_sound_ms;
 } scroll;
 
 // Something that fades in when shown, stays while it keeps being updated, then fades out.
@@ -38,8 +47,9 @@ static struct {
     fade_t fade;
 } indicator;
 
-// Position counter ("12/87"): shown on every selection change.
+// Position counter ("12/87"): shown on every selection change (Menu Settings > Game Counter).
 static fade_t position;
+static bool position_enabled = false;
 
 
 static void fade_touch (fade_t *fade, uint32_t now) {
@@ -85,110 +95,84 @@ static char letter_of (entry_t *entry) {
     return (c >= 'A' && c <= 'Z') ? c : '#';
 }
 
-/** @brief Entries with the same key are one page: same type (folders first) and first letter. */
-static int group_key (entry_t *entry) {
-    return (entry->type << 8) | letter_of(entry);
-}
-
-/** @brief First entry of the run of equal keys that contains index (the list is circular). */
-static int32_t group_start (entry_t *list, int32_t count, int32_t index) {
-    int key = group_key(&list[index]);
-    for (int32_t steps = 0; steps < count - 1; steps++) {
-        int32_t previous = (index + count - 1) % count;
-        if (group_key(&list[previous]) != key) {
-            break;
-        }
-        index = previous;
-    }
-    return index;
-}
-
-/** @brief Index of the first entry of the next (direction 1) or previous (-1) letter. */
-static int32_t page (entry_t *list, int32_t count, int32_t selected, int direction) {
-    int key = group_key(&list[selected]);
-    if (direction > 0) {
-        for (int32_t steps = 1; steps < count; steps++) {
-            int32_t index = (selected + steps) % count;
-            if (group_key(&list[index]) != key) {
-                return index;
-            }
-        }
-        return selected;
-    }
-    int32_t start = group_start(list, count, selected);
-    int32_t previous = (start + count - 1) % count;
-    if (group_key(&list[previous]) == key) {
-        return selected;    // the whole list is one letter
-    }
-    return group_start(list, count, previous);
-}
-
 /**
  * @brief Forget any held direction (call when a carousel view opens).
  */
 void ui_components_carousel_scroll_reset (void) {
-    scroll.hold_frames = 0;
-    scroll.hold_start_ms = 0;
-    scroll.paging = false;
+    scroll.direction = 0;
+    scroll.moves = 0;
 }
 
-static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging);
+static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_hint);
 
 /**
  * @brief Handle ←/→ for a carousel list (circular).
  *
- * @param letter_paging Whether a long hold pages by letter (lists sorted by file name).
+ * @param letter_hint Whether to show the first letter while held (lists sorted by file name).
  * @return The new selection.
  */
-int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging) {
-    int32_t next = scroll_step(menu, list, count, selected, letter_paging);
+int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_hint) {
+    int32_t next = scroll_step(menu, list, count, selected, letter_hint);
     if (next != selected) {
         fade_touch(&position, get_ticks_ms());
     }
     return next;
 }
 
-static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_paging) {
+/** @brief Time between tiles this long into a hold. */
+static uint32_t move_interval (uint32_t held_ms) {
+    int speed = (held_ms < CAROUSEL_SPEED_STEP_MS) ? CAROUSEL_SPEED_1
+        : (held_ms < (2 * CAROUSEL_SPEED_STEP_MS)) ? CAROUSEL_SPEED_2
+        : CAROUSEL_SPEED_3;
+    return 1000 / speed;
+}
+
+static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_hint) {
+    uint32_t now = get_ticks_ms();
     // C-buttons also report a direction (go_fast); in carousels they are action buttons instead.
     bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
     if (!horizontal || count < 2) {
-        ui_components_carousel_scroll_reset();
+        if (scroll.direction != 0 && (now - scroll.last_seen_ms) > HOLD_GAP_MS) {
+            ui_components_carousel_scroll_reset();
+        }
         return selected;
     }
 
     int direction = menu->actions.go_left ? -1 : 1;
-    uint32_t now = get_ticks_ms();
-    if (scroll.hold_frames == 0) {
+    if (direction != scroll.direction) {
+        // A new press (or a change of direction): move straight away, then keep going while held.
+        scroll.direction = direction;
+        scroll.moves = 0;
         scroll.hold_start_ms = now;
+        scroll.next_move_ms = now;
+    }
+    scroll.last_seen_ms = now;
+
+    // Once shown, the letter stays up for as long as the scroll is held (it fades after letting go).
+    if (letter_hint && scroll.moves > 0 && indicator.fade.visible) {
+        fade_touch(&indicator.fade, now);
     }
 
-    if (letter_paging && (now - scroll.hold_start_ms) >= CAROUSEL_PAGING_DELAY_MS) {
-        if (!scroll.paging || (now - scroll.last_page_ms) >= CAROUSEL_PAGING_INTERVAL_MS) {
-            int32_t next = page(list, count, selected, direction);
-            if (next != selected) {
-                scroll.paging = true;
-                scroll.last_page_ms = now;
-                scroll.hold_frames++;
-                indicator.letter = letter_of(&list[next]);
-                fade_touch(&indicator.fade, now);
-                sound_play_effect(SFX_CURSOR);
-                return next;
-            }
-            // Only one letter in the list: keep scrolling tile by tile.
-        } else {
-            scroll.hold_frames++;
-            return selected;
-        }
-    }
-
-    // Held directions repeat every frame; throttle that to one tile every CAROUSEL_REPEAT_FRAMES.
-    bool move_now = (scroll.hold_frames % CAROUSEL_REPEAT_FRAMES) == 0;
-    scroll.hold_frames++;
-    if (!move_now) {
+    if ((int32_t) (now - scroll.next_move_ms) < 0) {
         return selected;
     }
-    sound_play_effect(SFX_CURSOR);
-    return (selected + count + direction) % count;
+    uint32_t interval = move_interval(now - scroll.hold_start_ms);
+    scroll.next_move_ms += interval;
+    if ((int32_t) (now - scroll.next_move_ms) > (int32_t) interval) {
+        scroll.next_move_ms = now + interval;   // fell behind (a slow frame): don't catch up in a burst
+    }
+
+    int32_t next = (selected + count + direction) % count;
+    if (letter_hint && scroll.moves > 0 && letter_of(&list[next]) != letter_of(&list[selected])) {
+        indicator.letter = letter_of(&list[next]);
+        fade_touch(&indicator.fade, now);
+    }
+    scroll.moves++;
+    if ((now - scroll.last_sound_ms) >= CAROUSEL_SOUND_MIN_MS) {
+        scroll.last_sound_ms = now;
+        sound_play_effect(SFX_CURSOR);
+    }
+    return next;
 }
 
 /**
@@ -200,12 +184,41 @@ void ui_components_letter_indicator_draw (void) {
         return;
     }
 
-    // The background is black, so fading the colour towards black fades the letter.
-    fonts_set_fade_level(FNT_TITLE, (uint8_t) level);
-    rdpq_text_printf(
-        &(rdpq_textparms_t) { .style_id = STL_FADE },
-        FNT_TITLE, LETTER_INDICATOR_X, LETTER_INDICATOR_Y, "%c", indicator.letter
-    );
+    int size = LETTER_INDICATOR_BOX_SIZE;
+    int x0 = LETTER_INDICATOR_BOX_RIGHT - size;
+    int y0 = LETTER_INDICATOR_BOX_TOP;
+    int r = LETTER_INDICATOR_BOX_RADIUS;
+
+    rdpq_mode_push();
+        rdpq_set_mode_standard();
+        rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+        rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+        rdpq_set_prim_color(RGBA32(0, 0, 0, (LETTER_INDICATOR_BOX_ALPHA * level) / 0xFF));
+        // Rounded corners: the top and bottom r rows are inset along a quarter circle; each row
+        // is drawn once so the transparency stays even.
+        for (int row = 0; row < r; row++) {
+            float dy = r - row - 0.5f;
+            int inset = (int) (r - sqrtf((float) (r * r) - (dy * dy)) + 0.5f);
+            rdpq_fill_rectangle(x0 + inset, y0 + row, x0 + size - inset, y0 + row + 1);
+            rdpq_fill_rectangle(x0 + inset, y0 + size - row - 1, x0 + size - inset, y0 + size - row);
+        }
+        rdpq_fill_rectangle(x0, y0 + r, x0 + size, y0 + size - r);
+    rdpq_mode_pop();
+
+    // The title text's colour, fading with the box.
+    color_t colour = TEXT_COLOR;
+    colour.a = (uint8_t) level;
+    rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(FNT_LETTER), STL_FADE, &((rdpq_fontstyle_t) { .color = colour }));
+
+    // Centred on the box: across by the letter's ink, down by its capitals.
+    char text[2] = { indicator.letter, '\0' };
+    int nbytes = 1;
+    rdpq_paragraph_t *layout = rdpq_paragraph_build(&(rdpq_textparms_t) { .style_id = STL_FADE }, FNT_LETTER, text, &nbytes);
+    float ink_centre = (layout->bbox.x0 + layout->bbox.x1) / 2.0f;
+    rdpq_paragraph_render(layout,
+        (int) (x0 + (size / 2) - ink_centre + 0.5f),
+        y0 + (size / 2) + (fonts_cap_height(FNT_LETTER) / 2));
+    rdpq_paragraph_free(layout);
 }
 
 /**
@@ -216,9 +229,13 @@ void ui_components_letter_indicator_draw (void) {
  * @param index 1-based position of the selection, or 0 to draw nothing (e.g. a folder).
  * @param total Number of entries counted.
  */
+void ui_components_position_indicator_enable (bool enabled) {
+    position_enabled = enabled;
+}
+
 void ui_components_position_indicator_draw (int index, int total) {
     int level = fade_level(&position);
-    if (level < 0 || index <= 0 || total <= 0) {
+    if (!position_enabled || level < 0 || index <= 0 || total <= 0) {
         return;
     }
     char numerator[12], denominator[12];
@@ -239,12 +256,12 @@ void ui_components_position_indicator_draw (int index, int total) {
     }
     // The bar reaches past the wider number on both sides (and is never shorter than a minimum).
     int bar_width = MAX(POSITION_FRACTION_BAR_MIN, width + (2 * POSITION_FRACTION_BAR_OVERHANG));
-    int right = DISPLAY_WIDTH - LETTER_INDICATOR_X;
+    int right = POSITION_INDICATOR_RIGHT;
     int centre = right - (bar_width / 2);
 
     // Top of the numerator level with the top of the letter indicator's capitals.
     int cap = fonts_cap_height(BODY_FONT);
-    int top = LETTER_INDICATOR_Y - fonts_cap_height(TITLE_FONT);
+    int top = POSITION_INDICATOR_TOP;
     int baselines[2] = { top + cap, top + cap + POSITION_FRACTION_GAP + POSITION_FRACTION_BAR + POSITION_FRACTION_GAP + cap };
 
     fonts_set_fade_level(BODY_FONT, (uint8_t) level);

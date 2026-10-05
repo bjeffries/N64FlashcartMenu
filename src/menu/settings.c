@@ -54,7 +54,13 @@ static settings_t init = {
     .screenshot_gallery_enabled = true,
     .controller_hints_enabled = true,
     .carousel_at_bottom = true,
+    .game_counter_enabled = false,
     .screensaver_timeout = 60,
+#ifdef SCREENSAVER_STYLE_DEFAULT
+    .screensaver_style = SCREENSAVER_STYLE_DEFAULT,     // development builds: SCREENSAVER_STYLE in the Makefile
+#else
+    .screensaver_style = "random",
+#endif
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     .rom_autoload_enabled = false,
     .rom_autoload_path = "",
@@ -106,7 +112,10 @@ void settings_load (settings_t *settings) {
     settings->boot_animation_enabled = ini_get_bool(ini, "menu", "boot_animation_enabled", init.boot_animation_enabled);
     settings->screenshot_gallery_enabled = ini_get_bool(ini, "menu", "screenshot_gallery_enabled", init.screenshot_gallery_enabled);
     settings->controller_hints_enabled = ini_get_bool(ini, "menu", "controller_hints_enabled", init.controller_hints_enabled);
+    settings->game_counter_enabled = ini_get_bool(ini, "menu", "game_counter_enabled", init.game_counter_enabled);
     settings->carousel_at_bottom = ini_get_bool(ini, "menu", "carousel_at_bottom", init.carousel_at_bottom);
+    free(settings->screensaver_style);
+    settings->screensaver_style = strdup(ini_get_string(ini, "menu", "screensaver_style", init.screensaver_style));
     settings->screensaver_timeout = ini_get_int(ini, "menu", "screensaver_timeout", init.screensaver_timeout);
 
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
@@ -150,8 +159,10 @@ void settings_save (settings_t *settings) {
     ini_set_bool(ini, "menu", "boot_animation_enabled", settings->boot_animation_enabled);
     ini_set_bool(ini, "menu", "screenshot_gallery_enabled", settings->screenshot_gallery_enabled);
     ini_set_bool(ini, "menu", "controller_hints_enabled", settings->controller_hints_enabled);
+    ini_set_bool(ini, "menu", "game_counter_enabled", settings->game_counter_enabled);
     ini_set_bool(ini, "menu", "carousel_at_bottom", settings->carousel_at_bottom);
     ini_set_int(ini, "menu", "screensaver_timeout", settings->screensaver_timeout);
+    ini_set_string(ini, "menu", "screensaver_style", settings->screensaver_style);
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     ini_set_bool(ini, "menu", "autoload_rom_enabled", settings->rom_autoload_enabled);
     ini_set_string(ini, "autoload", "rom_path", settings->rom_autoload_path);

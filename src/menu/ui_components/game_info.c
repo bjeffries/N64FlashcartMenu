@@ -11,6 +11,8 @@
 
 #include "../ui_components.h"
 #include "../fonts.h"
+#include "../labels.h"
+#include "../play_stats.h"
 #include "../png_decoder.h"
 #include "../n64_logo_frames.h"
 #include "../sound.h"
@@ -55,6 +57,9 @@ typedef struct {
     char developer[INFO_TEXT];  // "" when unknown
     char publisher[INFO_TEXT];
     char release[INFO_TEXT / 2];
+    char title[INFO_TEXT];      // metadata name ("" when there's none; carousel and History show it)
+    bool has_label_id;          // the ROM could be read for its cartridge label ID
+    uint32_t label_id;
     bool has_description;       // description below is cached (Expansion Pak only)
     char *description;          // NULL when there's none
 } game_summary_t;
@@ -92,7 +97,7 @@ static struct {
 // About page scrolling, in lines of text.
 #define PAGE_ABOUT              (2)
 static int last_page_drawn = -1;
-static int value_right = VISIBLE_AREA_X1;   // values stop here (short of the screenshot on the Overview page)
+static int value_right = 0;     // values stop here (short of the screenshot on the Overview page); set each draw
 static int about_scroll = 0;
 static int about_max_scroll = 0;
 
@@ -344,12 +349,17 @@ static game_summary_t *summary_load (path_t *path, entry_type_t type) {
             copy_meta(summary->developer, sizeof(summary->developer), info.meta.author);
             copy_meta(summary->publisher, sizeof(summary->publisher), info.meta.publisher);
             copy_meta(summary->release, sizeof(summary->release), info.meta.release_date);
+            copy_meta(summary->title, sizeof(summary->title), info.meta.name);
             if (is_memory_expanded()) {
                 const char *description = meta_value(info.meta.short_description);
                 summary->description = description ? strdup(description) : NULL;
                 summary->has_description = true;
             }
             rom_info_free_meta(&info);
+
+            // The carousel's label key: a checksum of the ROM's first 8KB, read once here.
+            summary->has_label_id = labels_rom_id(path_get(path), &summary->label_id, NULL);
+            sound_poll();
 
             char first[280];
             screenshot_base(path_get(path), summary->game_code, first, sizeof(first) - 8);
@@ -436,11 +446,7 @@ static const char *format_date (time_t t, char *buffer, size_t size) {
     return buffer;
 }
 
-static void draw_shadowed (rdpq_textparms_t parms, int x, int y, const char *text) {
-    ui_components_body_text_draw(&parms, x, y, text);
-}
-
-/** @brief Lay out a paragraph twice (shadow and text) and draw both. */
+/** @brief Draw info panel text over its shadow (1px down and across). */
 static void render_paragraph_with_shadow (rdpq_textparms_t parms, int x, int y, const char *text, menu_font_style_t shadow_style) {
     menu_font_style_t style = parms.style_id;
     for (int layer = 0; layer < 2; layer++) {
@@ -451,6 +457,10 @@ static void render_paragraph_with_shadow (rdpq_textparms_t parms, int x, int y, 
         rdpq_paragraph_render(layout, x + offset, y + offset);
         rdpq_paragraph_free(layout);
     }
+}
+
+static void draw_shadowed (rdpq_textparms_t parms, int x, int y, const char *text) {
+    render_paragraph_with_shadow(parms, x, y, text, GAME_INFO_SHADOW_STYLE);
 }
 
 static void draw_text (int x, int y, menu_font_style_t style, const char *text) {
@@ -477,7 +487,7 @@ static int draw_tag (int x, int y, const char *text) {
     if (x + width > value_right) {
         return -1;
     }
-    render_paragraph_with_shadow((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x, y, text, STL_SHADOW);
+    render_paragraph_with_shadow((rdpq_textparms_t) { .style_id = STL_DEFAULT }, x, y, text, GAME_INFO_SHADOW_STYLE);
     return width;
 }
 
@@ -627,16 +637,32 @@ static void draw_box_faded (int x0, int y0, int x1, int y1, color_t color, uint8
     rdpq_mode_pop();
 }
 
-/** @brief The spinning N64 logo, centred in the screenshot area, faded in once the carousel settles. */
+/**
+ * @brief The N64 logo, centred in the screenshot area, faded in once the carousel settles. It
+ *        holds still on its first frame while cartridge labels are still loading (both at once is
+ *        too slow on hardware), and spins from there once they're done.
+ */
 static void draw_logo (void) {
+    static bool spinning = false;
+    static uint32_t spin_start_ms;
     uint8_t alpha = settled_alpha();
     if (alpha == 0) {
         return;
     }
+    int frame = 0;
+    if (ui_components_carousel_labels_pending()) {
+        spinning = false;
+    } else {
+        if (!spinning) {
+            spinning = true;
+            spin_start_ms = get_ticks_ms();
+        }
+        frame = (int) (((get_ticks_ms() - spin_start_ms) % N64_LOGO_LOOP_MS) * N64_LOGO_FRAMES / N64_LOGO_LOOP_MS);
+    }
     ui_components_n64_logo_draw(
         GAME_INFO_SCREENSHOT_X + ((GAME_INFO_SCREENSHOT_WIDTH - N64_LOGO_WIDTH) / 2),
         GAME_INFO_SCREENSHOT_Y + ((GAME_INFO_SCREENSHOT_HEIGHT - N64_LOGO_HEIGHT) / 2),
-        ui_components_n64_logo_frame(), alpha);
+        frame, alpha);
 }
 
 static void draw_screenshots (entry_t *entry) {
@@ -803,7 +829,7 @@ static void draw_about_page (const char *description) {
     // Clip to the info area and shift the text up by the scrolled lines.
     rdpq_set_scissor(0, top, DISPLAY_WIDTH, bottom);
     rdpq_paragraph_free(layout);
-    render_paragraph_with_shadow(parms, x, GAME_INFO_Y - (about_scroll * line_height), description, STL_SHADOW);
+    render_paragraph_with_shadow(parms, x, GAME_INFO_Y - (about_scroll * line_height), description, GAME_INFO_SHADOW_STYLE);
     rdpq_set_scissor(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
     // "..." where there is more text above or below.
@@ -872,9 +898,30 @@ void ui_components_game_info_forget (path_t *path) {
     }
 }
 
-void ui_components_game_info_prefetch (path_t *directory, entry_t *list, int32_t count, int32_t selected, uint32_t budget_us) {
+const char *ui_components_game_info_cached_title (const char *path) {
+    game_summary_t *summary = cache_find(path);
+    return (summary && summary->title[0] != '\0') ? summary->title : NULL;
+}
+
+int ui_components_game_info_label_id (const char *path, uint32_t *id) {
+    game_summary_t *summary = cache_find(path);
+    if (!summary) {
+        return -1;
+    }
+    if (!summary->is_rom || !summary->has_label_id) {
+        return 0;
+    }
+    *id = summary->label_id;
+    return 1;
+}
+
+bool ui_components_game_info_is_cached (const char *path) {
+    return cache_find(path) != NULL;
+}
+
+bool ui_components_game_info_prefetch (path_t *directory, entry_t *list, int32_t count, int32_t selected, uint32_t budget_us) {
     if (!list || count <= 0) {
-        return;
+        return true;
     }
     // A different list (another folder, or Faves / History): start again, outward from the selection.
     const char *dir = directory ? path_get(directory) : "";
@@ -890,8 +937,9 @@ void ui_components_game_info_prefetch (path_t *directory, entry_t *list, int32_t
         prefetch.done = 0;
     }
 
+    // Games already cached are skipped; after each one read, stop once the budget is used.
     uint64_t start = get_ticks_us();
-    while (prefetch.done < count && (get_ticks_us() - start) < budget_us) {
+    while (prefetch.done < count) {
         int32_t k = prefetch.done++;
         int32_t offset = (k % 2) ? ((k + 1) / 2) : -(k / 2);
         int32_t index = ((prefetch.origin + offset) % count + count) % count;
@@ -900,11 +948,16 @@ void ui_components_game_info_prefetch (path_t *directory, entry_t *list, int32_t
             continue;
         }
         path_t *path = directory ? path_clone_push(directory, entry->name) : path_create(entry->name);
-        if (!cache_find(path_get(path))) {
+        bool read = !cache_find(path_get(path));
+        if (read) {
             summary_load(path, entry->type);
         }
         path_free(path);
+        if (read && (get_ticks_us() - start) >= budget_us) {
+            break;
+        }
     }
+    return prefetch.done >= count;
 }
 
 /**
@@ -976,7 +1029,8 @@ void ui_components_game_info_draw (path_t *directory, entry_t *entry, bookkeepin
             }
         }
     } else {
-        draw_overview_page(entry, summary, bookkeeping_history_last_played(bookkeeping, path));
+        time_t last_played = play_stats_last_played(path_get(path));
+        draw_overview_page(entry, summary, last_played ? last_played : bookkeeping_history_last_played(bookkeeping, path));
     }
     path_free(path);
 }

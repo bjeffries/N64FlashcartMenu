@@ -58,6 +58,14 @@ void view_browser_fade_in(void);
 
 /** @brief Draw Favorites / History behind the game loading animation (surface already attached). */
 void view_history_favorites_draw_behind_loading(menu_t *menu);
+/** @brief Draw the History table as the background of the game loading animation (it fades out). */
+void view_history_draw_behind_loading(menu_t *menu);
+/** @brief Where the loading animation goes over the History table: the middle of the table. */
+int view_history_loading_center_y(void);
+/** @brief Whether the Library hides this file or folder (system and menu files), unless Show Hidden Files is on. */
+bool view_browser_is_protected(path_t *path);
+/** @brief Whether a file name is an N64 ROM (.z64, .n64, .v64, .rom). */
+bool view_browser_is_rom_file(const char *name);
 
 /**
  * @brief Initialize the file info view.

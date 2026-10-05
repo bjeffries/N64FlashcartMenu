@@ -123,6 +123,7 @@ typedef struct {
         rom_info_t rom_info;
         int32_t load_history_id;
         int32_t load_favorite_id;
+        path_t *request_path;   // History table: load this game (taken by the ROM screen)
         bool play_now;          // Library "Play Cartridge": boot without stopping on the ROM details screen
         bool open_configure;    // Library "Configure": open the per-game options straight away
         menu_mode_t return_mode; // Tab to go back to from the ROM screens (Library, Favorites, History)

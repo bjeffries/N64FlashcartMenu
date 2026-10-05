@@ -143,7 +143,7 @@ static int compare_entry (const void *pa, const void *pb) {
 }
 
 static void browser_list_free (menu_t *menu) {
-    ui_components_carousel_invalidate();
+    ui_components_carousel_snap();      // its labels are kept (per game) for when the folder comes back
 
     for (int i = menu->browser.entries - 1; i >= 0; i--) {
         free(menu->browser.list[i].name);
@@ -682,6 +682,14 @@ void view_browser_draw_behind_loading (menu_t *menu) {
     draw_content(menu, false);
 }
 
+bool view_browser_is_protected (path_t *path) {
+    return path_is_hidden(path);
+}
+
+bool view_browser_is_rom_file (const char *name) {
+    return file_has_extensions((char *) name, n64_rom_extensions);
+}
+
 void view_browser_preload (menu_t *menu) {
     // Errors are left for view_browser_init() to report (it tries again).
     if (!menu->browser.valid && !load_directory(menu)) {
@@ -693,8 +701,8 @@ void view_browser_init (menu_t *menu) {
     confirm_hide = false;
     ui_components_carousel_scroll_reset();
 
-    // Favorites and History share the carousel, so its cached labels may belong to another list.
-    ui_components_carousel_invalidate();
+    // Favorites shares the carousel: its labels are dropped if they belong to the other list.
+    ui_components_carousel_snap();
 
     if (!menu->browser.valid) {
         if (load_directory(menu)) {

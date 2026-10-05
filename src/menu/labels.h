@@ -38,14 +38,17 @@ void labels_deinit(void);
 bool labels_rom_id(const char *rom_path, uint32_t *id, char game_code[4]);
 
 /**
- * @brief Load the label image for a label ID, downscaled to the given size.
+ * @brief Load the label image for a label ID at two sizes, reading it from labels.db once.
  *
  * @param id Label ID from #labels_rom_id.
- * @param width Output width (at most #LABEL_WIDTH).
- * @param height Output height (at most #LABEL_HEIGHT).
- * @return Newly allocated RGBA16 surface (free with #labels_free), or NULL if there is no label.
+ * @param large_width, large_height Size of the first image (at most #LABEL_WIDTH x #LABEL_HEIGHT).
+ * @param large Output: newly allocated RGBA16 surface (free with #labels_free), or NULL.
+ * @param small_width, small_height Size of the second image.
+ * @param small Output: likewise.
+ * @return false if there is no label for this ID (both outputs NULL).
  */
-surface_t *labels_load(uint32_t id, int width, int height);
+bool labels_load_pair(uint32_t id, int large_width, int large_height, surface_t **large,
+    int small_width, int small_height, surface_t **small);
 
 /**
  * @brief Free a label surface once the RDP has finished drawing it.

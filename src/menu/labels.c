@@ -25,7 +25,7 @@
 #define LABEL_BYTES         (LABEL_WIDTH * LABEL_HEIGHT * 4)
 #define ROM_ID_BYTES        (0x2000)
 
-static char *db_path_copy = NULL;
+static FILE *db = NULL;          // kept open: reopening it for every label costs a directory lookup
 static uint32_t *ids = NULL;
 static int id_count = 0;
 
@@ -60,11 +60,14 @@ bool labels_init (const char *db_path) {
             }
             ids[id_count++] = id;
         }
-        db_path_copy = strdup(db_path);
         debugf("[LABELS] %d labels in %s\n", id_count, db_path);
     }
 
     free(table);
+    if (ok) {
+        db = fopen(db_path, "rb");
+        ok = (db != NULL);
+    }
     if (!ok) {
         labels_deinit();
     }
@@ -75,8 +78,10 @@ void labels_deinit (void) {
     free(ids);
     ids = NULL;
     id_count = 0;
-    free(db_path_copy);
-    db_path_copy = NULL;
+    if (db) {
+        fclose(db);
+        db = NULL;
+    }
 }
 
 bool labels_rom_id (const char *rom_path, uint32_t *id, char game_code[4]) {
@@ -130,25 +135,10 @@ static int find_id (uint32_t id) {
     return -1;
 }
 
-surface_t *labels_load (uint32_t id, int width, int height) {
-    int index = ids ? find_id(id) : -1;
-    if (index < 0) {
-        return NULL;
-    }
-
-    FILE *f = fopen(db_path_copy, "rb");
-    if (!f) {
-        return NULL;
-    }
-
-    uint8_t *bgra = malloc(LABEL_BYTES);
-    bool ok = bgra
-        && (fseek(f, DB_IMAGE_OFFSET + (index * DB_IMAGE_STRIDE), SEEK_SET) == 0)
-        && (fread(bgra, LABEL_BYTES, 1, f) == 1);
-    fclose(f);
-
-    surface_t *label = NULL;
-    if (ok && (label = malloc(sizeof(surface_t)))) {
+/** @brief An RGBA16 surface of the label at a size, box-filtered from its BGRA32 pixels. */
+static surface_t *make_label (const uint8_t *bgra, int width, int height) {
+    surface_t *label = malloc(sizeof(surface_t));
+    if (label) {
         *label = surface_alloc(FMT_RGBA16, width, height);
         // Box filter: each output pixel averages the source pixels it covers.
         for (int y = 0; y < height; y++) {
@@ -170,9 +160,28 @@ surface_t *labels_load (uint32_t id, int width, int height) {
         }
         data_cache_hit_writeback(label->buffer, label->stride * height);
     }
-
-    free(bgra);
     return label;
+}
+
+bool labels_load_pair (uint32_t id, int large_width, int large_height, surface_t **large,
+        int small_width, int small_height, surface_t **small) {
+    *large = NULL;
+    *small = NULL;
+    int index = (ids && db) ? find_id(id) : -1;
+    if (index < 0) {
+        return false;
+    }
+
+    uint8_t *bgra = malloc(LABEL_BYTES);
+    bool ok = bgra
+        && (fseek(db, DB_IMAGE_OFFSET + (index * DB_IMAGE_STRIDE), SEEK_SET) == 0)
+        && (fread(bgra, LABEL_BYTES, 1, db) == 1);
+    if (ok) {
+        *large = make_label(bgra, large_width, large_height);
+        *small = make_label(bgra, small_width, small_height);
+    }
+    free(bgra);
+    return ok;
 }
 
 static void free_surface (void *arg) {

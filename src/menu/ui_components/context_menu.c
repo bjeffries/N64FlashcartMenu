@@ -118,6 +118,10 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
     cm = get_current_submenu(cm);
 
     bool extra = (cm->draw_extra != NULL);
+    // Laid out in a box the size of the safe area but centred on the screen, like the dialog
+    // (the safe area itself isn't centred: the left and top margins are wider).
+    int origin_x = DISPLAY_CENTER_X - (VISIBLE_AREA_WIDTH / 2);
+    int origin_y = DISPLAY_CENTER_Y - (VISIBLE_AREA_HEIGHT / 2);
     rdpq_paragraph_builder_begin(
         &(rdpq_textparms_t) {
             .width = VISIBLE_AREA_WIDTH,
@@ -152,7 +156,7 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
     int highlight_x0 = DISPLAY_CENTER_X - (width / 2);
     int highlight_x1 = DISPLAY_CENTER_X + (width / 2);
     int highlight_height = (layout->bbox.y1 - layout->bbox.y0) / layout->nlines;
-    int highlight_y = VISIBLE_AREA_Y0 + layout->bbox.y0 + ((cm->row_selected) * highlight_height);
+    int highlight_y = origin_y + layout->bbox.y0 + ((cm->row_selected) * highlight_height);
 
     ui_components_box_draw(
         highlight_x0,
@@ -165,15 +169,15 @@ void ui_components_context_menu_draw(component_context_menu_t *cm) {
     if (extra) {
         // Left-aligned names, then the extra column after the longest one.
         int text_x = DISPLAY_CENTER_X - (content_width / 2);
-        rdpq_paragraph_render(layout, text_x - layout->bbox.x0, VISIBLE_AREA_Y0);
+        rdpq_paragraph_render(layout, text_x - layout->bbox.x0, origin_y);
         int extra_x = text_x + text_width + CONTEXT_MENU_EXTRA_GAP;
-        int baseline = VISIBLE_AREA_Y0 + layout->bbox.y0 + fonts_ascent(TITLE_FONT);
+        int baseline = origin_y + layout->bbox.y0 + fonts_ascent(TITLE_FONT);
         for (int i = 0; i < cm->row_count; i++) {
             int y_centre = baseline + (i * highlight_height) - (fonts_cap_height(TITLE_FONT) / 2);
             cm->draw_extra(i, extra_x, y_centre, i == cm->row_selected);
         }
     } else {
-        rdpq_paragraph_render(layout, VISIBLE_AREA_X0, VISIBLE_AREA_Y0);
+        rdpq_paragraph_render(layout, origin_x, origin_y);
     }
 
     rdpq_paragraph_free(layout);

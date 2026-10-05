@@ -175,7 +175,7 @@
  * @def TEXT_LINE_SPACING_ADJUST
  * @brief Adjustment for text line spacing (pixels).
  */
-#define TEXT_LINE_SPACING_ADJUST        (-6) // Cancels Analogue OS line gap: 18px line pitch at 20px
+#define TEXT_LINE_SPACING_ADJUST        (-6) // Tightens the line pitch of multi-line text (dialogs, menus)
 
 /**
  * @def BOXART_WIDTH
@@ -462,9 +462,10 @@
 #define GAME_INFO_SCREENSHOT_SHADOW_COLOR   TEXT_SHADOW_COLOR
 /** @brief The info panel reads the selected game's details from the SD card once the carousel has been still this long (not on every step while scrolling). */
 #define GAME_INFO_LOAD_DELAY_MS         (100)
-/** @brief Time per frame spent reading games' info into the cache in the background: during the boot animation, and while the carousel is still. */
-#define GAME_INFO_PREFETCH_BOOT_US      (6000)
+/** @brief Time per frame spent reading games' info into the cache in the background while the carousel is still. */
 #define GAME_INFO_PREFETCH_IDLE_US      (4000)
+/** @brief During the boot animation, one game's info or label (taking turns) is read every this many frames. */
+#define BOOT_PREFETCH_FRAMES            (3)
 /** @brief The screenshot (or placeholder logo) shows this long after the carousel stops (animating both is too slow on hardware)... */
 #define GAME_INFO_FADE_DELAY_MS         (600)
 /** @brief ...then fades in over this long (a screenshot that loads later fades in once it's loaded). */
@@ -483,6 +484,8 @@
 #define BODY_FONT                       FNT_DEFAULT
 /** @brief Font of the info panel (and the captions under unselected games). */
 #define GAME_INFO_FONT                  BODY_FONT
+/** @brief Info panel text's shadow: the colour of the captions under unselected cartridges. */
+#define GAME_INFO_SHADOW_STYLE          (STL_GRAY)
 /** @brief Distance between info rows in a group: the info font's ascent + 3px (at least 16). */
 #define GAME_INFO_ROW_PITCH             (MAX(16, fonts_ascent(GAME_INFO_FONT) + 3))
 /** @brief Extra space between groups of info rows. */
@@ -578,8 +581,13 @@
 #define CAROUSEL_SCROLL_SPEED           (18.0f)
 /** @brief Scroll distances beyond this many tiles jump and animate only the last step. */
 #define CAROUSEL_MAX_ANIMATED_STEPS     (3.0f)
-/** @brief While ←/→ is held, move one tile every this many frames (12 per second at 60fps). */
-#define CAROUSEL_REPEAT_FRAMES          (5)
+/** @brief Holding ←/→: tiles per second, stepping up every CAROUSEL_SPEED_STEP_MS held. */
+#define CAROUSEL_SPEED_1                (6)
+#define CAROUSEL_SPEED_2                (12)
+#define CAROUSEL_SPEED_3                (18)
+#define CAROUSEL_SPEED_STEP_MS          (1500)
+/** @brief The cursor sound plays at most this often while scrolling. */
+#define CAROUSEL_SOUND_MIN_MS           (100)
 /**
  * @brief Game loading animation: centre of the eclipse. The info panel is blacked out while a game
  *        loads; the eclipse is centred in it: across the screen, and between the top of the first
@@ -591,22 +599,26 @@
 #define LOADING_FADE_START              (0.8f)
 /** @brief Emulators only (no SummerCart64): how long the pretend game load takes. */
 #define SIMULATED_LOAD_MS               (3000)
-/** @brief Holding ←/→ this long switches from tiles to letters (Library, Favorites). */
-#define CAROUSEL_PAGING_DELAY_MS        (1000)
-/** @brief While paging, one letter every this long. */
-#define CAROUSEL_PAGING_INTERVAL_MS     (400)
-/** @brief Paging letter: baseline (title font; its capitals top out at the safe area). */
-#define LETTER_INDICATOR_Y              (VISIBLE_AREA_Y0 + fonts_cap_height(FNT_TITLE))
-/** @brief Paging letter: left edge, 8px left of the cartridge, page dots and info labels (the position counter mirrors it on the right). */
-#define LETTER_INDICATOR_X              (GAME_INFO_LABEL_X - 8)
+/**
+ * @brief Scrolling letter: a rounded box against the right margin, its top level with the top of
+ *        the game title's capitals, black at LETTER_INDICATOR_BOX_ALPHA, the letter centred in it.
+ */
+#define LETTER_INDICATOR_BOX_RIGHT      (VISIBLE_AREA_X1)
+#define LETTER_INDICATOR_BOX_TOP        (CAROUSEL_TITLE_Y - fonts_cap_height(FNT_TITLE))
+#define LETTER_INDICATOR_BOX_SIZE       (112)
+#define LETTER_INDICATOR_BOX_RADIUS     (12)
+#define LETTER_INDICATOR_BOX_ALPHA      (0x80)
 #define LETTER_INDICATOR_FADE_IN_MS     (120)
+/** @brief Position counter: top of its numerator and right edge, 8px outside the cartridge and info labels' left edge, mirrored. */
+#define POSITION_INDICATOR_TOP          (VISIBLE_AREA_Y0)
+#define POSITION_INDICATOR_RIGHT        (DISPLAY_WIDTH - (GAME_INFO_LABEL_X - 8))
 /** @brief Position counter (a vertical fraction): space above and below its bar, and the bar's thickness. */
 #define POSITION_FRACTION_GAP           (3)
 #define POSITION_FRACTION_BAR           (2)
 /** @brief Position counter: how far the bar reaches past the wider number, and its minimum width. */
 #define POSITION_FRACTION_BAR_OVERHANG  (2)
 #define POSITION_FRACTION_BAR_MIN       (14)
-/** @brief Paging letter stays this long after the last page, then fades out. */
+/** @brief Scrolling letter (and position counter) stays this long after the last change, then fades out. */
 #define LETTER_INDICATOR_HOLD_MS        (400)
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)
 

@@ -38,7 +38,7 @@ static void load_default_font (char *custom_font_path) {
     rdpq_text_register_font(FNT_DEFAULT, default_font);
 }
 
-// Height of each font's capitals (the font is chosen at build time: MENU_FONT in the Makefile).
+// Height of each font's capitals (the fonts and sizes are set in the Makefile).
 static int cap_heights[FNT_LAST + 1];
 static int ascents[FNT_LAST + 1];
 
@@ -86,6 +86,7 @@ void fonts_set_fade_level (uint8_t font_id, uint8_t level) {
 void fonts_init (char *custom_font_path) {
     load_default_font(custom_font_path);
     load_font(FNT_TITLE, "rom:/font-title.font64");
+    load_font(FNT_LETTER, "rom:/font-letter.font64");
     for (int id = FNT_DEFAULT; id <= FNT_LAST; id++) {
         measure_cap_height(id);
     }
