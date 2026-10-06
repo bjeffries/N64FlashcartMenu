@@ -24,7 +24,6 @@ static const char *rom_meta_extensions[] = { "meta", "metadata", NULL };
 
 static bool directory_entry_limit_exceeded = false;
 static int info_page = 0;
-static bool confirm_hide = false;
 
 static const char *hidden_root_paths[] = {
     "/menu.bin",
@@ -420,32 +419,7 @@ static void set_selected_folder_default (menu_t *menu) {
     settings_save(&menu->settings);
 }
 
-/** @brief Hide or unhide the selected game, then refresh the list if it just disappeared from it. */
-static void set_selected_hidden (menu_t *menu, bool hide) {
-    path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
-    hidden_set(path, hide);
-    path_free(path);
-    if (menu->settings.show_hidden_games) {
-        menu->browser.entry->hidden = hide;
-    } else if (reload_directory(menu)) {
-        menu->browser.valid = false;
-        menu_show_error(menu, "Couldn't refresh directory contents");
-    }
-    sound_play_effect(SFX_SETTING);
-}
-
 static void process (menu_t *menu) {
-    if (confirm_hide) {
-        if (menu->actions.enter) {
-            confirm_hide = false;
-            set_selected_hidden(menu, true);
-        } else if (menu->actions.back) {
-            confirm_hide = false;
-            sound_play_effect(SFX_EXIT);
-        }
-        return;
-    }
-
     if (ui_components_tab_process(menu, TAB_LIBRARY)) {
         return;
     }
@@ -511,7 +485,7 @@ static void process (menu_t *menu) {
         menu->load.open_configure = true;
         menu->next_mode = MENU_MODE_LOAD_ROM;
         sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.c_left && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {  // Favorite
+    } else if (menu->actions.c_down && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {  // Favorite
         path_t *path = path_clone_push(menu->browser.directory, menu->browser.entry->name);
         int slot = bookkeeping_favorite_find(&menu->bookkeeping, path);
         if (slot >= 0) {
@@ -521,17 +495,10 @@ static void process (menu_t *menu) {
         }
         path_free(path);
         sound_play_effect(SFX_SETTING);
-    } else if (menu->actions.c_left && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
-        // C-Left on a folder: open the Library there from now on (reset in Menu Settings).
+    } else if (menu->actions.c_down && menu->browser.entry && menu->browser.entry->type == ENTRY_TYPE_DIR) {
+        // C-Down on a folder: open the Library there from now on (reset in Menu Settings).
         if (!selected_folder_is_default(menu)) {
             set_selected_folder_default(menu);
-            sound_play_effect(SFX_SETTING);
-        }
-    } else if (menu->actions.c_down && menu->browser.entry && menu->browser.entry->type != ENTRY_TYPE_DIR) {  // Hide / Unhide
-        if (menu->browser.entry->hidden) {
-            set_selected_hidden(menu, false);       // unhiding is harmless: no confirmation
-        } else {
-            confirm_hide = true;
             sound_play_effect(SFX_SETTING);
         }
     } else if ((menu->actions.go_up || menu->actions.go_down) && !menu->actions.go_fast) {
@@ -605,14 +572,16 @@ static void draw_content (menu_t *menu, bool show_hints) {
     if (!path_is_root(menu->browser.directory)) {
         hints[count++] = (button_hint_t) { ICON_B, "Back" };
     }
+    if (menu->browser.entries > 1) {
+        hints[count++] = (button_hint_t) { ICON_C_LEFT, "Page", ICON_C_RIGHT, true };     // by letter
+    }
     if (is_game) {
-        hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfave" : "Fave" };
         if (entry->type == ENTRY_TYPE_ROM) {
             hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
         }
-        hints[count++] = (button_hint_t) { ICON_C_DOWN, entry->hidden ? "Unhide" : "Hide" };
+        hints[count++] = (button_hint_t) { ICON_C_DOWN, favorite ? "Unfave" : "Fave" };
     } else if (entry && !selected_folder_is_default(menu)) {
-        hints[count++] = (button_hint_t) { ICON_C_LEFT, "Set to Default" };
+        hints[count++] = (button_hint_t) { ICON_C_DOWN, "Set to Default" };
     }
     ui_components_button_hints_draw(hints, count);
 }
@@ -657,18 +626,6 @@ static void draw (menu_t *menu, surface_t *d) {
 
     draw_content(menu, true);
 
-    if (confirm_hide && menu->browser.entry) {
-        char title[128];
-        ui_components_carousel_entry_title(menu->browser.entry, menu->browser.selected, title, sizeof(title));
-        ui_components_messagebox_draw(
-            "Hide %s?\n\n"
-            "It stays on your SD card. To bring it back, turn on\n"
-            "Show Hidden Games in Menu Settings.\n\n"
-            "A: Hide    B: Cancel",
-            title
-        );
-    }
-
     draw_fade_in(d);
 
     rdpq_detach_show();
@@ -698,7 +655,6 @@ void view_browser_preload (menu_t *menu) {
 }
 
 void view_browser_init (menu_t *menu) {
-    confirm_hide = false;
     ui_components_carousel_scroll_reset();
 
     // Favorites shares the carousel: its labels are dropped if they belong to the other list.

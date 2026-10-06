@@ -584,8 +584,9 @@
 /** @brief Holding ←/→: tiles per second, stepping up every CAROUSEL_SPEED_STEP_MS held. */
 #define CAROUSEL_SPEED_1                (6)
 #define CAROUSEL_SPEED_2                (12)
-#define CAROUSEL_SPEED_3                (18)
 #define CAROUSEL_SPEED_STEP_MS          (1500)
+/** @brief C-Left / C-Right held: a letter every this long. */
+#define CAROUSEL_PAGING_INTERVAL_MS     (300)
 /** @brief The cursor sound plays at most this often while scrolling. */
 #define CAROUSEL_SOUND_MIN_MS           (100)
 /**
@@ -622,6 +623,8 @@
 #define LETTER_INDICATOR_HOLD_MS        (400)
 #define LETTER_INDICATOR_FADE_OUT_MS    (300)
 
+/** @brief Background of the filler label (the N64 logo) on screensaver cartridges with no label art. */
+#define CARTRIDGE_FILLER_LABEL_COLOR    RGBA32(0xEE, 0xEA, 0xE0, 0xFF)   // off-white
 /** @brief Stand-in for a missing label (matches the cartridge's label recess). */
 #define CAROUSEL_PLACEHOLDER_COLOR      SPRITE_CARTRIDGE_DETAIL
 /** @brief Folder icon color. */

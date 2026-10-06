@@ -26,6 +26,12 @@
  *    tilt and roll change slowly and its centre traces a small figure 8. It starts with games whose
  *    labels the carousel has cached; each time a cartridge passes the back, it's swapped for another
  *    game (its label read then, out of sight behind the logo).
+ *  - Conveyor: a wall of cartridges from the Library's folder, on a grid tilted to its direction
+ *    of travel (3 across to 1 down), every other column half a cell lower, moving steadily; each
+ *    cartridge is turned so its sides are square to the travel. Games go down the columns in a
+ *    shuffled order; a folder with fewer games than the screen holds gets filler cartridges (the
+ *    N64 logo as the label) spread among them rather than repeats. Labels come from the carousel's
+ *    cache, or are read as columns come in from the left (one a frame).
  */
 
 #include <math.h>
@@ -83,14 +89,26 @@
 #define ORBIT_EIGHT_Y               (14.0f)     // ...and down
 #define ORBIT_EIGHT_MS              (40000)
 
+#define CONVEYOR_SCALE              (1.0f)     // cartridge size
+#define CONVEYOR_GAP                (16.0f)     // space between cartridges, as in the logo grid
+#define CONVEYOR_SPEED              (26.0f)     // pixels per second along the travel
+#define CONVEYOR_ACROSS             (3.0f)      // travel direction: this far across...
+#define CONVEYOR_DOWN               (1.0f)      // ...for this far down
+
 typedef enum {
     STYLE_BOUNCE,
     STYLE_TRAILS,
     STYLE_GRID,
     STYLE_STARFIELD,
     STYLE_ORBIT,
+    STYLE_CONVEYOR,
     STYLE_COUNT,
 } screensaver_style_t;
+
+static struct {
+    int *games;                 // the folder's games (Library list entries, -1: filler), shuffled
+    int game_count;
+} conveyor;
 
 static menu_t *saver_menu;                  // for the Library's games (Orbit)
 
@@ -98,8 +116,6 @@ static struct {
     int count;
     struct {
         int entry;              // in the Library's list, -1 while waiting for its first trip round the back
-        surface_t *label;
-        bool owned;             // loaded here (freed here), rather than the carousel's cached one
         int turns;              // times it has passed the back
     } carts[ORBIT_CARTRIDGES];
 } orbit;
@@ -249,6 +265,133 @@ static void draw_starfield (surface_t *display, uint32_t now, float step) {
     rdpq_detach_show();
 }
 
+/**
+ * @brief A Library game's large label from the carousel's label cache, read into it if needed and
+ *        *may_load (one read a frame). The cache's image: for this frame only. NULL: none yet.
+ */
+static surface_t *library_label (int entry, bool *may_load) {
+    menu_t *menu = saver_menu;
+    return ui_components_carousel_label(menu->browser.directory, menu->browser.list[entry].name, may_load);
+}
+
+static void conveyor_release (void) {
+    free(conveyor.games);
+    conveyor.games = NULL;
+    conveyor.game_count = 0;
+}
+
+static void conveyor_start (void) {
+    conveyor_release();
+    menu_t *menu = saver_menu;
+    if (!menu || !menu->browser.valid || menu->browser.entries <= 0) {
+        return;
+    }
+    conveyor.games = malloc(menu->browser.entries * sizeof(int));
+    if (!conveyor.games) {
+        return;
+    }
+    for (int i = 0; i < menu->browser.entries; i++) {
+        if (menu->browser.list[i].type == ENTRY_TYPE_ROM) {
+            conveyor.games[conveyor.game_count++] = i;
+        }
+    }
+    for (int i = conveyor.game_count - 1; i > 0; i--) {
+        int j = (int) (random_unit() * (i + 1)) % (i + 1);
+        int t = conveyor.games[i];
+        conveyor.games[i] = conveyor.games[j];
+        conveyor.games[j] = t;
+    }
+
+    // Too few games to fill the screen without repeats: spread filler cartridges (-1) among them.
+    float cell_u = (CARTRIDGE_LARGE_WIDTH * CONVEYOR_SCALE) + CONVEYOR_GAP;
+    float cell_v = (CARTRIDGE_LARGE_HEIGHT * CONVEYOR_SCALE) + CONVEYOR_GAP;
+    int needed = (int) ((DISPLAY_WIDTH * DISPLAY_HEIGHT) / (cell_u * cell_v)) + 8;     // on screen at once, with the edges
+    if (conveyor.game_count > 0 && conveyor.game_count < needed) {
+        int *padded = malloc(needed * sizeof(int));
+        if (padded) {
+            int games = 0;
+            for (int i = 0; i < needed; i++) {
+                // Evenly: a game whenever its share of the sequence so far is due, filler otherwise.
+                bool game = (games < conveyor.game_count) && ((games * needed) <= (i * conveyor.game_count));
+                padded[i] = game ? conveyor.games[games++] : -1;
+            }
+            free(conveyor.games);
+            conveyor.games = padded;
+            conveyor.game_count = needed;
+        }
+    }
+}
+
+/** @brief Conveyor style: a tilted, offset grid of cartridges moving steadily down and to the right. */
+static void draw_conveyor (surface_t *display, uint32_t now) {
+    uint32_t elapsed = now - trails.started_ms;
+    ui_components_carousel_label_tick();
+
+    // Along the travel (u) and across it (v); the cartridges turn to match.
+    float length = sqrtf((CONVEYOR_ACROSS * CONVEYOR_ACROSS) + (CONVEYOR_DOWN * CONVEYOR_DOWN));
+    float ux = CONVEYOR_ACROSS / length, uy = CONVEYOR_DOWN / length;
+    float vx = -uy, vy = ux;
+    float theta = -atan2f(CONVEYOR_DOWN, CONVEYOR_ACROSS);      // rdpq turns counter-clockwise
+    float cell_u = (CARTRIDGE_LARGE_WIDTH * CONVEYOR_SCALE) + CONVEYOR_GAP;
+    float cell_v = (CARTRIDGE_LARGE_HEIGHT * CONVEYOR_SCALE) + CONVEYOR_GAP;
+    float travel = (elapsed / 1000.0f) * CONVEYOR_SPEED;
+    float reach = sqrtf((cell_u * cell_u) + (cell_v * cell_v));    // a cell's size either way, to cover the edges
+
+    // The screen's extent along u and v (from the centre), plus a cell: the cells that can show.
+    float half_w = DISPLAY_WIDTH / 2.0f, half_h = DISPLAY_HEIGHT / 2.0f;
+    float extent_u = (half_w * ux) + (half_h * uy) + reach;
+    float extent_v = (half_w * fabsf(vx)) + (half_h * vy) + reach;
+    int column_min = (int) floorf((-extent_u - travel) / cell_u);
+    int column_max = (int) ceilf((extent_u - travel) / cell_u);
+    int row_min = (int) floorf(-extent_v / cell_v) - 1;
+    int row_max = (int) ceilf(extent_v / cell_v);
+
+    // Cartridges move along their row, so a row either crosses the screen or never shows. Only
+    // rows that cross it get games: consecutive cartridges that show are consecutive games in the
+    // shuffled order, so a game only comes round again after all the others.
+    float screen_v = (half_w * fabsf(vx)) + (half_h * vy);              // the screen's half-extent across the travel
+    float crossing_v = screen_v + ((CARTRIDGE_LARGE_HEIGHT * CONVEYOR_SCALE) / 2.0f);
+    int crossing[2] = { 0, 0 };     // rows that cross the screen, in even and odd (half-cell lower) columns
+    for (int parity = 0; parity < 2; parity++) {
+        for (int row = row_min; row <= row_max; row++) {
+            crossing[parity] += (fabsf((row * cell_v) + (parity ? (cell_v / 2.0f) : 0.0f)) < crossing_v);
+        }
+    }
+
+    ui_components_attach_clear(display);
+    if (conveyor.game_count > 0) {
+        bool may_load = true;
+        float half_cart = (CARTRIDGE_LARGE_WIDTH * CONVEYOR_SCALE) / 2.0f;
+        for (int column = column_min; column <= column_max; column++) {
+            float u = (column * cell_u) + travel;
+            int parity = column & 1;
+            float shift = parity ? (cell_v / 2.0f) : 0.0f;
+            // This column's first game: every column before it took one per crossing row.
+            int64_t pairs = (column >= 0) ? (column / 2) : -((-column + 1) / 2);
+            int64_t next = (pairs * (crossing[0] + crossing[1])) + (parity ? crossing[0] : 0);
+            for (int row = row_min; row <= row_max; row++) {
+                float v = (row * cell_v) + shift;
+                if (fabsf(v) >= crossing_v) {
+                    continue;   // a row that never crosses the screen
+                }
+                float x = half_w + (u * ux) + (v * vx);
+                float y = half_h + (u * uy) + (v * vy);
+                int n = conveyor.game_count;
+                int entry = conveyor.games[(int) (((next++ % n) + n) % n)];
+                if (x - half_cart >= DISPLAY_WIDTH || y - half_cart >= DISPLAY_HEIGHT) {
+                    continue;   // gone past the right or bottom edge
+                }
+                // Also reads ahead for the cartridges about to come in at the left and top.
+                surface_t *label = (entry >= 0) ? library_label(entry, &may_load) : NULL;     // NULL: the filler
+                if (x + half_cart > 0 && y + half_cart > 0) {
+                    ui_components_cartridge_draw_rotated(x, y, CONVEYOR_SCALE, theta, label);
+                }
+            }
+        }
+    }
+    rdpq_detach_show();
+}
+
 static bool orbit_in_use (int entry) {
     for (int i = 0; i < orbit.count; i++) {
         if (orbit.carts[i].entry == entry) {
@@ -259,11 +402,6 @@ static bool orbit_in_use (int entry) {
 }
 
 static void orbit_release (void) {
-    for (int i = 0; i < orbit.count; i++) {
-        if (orbit.carts[i].owned) {
-            labels_free(orbit.carts[i].label);
-        }
-    }
     orbit.count = 0;
 }
 
@@ -286,14 +424,13 @@ static void orbit_start (void) {
         if (menu->browser.list[entry].type != ENTRY_TYPE_ROM || orbit_in_use(entry)) {
             continue;
         }
-        surface_t *label = ui_components_carousel_cached_label(menu->browser.directory, menu->browser.list[entry].name);
-        if (label) {
-            orbit.carts[orbit.count++] = (typeof(orbit.carts[0])) { .entry = entry, .label = label, .owned = false };
+        if (library_label(entry, NULL)) {      // already cached
+            orbit.carts[orbit.count++] = (typeof(orbit.carts[0])) { .entry = entry };
         }
     }
     // The rest join on their first trip round the back.
     while (orbit.count < wanted) {
-        orbit.carts[orbit.count++] = (typeof(orbit.carts[0])) { .entry = -1, .label = NULL, .owned = false };
+        orbit.carts[orbit.count++] = (typeof(orbit.carts[0])) { .entry = -1 };
     }
 }
 
@@ -307,12 +444,9 @@ static void orbit_swap (int i) {
         if (menu->browser.list[entry].type != ENTRY_TYPE_ROM || orbit_in_use(entry)) {
             continue;
         }
-        if (orbit.carts[i].owned) {
-            labels_free(orbit.carts[i].label);
-        }
         orbit.carts[i].entry = entry;
-        orbit.carts[i].label = ui_components_cartridge_label_load(menu->browser.directory, menu->browser.list[entry].name);
-        orbit.carts[i].owned = true;
+        bool may_load = true;
+        library_label(entry, &may_load);   // read into the label cache now, out of sight at the back
         return;
     }
     // Every game is already on the ring: keep this one (unless it hasn't joined yet).
@@ -322,6 +456,7 @@ static void orbit_swap (int i) {
 static void draw_orbit (surface_t *display, uint32_t now) {
     const float tau = 6.28318531f;
     uint32_t elapsed = now - trails.started_ms;
+    ui_components_carousel_label_tick();
     float turn = (float) elapsed / ORBIT_TURN_MS;
     float tilt = ORBIT_TILT_MIN + ((ORBIT_TILT_MAX - ORBIT_TILT_MIN) * 0.5f * (1.0f - cosf(tau * elapsed / ORBIT_TILT_MS)));
     float roll = ORBIT_ROLL * sinf(tau * elapsed / ORBIT_ROLL_MS);
@@ -384,7 +519,7 @@ static void draw_orbit (surface_t *display, uint32_t now) {
             continue;   // joins on its first trip round the back
         }
         float shade = ORBIT_SHADE_BACK + ((1.0f - ORBIT_SHADE_BACK) * nearness[i]);
-        ui_components_cartridge_draw(xs[i], ys[i], scales[i], orbit.carts[i].label,
+        ui_components_cartridge_draw(xs[i], ys[i], scales[i], library_label(orbit.carts[i].entry, NULL),
             (uint8_t) (MIN(1.0f, nearness[i]) * 0xFF), (uint8_t) (MIN(1.0f, shade) * 0xFF));
     }
     if (!logo_drawn) {
@@ -410,11 +545,16 @@ static void start (uint32_t now) {
         case SCREENSAVER_GRID: trails.style = STYLE_GRID; break;
         case SCREENSAVER_STARFIELD: trails.style = STYLE_STARFIELD; break;
         case SCREENSAVER_ORBIT: trails.style = STYLE_ORBIT; break;
+        case SCREENSAVER_CONVEYOR: trails.style = STYLE_CONVEYOR; break;
         default: trails.style = (screensaver_style_t) ((r >> 2) % STYLE_COUNT); break;
     }
     trails.started_ms = now;
 
     orbit_release();
+    conveyor_release();
+    if (trails.style == STYLE_CONVEYOR) {
+        conveyor_start();
+    }
     if (trails.style == STYLE_ORBIT) {
         orbit_start();
         for (int i = 0; i < orbit.count; i++) {
@@ -437,7 +577,7 @@ void screensaver_set_timeout (int seconds) {
     timeout_ms = seconds * 1000;
 }
 
-static const char *style_keys[SCREENSAVER_STYLE_COUNT] = { "random", "bounce", "trails", "grid", "starfield", "orbit" };
+static const char *style_keys[SCREENSAVER_STYLE_COUNT] = { "random", "bounce", "trails", "grid", "starfield", "orbit", "conveyor" };
 
 const char *screensaver_style_key (screensaver_style_setting_t style) {
     return style_keys[(style < SCREENSAVER_STYLE_COUNT) ? style : SCREENSAVER_RANDOM];
@@ -467,6 +607,7 @@ bool screensaver_update (menu_t *menu) {
         waking = true;
         wake_ms = now;
         orbit_release();
+        conveyor_release();
     }
     if (held || !allowed) {
         last_input_ms = now;
@@ -538,6 +679,10 @@ void screensaver_draw (surface_t *display) {
     }
     if (trails.style == STYLE_ORBIT) {
         draw_orbit(display, now);
+        return;
+    }
+    if (trails.style == STYLE_CONVEYOR) {
+        draw_conveyor(display, now);
         return;
     }
     if (trails.style == STYLE_BOUNCE) {

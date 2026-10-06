@@ -4,9 +4,10 @@
 Emulators can't emulate the SC64 SD card, so a DEV_SD=1 build packs devsd/
 into the menu's own ROM filesystem (rom:/) instead.
 
-For every ROM in ROMS_DIR this writes an 8 KiB stub (the header plus enough
-data to compute the Analogue 3D label ID) and a trimmed labels.db holding only
-the labels for those ROMs.
+For every ROM in ROMS_DIR, including its subfolders (kept as subfolders of N64/,
+as they would be on the SD card), this writes an 8 KiB stub (the header plus
+enough data to compute the Analogue 3D label ID) and a trimmed labels.db holding
+only the labels for those ROMs.
 
 Usage: scripts/make_devsd.py <roms_dir> <labels.db> [out_dir=devsd]
 """
@@ -50,16 +51,24 @@ def main():
     os.makedirs(os.path.join(out_dir, 'menu'))
 
     found = {}
-    for name in sorted(os.listdir(roms_dir)):
-        if not name.lower().endswith(ROM_EXTENSIONS):
-            continue
-        head = open(os.path.join(roms_dir, name), 'rb').read(LABEL_ID_BYTES)
-        open(os.path.join(games_dir, name), 'wb').write(head)
-        label_id = zlib.crc32(to_big_endian(head))
-        status = 'label' if label_id in index_of else 'NO LABEL'
-        print(f'{status:8}  {label_id:08x}  {name}')
-        if label_id in index_of:
-            found[label_id] = index_of[label_id]
+    roms = 0
+    for folder, dirs, files in os.walk(roms_dir):
+        dirs.sort()
+        relative = os.path.relpath(folder, roms_dir)
+        out_folder = games_dir if relative == '.' else os.path.join(games_dir, relative)
+        for name in sorted(files):
+            if not name.lower().endswith(ROM_EXTENSIONS):
+                continue
+            os.makedirs(out_folder, exist_ok=True)
+            head = open(os.path.join(folder, name), 'rb').read(LABEL_ID_BYTES)
+            open(os.path.join(out_folder, name), 'wb').write(head)
+            roms += 1
+            label_id = zlib.crc32(to_big_endian(head))
+            status = 'label' if label_id in index_of else 'NO LABEL'
+            shown = name if relative == '.' else os.path.join(relative, name)
+            print(f'{status:8}  {label_id:08x}  {shown}')
+            if label_id in index_of:
+                found[label_id] = index_of[label_id]
 
     table = sorted(found)
     out = bytearray(db[:DB_TABLE_OFFSET])
@@ -69,7 +78,7 @@ def main():
         start = DB_IMAGE_OFFSET + found[label_id] * DB_IMAGE_STRIDE
         out += db[start:start + DB_IMAGE_STRIDE]
     open(os.path.join(out_dir, 'menu', 'labels.db'), 'wb').write(out)
-    print(f'\n{len(table)} labels -> {out_dir}/menu/labels.db ({len(out)} bytes)')
+    print(f'\n{roms} ROMs -> {games_dir}/, {len(table)} labels -> {out_dir}/menu/labels.db ({len(out)} bytes)')
 
 
 if __name__ == '__main__':

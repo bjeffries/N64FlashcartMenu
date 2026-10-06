@@ -135,11 +135,11 @@ static int find_id (uint32_t id) {
     return -1;
 }
 
-/** @brief An RGBA16 surface of the label at a size, box-filtered from its BGRA32 pixels. */
-static surface_t *make_label (const uint8_t *bgra, int width, int height) {
-    surface_t *label = malloc(sizeof(surface_t));
-    if (label) {
-        *label = surface_alloc(FMT_RGBA16, width, height);
+/** @brief Fill an RGBA16 surface with the label at its size, box-filtered from the label's BGRA32 pixels. */
+static void make_label (const uint8_t *bgra, surface_t *label) {
+    int width = label->width;
+    int height = label->height;
+    {
         // Box filter: each output pixel averages the source pixels it covers.
         for (int y = 0; y < height; y++) {
             int sy0 = (y * LABEL_HEIGHT) / height;
@@ -160,31 +160,26 @@ static surface_t *make_label (const uint8_t *bgra, int width, int height) {
         }
         data_cache_hit_writeback(label->buffer, label->stride * height);
     }
-    return label;
 }
 
-bool labels_load_pair (uint32_t id, int large_width, int large_height, surface_t **large,
-        int small_width, int small_height, surface_t **small) {
-    *large = NULL;
-    if (small) {
-        *small = NULL;
-    }
+bool labels_load_into (uint32_t id, surface_t *large, surface_t *small) {
+    // One read buffer, kept: reading labels allocates nothing (no fragmenting the heap).
+    static uint8_t *bgra = NULL;
     int index = (ids && db) ? find_id(id) : -1;
     if (index < 0) {
         return false;
     }
-
-    uint8_t *bgra = malloc(LABEL_BYTES);
-    bool ok = bgra
-        && (fseek(db, DB_IMAGE_OFFSET + (index * DB_IMAGE_STRIDE), SEEK_SET) == 0)
+    if (!bgra && !(bgra = malloc(LABEL_BYTES))) {
+        return false;
+    }
+    bool ok = (fseek(db, DB_IMAGE_OFFSET + (index * DB_IMAGE_STRIDE), SEEK_SET) == 0)
         && (fread(bgra, LABEL_BYTES, 1, db) == 1);
     if (ok) {
-        *large = make_label(bgra, large_width, large_height);
+        make_label(bgra, large);
         if (small) {
-            *small = make_label(bgra, small_width, small_height);
+            make_label(bgra, small);
         }
     }
-    free(bgra);
     return ok;
 }
 

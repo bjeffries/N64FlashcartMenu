@@ -302,6 +302,18 @@ void menu_run (boot_params_t *boot_params) {
 
         sound_poll();
 
+#ifdef DEV_SD
+        // Development builds: heap use in the emulator's log every few seconds.
+        static uint32_t heap_report_ms = 0;
+        if ((get_ticks_ms() - heap_report_ms) >= 5000) {
+            heap_report_ms = get_ticks_ms();
+            heap_stats_t heap;
+            sys_get_heap_stats(&heap);
+            debugf("[HEAP] used %d KB of %d KB, free %d KB (%d KB fragmented, %d%%)\n",
+                heap.used / 1024, heap.total / 1024, heap.free / 1024, heap.fragmented / 1024, (int) (heap.fragmentation * 100));
+        }
+#endif
+
         png_decoder_poll();
 
         usb_comm_poll(menu);

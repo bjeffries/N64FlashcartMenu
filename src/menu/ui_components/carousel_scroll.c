@@ -4,7 +4,10 @@
  * @ingroup ui_components
  *
  * Holding ←/→ moves CAROUSEL_SPEED_1 tiles a second, then CAROUSEL_SPEED_2 after
- * CAROUSEL_SPEED_STEP_MS and CAROUSEL_SPEED_3 after twice that; letting go drops straight back.
+ * CAROUSEL_SPEED_STEP_MS; letting go drops straight back. C-Left / C-Right page by letter (in lists
+ * sorted by name): a jump to the first entry of the previous / next letter, again every
+ * CAROUSEL_PAGING_INTERVAL_MS while held, showing the letter each time. The carousel reads labels
+ * for the letters it's heading for while paging (ui_components_carousel_paging_direction).
  * While held, the first letter of the file name (what the lists are sorted by; '#' for names that
  * don't start with a letter) shows against the right margin, level with the game title, each time
  * it changes: large, on a half-transparent black rounded box. It stays while the scroll is held and
@@ -27,6 +30,7 @@
 #define HOLD_GAP_MS     (300)
 
 static struct {
+    bool paging;            // jumping by letter (the third speed, in long lists)
     int direction;          // -1 / 1 while held, 0 when not
     int moves;              // tiles moved in this hold
     uint32_t hold_start_ms;
@@ -95,12 +99,54 @@ static char letter_of (entry_t *entry) {
     return (c >= 'A' && c <= 'Z') ? c : '#';
 }
 
+/** @brief Entries with the same key are one page: same type (folders first) and first letter. */
+static int group_key (entry_t *entry) {
+    return (entry->type << 8) | letter_of(entry);
+}
+
+/** @brief First entry of the run of equal keys that contains index (the list is circular). */
+static int32_t group_start (entry_t *list, int32_t count, int32_t index) {
+    int key = group_key(&list[index]);
+    for (int32_t steps = 0; steps < count - 1; steps++) {
+        int32_t previous = (index + count - 1) % count;
+        if (group_key(&list[previous]) != key) {
+            break;
+        }
+        index = previous;
+    }
+    return index;
+}
+
+int32_t ui_components_carousel_next_letter (entry_t *list, int32_t count, int32_t selected, int direction) {
+    int key = group_key(&list[selected]);
+    if (direction > 0) {
+        for (int32_t steps = 1; steps < count; steps++) {
+            int32_t index = (selected + steps) % count;
+            if (group_key(&list[index]) != key) {
+                return index;
+            }
+        }
+        return selected;
+    }
+    int32_t start = group_start(list, count, selected);
+    int32_t previous = (start + count - 1) % count;
+    if (group_key(&list[previous]) == key) {
+        return selected;    // the whole list is one letter
+    }
+    return group_start(list, count, previous);
+}
+
+int ui_components_carousel_paging_direction (void) {
+    return scroll.paging ? scroll.direction : 0;
+}
+
 /**
  * @brief Forget any held direction (call when a carousel view opens).
  */
 void ui_components_carousel_scroll_reset (void) {
     scroll.direction = 0;
     scroll.moves = 0;
+    scroll.paging = false;
 }
 
 static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_hint);
@@ -121,17 +167,15 @@ int32_t ui_components_carousel_scroll (menu_t *menu, entry_t *list, int32_t coun
 
 /** @brief Time between tiles this long into a hold. */
 static uint32_t move_interval (uint32_t held_ms) {
-    int speed = (held_ms < CAROUSEL_SPEED_STEP_MS) ? CAROUSEL_SPEED_1
-        : (held_ms < (2 * CAROUSEL_SPEED_STEP_MS)) ? CAROUSEL_SPEED_2
-        : CAROUSEL_SPEED_3;
-    return 1000 / speed;
+    return 1000 / ((held_ms < CAROUSEL_SPEED_STEP_MS) ? CAROUSEL_SPEED_1 : CAROUSEL_SPEED_2);
 }
 
 static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t selected, bool letter_hint) {
     uint32_t now = get_ticks_ms();
-    // C-buttons also report a direction (go_fast); in carousels they are action buttons instead.
-    bool horizontal = (menu->actions.go_left || menu->actions.go_right) && !menu->actions.go_fast;
-    if (!horizontal || count < 2) {
+    // The D-pad / stick scrolls; C-Left / C-Right (which report a direction with go_fast) page by letter.
+    bool horizontal = menu->actions.go_left || menu->actions.go_right;
+    bool paging = menu->actions.go_fast;
+    if (!horizontal || count < 2 || (paging && !letter_hint)) {
         if (scroll.direction != 0 && (now - scroll.last_seen_ms) > HOLD_GAP_MS) {
             ui_components_carousel_scroll_reset();
         }
@@ -139,9 +183,10 @@ static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t 
     }
 
     int direction = menu->actions.go_left ? -1 : 1;
-    if (direction != scroll.direction) {
-        // A new press (or a change of direction): move straight away, then keep going while held.
+    if (direction != scroll.direction || paging != scroll.paging) {
+        // A new press (or another direction or button): move straight away, then keep going while held.
         scroll.direction = direction;
+        scroll.paging = paging;
         scroll.moves = 0;
         scroll.hold_start_ms = now;
         scroll.next_move_ms = now;
@@ -156,14 +201,20 @@ static int32_t scroll_step (menu_t *menu, entry_t *list, int32_t count, int32_t 
     if ((int32_t) (now - scroll.next_move_ms) < 0) {
         return selected;
     }
-    uint32_t interval = move_interval(now - scroll.hold_start_ms);
+    uint32_t interval = scroll.paging ? CAROUSEL_PAGING_INTERVAL_MS : move_interval(now - scroll.hold_start_ms);
     scroll.next_move_ms += interval;
     if ((int32_t) (now - scroll.next_move_ms) > (int32_t) interval) {
         scroll.next_move_ms = now + interval;   // fell behind (a slow frame): don't catch up in a burst
     }
 
-    int32_t next = (selected + count + direction) % count;
-    if (letter_hint && scroll.moves > 0 && letter_of(&list[next]) != letter_of(&list[selected])) {
+    int32_t next = scroll.paging
+        ? ui_components_carousel_next_letter(list, count, selected, direction)
+        : (selected + count + direction) % count;
+    if (next == selected) {
+        return selected;
+    }
+    // The letter: on every page, and in a held scroll each time it changes.
+    if (letter_hint && (paging || (scroll.moves > 0 && letter_of(&list[next]) != letter_of(&list[selected])))) {
         indicator.letter = letter_of(&list[next]);
         fade_touch(&indicator.fade, now);
     }

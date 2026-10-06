@@ -97,7 +97,7 @@ static void process (menu_t *menu) {
     } else if (menu->actions.c_up && entries[selected].type == ENTRY_TYPE_ROM) {    // Config
         sound_play_effect(SFX_SETTING);
         open_selected(menu, true);
-    } else if (menu->actions.c_left) {    // Favorite / Unfavorite
+    } else if (menu->actions.c_down) {    // Favorite / Unfavorite
         path_t *path = path_create(entries[selected].name);
         int slot = bookkeeping_favorite_find(&menu->bookkeeping, path);
         if (slot >= 0) {
@@ -134,7 +134,7 @@ static void draw_content (menu_t *menu, bool show_hints) {
             &(rdpq_textparms_t) { .style_id = STL_GRAY, .width = VISIBLE_AREA_X1 - CAROUSEL_SELECTED_X, .wrap = WRAP_WORD },
             CAROUSEL_SELECTED_X, CAROUSEL_TILE_Y + 40,
             (tab == TAB_FAVORITES)
-                ? "No favorites yet.\nPress C-Left on a game in the Library\nto add it here."
+                ? "No favorites yet.\nPress C-Down on a game in the Library\nto add it here."
                 : "Nothing played yet.\nGames you launch will appear here."
         );
         return;
@@ -167,10 +167,13 @@ static void draw_content (menu_t *menu, bool show_hints) {
     button_hint_t hints[BUTTON_HINTS_MAX];
     int count = 0;
     hints[count++] = (button_hint_t) { ICON_A, "Play", ICON_START, true };     // A or Start
-    hints[count++] = (button_hint_t) { ICON_C_LEFT, favorite ? "Unfave" : "Fave" };
+    if (entry_count > 1) {
+        hints[count++] = (button_hint_t) { ICON_C_LEFT, "Page", ICON_C_RIGHT, true };     // by letter
+    }
     if (entries[selected].type == ENTRY_TYPE_ROM) {
         hints[count++] = (button_hint_t) { ICON_C_UP, "Config" };
     }
+    hints[count++] = (button_hint_t) { ICON_C_DOWN, favorite ? "Unfave" : "Fave" };
     ui_components_button_hints_draw(hints, count);
 }
 

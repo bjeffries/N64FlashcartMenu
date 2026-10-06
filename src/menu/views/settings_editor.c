@@ -169,6 +169,7 @@ static component_context_menu_t screensaver_style_picker = {
         { .text = "Grid", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_GRID) },
         { .text = "Starfield", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_STARFIELD) },
         { .text = "Orbit", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_ORBIT) },
+        { .text = "Conveyor", .action = set_screensaver_style, .arg = (void *) (SCREENSAVER_CONVEYOR) },
         COMPONENT_CONTEXT_MENU_LIST_END,
     }
 };
@@ -276,11 +277,11 @@ static option_t options[] = {
     { .label = "Screensaver", .type = OPTION_CHOICE, .picker = &screensaver_picker,
       .description = "Show the screensaver after this long without a button press." },
     { .label = "Screensaver Style", .type = OPTION_CHOICE, .picker = &screensaver_style_picker,
-      .description = "Bounce, Trails, Grid, Starfield or Orbit, or Random for a different one each time." },
+      .description = "Pick a style, or Random for a different one each time." },
     { .label = "Sound Effects", .type = OPTION_TOGGLE, .get = get_soundfx, .set = set_soundfx,
       .description = "Menu sounds when moving and selecting." },
     { .label = "Show Hidden Games", .type = OPTION_TOGGLE, .get = get_hidden_games, .set = set_hidden_games,
-      .description = "List games you hid with C-Down in the Library, grayed out, so you can unhide them." },
+      .description = "List games hidden in their Config, grayed out, so you can unhide them." },
     { .label = "Use Saves Folder", .type = OPTION_TOGGLE, .get = get_use_saves_folder, .set = set_use_saves_folder,
       .description = "Keep save files in a \"saves\" folder next to each game instead of beside it." },
     { .label = "Show Saves Folder", .type = OPTION_TOGGLE, .get = get_show_saves_folder, .set = set_show_saves_folder,
@@ -303,7 +304,7 @@ static option_t options[] = {
 #endif
     { .label = "Start Folder", .type = OPTION_ACTION, .value = start_folder_value,
       .action = reset_start_folder, .action_name = "Reset",
-      .description = "Folder the Library opens in. Set it with C-Left on a folder; A resets it to /N64." },
+      .description = "Folder the Library opens in. Set it with C-Down on a folder; A resets it to /N64." },
     { .label = "Reset Settings", .type = OPTION_ACTION, .action = ask_reset, .action_name = "Reset",
       .description = "Put every menu setting back to its default." },
 };

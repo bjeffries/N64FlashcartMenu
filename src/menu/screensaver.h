@@ -24,6 +24,7 @@ typedef enum {
     SCREENSAVER_GRID,
     SCREENSAVER_STARFIELD,
     SCREENSAVER_ORBIT,
+    SCREENSAVER_CONVEYOR,
     SCREENSAVER_STYLE_COUNT,
 } screensaver_style_setting_t;
 

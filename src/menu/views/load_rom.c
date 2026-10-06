@@ -1,6 +1,7 @@
 #include "../bookkeeping.h"
 #include "../cart_load.h"
 #include "../datel_codes.h"
+#include "../hidden.h"
 #include "../play_stats.h"
 #include "../fonts.h"
 #include "../rom_info.h"
@@ -593,6 +594,15 @@ static const char *config_video_value (menu_t *menu) {
     return buffer;
 }
 
+static bool config_get_hidden (menu_t *menu) {
+    return hidden_contains(menu->load.rom_path);
+}
+
+static void config_set_hidden (menu_t *menu, bool value) {
+    hidden_set(menu->load.rom_path, value);
+    menu->browser.reload = true;    // it leaves (or rejoins) the Library's list
+}
+
 static option_t config_options[] = {
     { .label = "Save Type", .type = OPTION_CHOICE, .picker = &set_save_type_context_menu, .value = config_save_value,
       .description = "Only change this if the game doesn't save correctly." },
@@ -606,6 +616,8 @@ static option_t config_options[] = {
       .description = "Add, edit and enable GameShark / Action Replay codes." },
     { .label = "Clear RDRAM", .type = OPTION_TOGGLE, .get = config_get_clear_rdram, .set = config_set_clear_rdram,
       .description = "Zero memory before boot. Fixes a few games that crash or glitch on start." },
+    { .label = "Hide from Library", .type = OPTION_TOGGLE, .get = config_get_hidden, .set = config_set_hidden,
+      .description = "It stays on your SD card. Show Hidden Games in Menu Settings brings it back." },
 };
 
 static option_list_t config_list = {

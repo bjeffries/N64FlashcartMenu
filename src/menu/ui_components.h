@@ -318,6 +318,10 @@ bool ui_components_loading_animation_finished(void);
  */
 void ui_components_table_scrollbar_draw(int first_row_y, int pitch, int first_visible, int count, int visible);
 
+/** @brief The first entry of the next (direction 1) or previous (-1) letter in a carousel list (folders and games page separately). */
+int32_t ui_components_carousel_next_letter(entry_t *list, int32_t count, int32_t selected, int direction);
+/** @brief While a held scroll is paging by letter, its direction (-1 / 1); otherwise 0. */
+int ui_components_carousel_paging_direction(void);
 /** @brief Forget any held direction (call when a carousel view opens). */
 void ui_components_carousel_scroll_reset(void);
 /** @brief Handle ←/→ for a circular carousel list, speeding up while held; shows the first letter as it changes if letter_hint. Returns the new selection. */
@@ -418,12 +422,21 @@ bool ui_components_tab_process(menu_t *menu, menu_tab_t current);
 void ui_components_carousel_invalidate(void);
 /** @brief Snap the scroll position to the selection on the next draw (a carousel screen opened); cached labels are kept if the list is the same. */
 void ui_components_carousel_snap(void);
-/** @brief A game's large cartridge label if the carousel has it cached (still the carousel's: don't free it), else NULL. */
-surface_t *ui_components_carousel_cached_label(path_t *directory, const char *name);
-/** @brief Load a game's large cartridge label (yours: free it with labels_free), or NULL if it has none. Reads the SD card. */
-surface_t *ui_components_cartridge_label_load(path_t *directory, const char *name);
-/** @brief Draw a large cartridge centred on (cx, cy), scaled, with its label (NULL: the placeholder); the label and the shell darkened to their brightness (0xFF: as is). */
+/**
+ * @brief A game's large cartridge label from the carousel's label cache (the screensavers), counting
+ *        as a use. If it isn't cached and *may_load, it's read into the cache now (reading the SD
+ *        card) and *may_load is cleared. The image stays the cache's: use it this frame only, and
+ *        ask again each frame. NULL: not cached (or the game has no label).
+ */
+surface_t *ui_components_carousel_label(path_t *directory, const char *name, bool *may_load);
+/** @brief Count a frame for the label cache's least-recently-used order (the screensavers, which draw without the carousel). */
+void ui_components_carousel_label_tick(void);
+/** @brief Draw a large cartridge centred on (cx, cy), scaled, with its label (NULL: the filler); the label and the shell darkened to their brightness (0xFF: as is). */
 void ui_components_cartridge_draw(float cx, float cy, float scale, surface_t *label, uint8_t label_brightness, uint8_t brightness);
+/** @brief The filler label: the N64 logo on an off-white label, for cartridges with no label art (kept; don't free it). */
+surface_t *ui_components_cartridge_filler_label(void);
+/** @brief Draw a large cartridge centred on (cx, cy), scaled and turned by theta (radians, counter-clockwise), with its label (NULL: the filler). */
+void ui_components_cartridge_draw_rotated(float cx, float cy, float scale, float theta, surface_t *label);
 /** @brief Whether labels near the selection are still being loaded (as of the last time the row was still). */
 bool ui_components_carousel_labels_pending(void);
 /** @brief Load a list's cartridge labels ahead of drawing it (during the boot animation), nearest the selection first, for up to budget_us. */
